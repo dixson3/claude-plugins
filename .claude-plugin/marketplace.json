@@ -15,6 +15,24 @@
       "path": "plugins/hello-world",
       "description": "A placeholder plugin demonstrating all plugin components",
       "version": "1.0.0"
+    },
+    {
+      "name": "roles",
+      "path": "plugins/roles",
+      "description": "Selective role loading for agents",
+      "version": "1.0.0"
+    },
+    {
+      "name": "workflows",
+      "path": "plugins/workflows",
+      "description": "Workflow utilities including beads initialization",
+      "version": "1.0.0"
+    },
+    {
+      "name": "chronicler",
+      "path": "plugins/chronicler",
+      "description": "Context persistence using beads and diary generation",
+      "version": "1.0.0"
     }
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "name": "workflows",
+  "version": "1.0.0",
+  "description": "Workflow utilities including beads initialization",
+  "author": {
+    "name": "James Dixson",
+    "email": "dixson3@gmail.com",
+    "organization": "Yoshiko Studios LLC",
+    "github": "dixson3"
+  },
+  "license": "MIT",
+  "skills": [
+    "skills/init_beads/SKILL.md"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "name": "chronicler",
+  "version": "1.0.0",
+  "description": "Context persistence across Claude sessions using beads and diary generation",
+  "author": {
+    "name": "James Dixson",
+    "email": "dixson3@gmail.com",
+    "organization": "Yoshiko Studios LLC",
+    "github": "dixson3"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "plugins": ["roles", "workflows"],
+    "cli": {
+      "beads-cli": ">=0.44.0"
+    }
+  },
+  "skills": [
+    "skills/init/SKILL.md",
+    "skills/capture/SKILL.md",
+    "skills/recall/SKILL.md",
+    "skills/diary/SKILL.md",
+    "skills/disable/SKILL.md"
+  ],
+  "agents": [
+    "agents/chronicler_recall.md",
+    "agents/chronicler_diary.md"
+  ],
+  "installs": {
+    "roles": ["roles/watch-for-chronicle-worthiness.md"],
+    "hooks": ["hooks/pre-push-diary.sh"]
+  }
+}

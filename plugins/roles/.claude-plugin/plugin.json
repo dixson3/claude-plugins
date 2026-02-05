@@ -1,0 +1,19 @@
+{
+  "name": "roles",
+  "version": "1.0.0",
+  "description": "Selective role loading for agents - allows roles to be assigned to specific agents",
+  "author": {
+    "name": "James Dixson",
+    "email": "dixson3@gmail.com",
+    "organization": "Yoshiko Studios LLC",
+    "github": "dixson3"
+  },
+  "license": "MIT",
+  "skills": [
+    "skills/apply/SKILL.md",
+    "skills/assign/SKILL.md",
+    "skills/unassign/SKILL.md",
+    "skills/list/SKILL.md"
+  ],
+  "scripts": ["scripts/roles-apply.sh"]
+}
