@@ -1,0 +1,20 @@
+{
+  "name": "yoshiko-studios-marketplace",
+  "version": "1.0.0",
+  "description": "Yoshiko Studios Claude Marketplace - A collection of Claude plugins",
+  "author": {
+    "name": "James Dixson",
+    "email": "dixson3@gmail.com",
+    "organization": "Yoshiko Studios LLC",
+    "github": "dixson3"
+  },
+  "license": "MIT",
+  "plugins": [
+    {
+      "name": "hello-world",
+      "path": "plugins/hello-world",
+      "description": "A placeholder plugin demonstrating all plugin components",
+      "version": "1.0.0"
+    }
+  ]
+}

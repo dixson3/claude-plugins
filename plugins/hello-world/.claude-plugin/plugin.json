@@ -1,0 +1,15 @@
+{
+  "name": "hello-world",
+  "version": "1.0.0",
+  "description": "A placeholder plugin demonstrating all Claude plugin components",
+  "author": {
+    "name": "James Dixson",
+    "email": "dixson3@gmail.com",
+    "organization": "Yoshiko Studios LLC",
+    "github": "dixson3"
+  },
+  "license": "MIT",
+  "commands": ["commands/greet.md"],
+  "skills": ["skills/hello/SKILL.md"],
+  "agents": ["agents/greeter.md"]
+}
