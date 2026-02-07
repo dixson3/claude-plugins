@@ -1,5 +1,5 @@
 ---
-name: init
+name: workflows:init
 description: Initialize the workflows plugin - installs rules, scripts, and hooks
 arguments: []
 ---

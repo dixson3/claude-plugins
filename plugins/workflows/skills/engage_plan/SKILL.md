@@ -1,5 +1,5 @@
 ---
-name: engage_plan
+name: workflows:engage_plan
 description: Plan lifecycle state machine - manages Draft, Ready, Executing, Paused, and Completed states
 arguments:
   - name: action

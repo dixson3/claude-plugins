@@ -1,5 +1,5 @@
 ---
-name: plan_to_beads
+name: workflows:plan_to_beads
 description: Convert a plan document into a beads hierarchy with epics, tasks, gates, and dependencies
 arguments:
   - name: plan_file

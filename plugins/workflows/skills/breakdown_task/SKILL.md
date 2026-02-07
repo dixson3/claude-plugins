@@ -1,5 +1,5 @@
 ---
-name: breakdown_task
+name: workflows:breakdown_task
 description: Decompose a non-trivial task into child beads with proper dependencies and agent assignments
 arguments:
   - name: task_id

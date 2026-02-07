@@ -1,5 +1,5 @@
 ---
-name: disable
+name: chronicler:disable
 description: Close all open chronicle beads without generating diary entries
 arguments: []
 ---

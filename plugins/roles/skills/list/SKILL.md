@@ -1,5 +1,5 @@
 ---
-name: list
+name: roles:list
 description: Show all roles and their agent assignments
 arguments: []
 ---

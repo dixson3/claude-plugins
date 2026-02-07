@@ -1,5 +1,5 @@
 ---
-name: diary
+name: chronicler:diary
 description: Generate diary entries from open chronicles and close them
 arguments: []
 ---

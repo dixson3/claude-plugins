@@ -1,5 +1,5 @@
 ---
-name: init_beads
+name: workflows:init_beads
 description: Initialize beads issue tracking and install BEADS.md rule (keeps AGENTS.md clean)
 arguments: []
 ---

@@ -1,5 +1,5 @@
 ---
-name: recall
+name: chronicler:recall
 description: Recall and summarize open chronicle beads to restore context
 arguments: []
 ---

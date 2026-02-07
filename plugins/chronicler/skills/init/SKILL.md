@@ -1,5 +1,5 @@
 ---
-name: init
+name: chronicler:init
 description: Initialize chronicler - sets up beads, roles, hooks, and diary directory
 arguments: []
 ---

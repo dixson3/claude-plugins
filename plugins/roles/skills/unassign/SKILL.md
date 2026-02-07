@@ -1,5 +1,5 @@
 ---
-name: unassign
+name: roles:unassign
 description: Remove agents from a role's applies-to list
 arguments:
   - name: role

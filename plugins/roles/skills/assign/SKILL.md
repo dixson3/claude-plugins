@@ -1,5 +1,5 @@
 ---
-name: assign
+name: roles:assign
 description: Add agents to a role's applies-to list
 arguments:
   - name: role

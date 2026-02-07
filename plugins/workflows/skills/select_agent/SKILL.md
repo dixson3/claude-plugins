@@ -1,5 +1,5 @@
 ---
-name: select_agent
+name: workflows:select_agent
 description: Match a task to the best available agent based on capabilities and assign an agent label
 arguments:
   - name: task_id

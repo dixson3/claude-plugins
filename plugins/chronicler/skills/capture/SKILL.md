@@ -1,5 +1,5 @@
 ---
-name: capture
+name: chronicler:capture
 description: Capture current context as a chronicle bead
 arguments:
   - name: topic

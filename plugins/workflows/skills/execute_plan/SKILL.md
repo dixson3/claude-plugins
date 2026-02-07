@@ -1,5 +1,5 @@
 ---
-name: execute_plan
+name: workflows:execute_plan
 description: Orchestrate plan execution by dispatching tasks to agents respecting dependencies and execution state
 arguments:
   - name: plan_file

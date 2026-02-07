@@ -1,5 +1,5 @@
 ---
-name: apply
+name: roles:apply
 description: Load active roles for the current agent
 arguments:
   - name: agent
