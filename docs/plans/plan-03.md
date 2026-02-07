@@ -34,11 +34,11 @@ Draft ───► Ready ───► Executing ◄──► Paused ───►
 
 ### 1. Migrate engage-plan into the workflows plugin
 
-Moved from `.claude/commands/` and `.claude/rules/` into `plugins/workflows/skills/engage_plan/` and `plugins/workflows/rules/`. Originals deleted.
+Moved from `.claude/commands/` and `.claude/rules/` into `plugins/workflows/`. Originally created as a command, then converted to a skill for consistency — all plugin components are now skills. Originals deleted.
 
 ### 2. `/workflows:engage_plan` skill
 
-Full lifecycle state machine with per-transition behavior for Draft, Ready, Executing, Paused, and Completed states.
+Full lifecycle state machine with per-transition behavior for Draft, Ready, Executing, Paused, and Completed states. Implemented as a skill (not a command) for consistency with all other plugin components.
 
 ### 3. `/workflows:plan_to_beads` skill
 
@@ -76,7 +76,14 @@ Installs rules, verifies scripts, configures hooks.
 
 ### 11. Plugin manifest and README
 
-Updated to v1.1.0 with all new components registered.
+Updated to v1.1.0 with all new components registered. No `commands` field — all components are skills.
+
+### 12. Project-level docs
+
+- `CLAUDE.md` — Updated structure, test commands, plugin list (removed hello-world references)
+- `README.md` — Updated plugin table, overview, structure tree, quick start
+- `CHANGELOG.md` — Added v1.2.0 entry with all additions, changes, and removals
+- `hello-world` plugin removed — placeholder no longer needed with real plugins as examples
 
 ## Files Summary
 
@@ -95,15 +102,24 @@ Updated to v1.1.0 with all new components registered.
 | Create | `plugins/workflows/rules/breakdown-the-work.md` |
 | Modify | `plugins/workflows/.claude-plugin/plugin.json` |
 | Modify | `plugins/workflows/README.md` |
+| Modify | `CLAUDE.md` |
+| Modify | `README.md` |
+| Modify | `CHANGELOG.md` |
+| Modify | `.claude-plugin/marketplace.json` |
 | Delete | `.claude/commands/engage-plan.md` |
 | Delete | `.claude/rules/engage-the-plan.md` |
+| Delete | `plugins/hello-world/` (entire plugin) |
 
 ## Completion Criteria
 
 - [x] Init: `/workflows:init` installs 3 rules, script executable, hook registered
-- [x] All skills registered in plugin manifest
+- [x] All 7 skills registered in plugin manifest (no commands — skills only)
 - [x] `plan-exec.sh` passes bash syntax check
 - [x] `plan-exec-guard.sh` passes bash syntax check
 - [x] Old `.claude/commands/engage-plan.md` and `.claude/rules/engage-the-plan.md` deleted
 - [x] Marketplace manifest updated to v1.1.0
 - [x] Full README documentation
+- [x] CHANGELOG updated with v1.2.0 entry
+- [x] Project README updated with all plugins
+- [x] CLAUDE.md updated with current structure
+- [x] hello-world placeholder plugin removed
