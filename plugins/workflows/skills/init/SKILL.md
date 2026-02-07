@@ -18,7 +18,7 @@ When invoked with `/workflows:init`:
 
 ### Step 1: Initialize Beads
 
-Invoke the existing beads initialization:
+Invoke beads initialization (also installs `.claude/rules/BEADS.md`):
 ```
 /workflows:init_beads
 ```
@@ -87,6 +87,10 @@ Read the existing file (if any), merge in the new hook entries, and write back:
 Check that all components are in place:
 
 ```bash
+# Beads initialized + BEADS.md rule
+test -d .beads && echo "beads: OK"
+test -f .claude/rules/BEADS.md && echo "BEADS.md rule: OK"
+
 # Rules installed
 ls .claude/rules/engage-the-plan.md
 ls .claude/rules/plan-to-beads.md
@@ -95,9 +99,6 @@ ls .claude/rules/breakdown-the-work.md
 # Scripts executable
 test -x plugins/workflows/scripts/plan-exec.sh && echo "plan-exec.sh: OK"
 test -x plugins/workflows/hooks/plan-exec-guard.sh && echo "plan-exec-guard.sh: OK"
-
-# Beads initialized
-test -d .beads && echo "beads: OK"
 ```
 
 ## Expected Output
@@ -107,6 +108,7 @@ Initializing workflows plugin...
 
 [1/6] Initializing beads...
       Beads initialized successfully.
+      Installed .claude/rules/BEADS.md
 
 [2/6] Creating .claude/rules/ directory...
       Directory exists.
