@@ -65,15 +65,30 @@ Read the existing file (if any), merge in the new hook entries, and write back:
     "PreToolUse": [
       {
         "matcher": "Bash(bd update*--status*in_progress*)",
-        "command": "plugins/workflows/hooks/plan-exec-guard.sh"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "plugins/workflows/hooks/plan-exec-guard.sh"
+          }
+        ]
       },
       {
         "matcher": "Bash(bd update*--claim*)",
-        "command": "plugins/workflows/hooks/plan-exec-guard.sh"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "plugins/workflows/hooks/plan-exec-guard.sh"
+          }
+        ]
       },
       {
         "matcher": "Bash(bd close*)",
-        "command": "plugins/workflows/hooks/plan-exec-guard.sh"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "plugins/workflows/hooks/plan-exec-guard.sh"
+          }
+        ]
       }
     ]
   }

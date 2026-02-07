@@ -24,9 +24,9 @@ Chronicler helps you maintain context across Claude sessions by:
 
 This will:
 1. Initialize beads in your project
-2. Install the `watch-for-chronicle-worthiness` role
-3. Create `docs/diary/` directory
-4. Set up the pre-push hook (manual configuration needed)
+2. Initialize the roles plugin
+3. Install the `watch-for-chronicle-worthiness` role
+4. Create `docs/diary/` directory
 
 ## Skills
 
@@ -152,21 +152,7 @@ Consolidated narrative...
 
 ### Pre-Push Hook
 
-Configure the pre-push hook to remind about open chronicles:
-
-```json
-// .claude/settings.json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash(git push:*)",
-        "command": ".claude/hooks/pre-push-diary.sh"
-      }
-    ]
-  }
-}
-```
+The pre-push hook is configured automatically by `plugin.json` — no manual setup needed. It reminds you about open chronicles before pushing.
 
 ## Example Session
 

@@ -2,18 +2,8 @@
 # pre-push-diary.sh
 # Hook to check for open chronicle beads before push and suggest diary generation
 #
-# Install to: .claude/hooks/pre-push-diary.sh
-# Configure in .claude/settings.json:
-# {
-#   "hooks": {
-#     "PreToolUse": [
-#       {
-#         "matcher": "Bash(git push:*)",
-#         "command": ".claude/hooks/pre-push-diary.sh"
-#       }
-#     ]
-#   }
-# }
+# Installation is managed automatically by the chronicler plugin.json.
+# No manual hook configuration is needed.
 
 set -e
 

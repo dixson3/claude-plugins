@@ -18,6 +18,7 @@ marketplace/
 │       │   └── plugin.json # Plugin manifest
 │       ├── skills/         # Auto-invoked skills (*/SKILL.md)
 │       ├── agents/         # Specialized agents (*.md)
+│       ├── roles/          # Role definitions (*.md)
 │       ├── rules/          # Behavioral rules (*.md)
 │       ├── scripts/        # Shell scripts (*.sh)
 │       ├── hooks/          # Pre/post tool-use hooks (*.sh)
@@ -157,6 +158,6 @@ Pre/post tool-use hooks declared in `plugin.json` under the `hooks` key. Hook co
 
 ## Current Plugins
 
-- **roles** (v1.0.0) - Selective role loading for agents
+- **roles** (v1.1.0) - Selective role loading for agents
 - **workflows** (v1.1.0) - Plan lifecycle, beads decomposition, and execution orchestration
-- **chronicler** (v1.0.0) - Context persistence using beads and diary generation
+- **chronicler** (v1.1.0) - Context persistence using beads and diary generation

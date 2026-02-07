@@ -5,6 +5,22 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-02-07
+
+### Added
+
+- `roles` plugin: `/roles:init` skill for plugin initialization (creates roles directory, installs apply script)
+
+### Changed
+
+- `chronicler` plugin: Replaced manual `roles-apply.sh` copy with `/roles:init` invocation (removes cross-plugin coupling)
+- `chronicler` plugin: Removed redundant Step 7 (manual hook config) from init — `plugin.json` handles it automatically
+- `chronicler` plugin: Updated `pre-push-diary.sh` header comments to reflect automatic installation
+- `chronicler` plugin: Updated README pre-push hook section to note automatic configuration
+- `workflows` plugin: Fixed hook format in init SKILL.md Step 5 to use nested `hooks[]` format
+- Updated `CLAUDE.md` plugin structure to include `roles/` directory
+- Version bumps: roles 1.0.0 → 1.1.0, chronicler 1.0.0 → 1.1.0, marketplace 1.2.0 → 1.3.0
+
 ## [1.2.0] - 2026-02-07
 
 ### Added
