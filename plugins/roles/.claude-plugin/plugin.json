@@ -7,10 +7,5 @@
     "email": "dixson3@gmail.com"
   },
   "license": "MIT",
-  "skills": [
-    "skills/apply/SKILL.md",
-    "skills/assign/SKILL.md",
-    "skills/unassign/SKILL.md",
-    "skills/list/SKILL.md"
-  ]
+  "skills": "./skills/"
 }

@@ -7,15 +7,7 @@
     "email": "dixson3@gmail.com"
   },
   "license": "MIT",
-  "skills": [
-    "skills/init/SKILL.md",
-    "skills/init_beads/SKILL.md",
-    "skills/engage_plan/SKILL.md",
-    "skills/plan_to_beads/SKILL.md",
-    "skills/execute_plan/SKILL.md",
-    "skills/breakdown_task/SKILL.md",
-    "skills/select_agent/SKILL.md"
-  ],
+  "skills": "./skills/",
   "hooks": {
     "PreToolUse": [
       {

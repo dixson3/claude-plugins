@@ -7,17 +7,8 @@
     "email": "dixson3@gmail.com"
   },
   "license": "MIT",
-  "skills": [
-    "skills/init/SKILL.md",
-    "skills/capture/SKILL.md",
-    "skills/recall/SKILL.md",
-    "skills/diary/SKILL.md",
-    "skills/disable/SKILL.md"
-  ],
-  "agents": [
-    "agents/chronicler_recall.md",
-    "agents/chronicler_diary.md"
-  ],
+  "skills": "./skills/",
+  "agents": "./agents/",
   "hooks": {
     "PreToolUse": [
       {
