@@ -4,17 +4,9 @@
   "description": "Context persistence across Claude sessions using beads and diary generation",
   "author": {
     "name": "James Dixson",
-    "email": "dixson3@gmail.com",
-    "organization": "Yoshiko Studios LLC",
-    "github": "dixson3"
+    "email": "dixson3@gmail.com"
   },
   "license": "MIT",
-  "dependencies": {
-    "plugins": ["roles", "workflows"],
-    "cli": {
-      "beads-cli": ">=0.44.0"
-    }
-  },
   "skills": [
     "skills/init/SKILL.md",
     "skills/capture/SKILL.md",
@@ -26,8 +18,17 @@
     "agents/chronicler_recall.md",
     "agents/chronicler_diary.md"
   ],
-  "installs": {
-    "roles": ["roles/watch-for-chronicle-worthiness.md"],
-    "hooks": ["hooks/pre-push-diary.sh"]
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git push*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/pre-push-diary.sh"
+          }
+        ]
+      }
+    ]
   }
 }

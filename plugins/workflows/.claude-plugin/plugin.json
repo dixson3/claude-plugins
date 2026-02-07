@@ -4,9 +4,7 @@
   "description": "Plan lifecycle, beads decomposition, and execution orchestration",
   "author": {
     "name": "James Dixson",
-    "email": "dixson3@gmail.com",
-    "organization": "Yoshiko Studios LLC",
-    "github": "dixson3"
+    "email": "dixson3@gmail.com"
   },
   "license": "MIT",
   "skills": [
@@ -18,13 +16,35 @@
     "skills/breakdown_task/SKILL.md",
     "skills/select_agent/SKILL.md"
   ],
-  "installs": {
-    "rules": [
-      "rules/engage-the-plan.md",
-      "rules/plan-to-beads.md",
-      "rules/breakdown-the-work.md"
-    ],
-    "scripts": ["scripts/plan-exec.sh"],
-    "hooks": ["hooks/plan-exec-guard.sh"]
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash(bd update*--status*in_progress*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/plan-exec-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(bd update*--claim*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/plan-exec-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(bd close*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/plan-exec-guard.sh"
+          }
+        ]
+      }
+    ]
   }
 }

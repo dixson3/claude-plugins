@@ -1,30 +1,32 @@
 {
   "name": "yoshiko-studios-marketplace",
-  "version": "1.0.0",
-  "description": "Yoshiko Studios Claude Marketplace - A collection of Claude plugins",
-  "author": {
+  "owner": {
     "name": "James Dixson",
-    "email": "dixson3@gmail.com",
+    "email": "dixson3@gmail.com"
+  },
+  "metadata": {
+    "description": "Yoshiko Studios Claude Marketplace - A collection of Claude plugins",
+    "version": "1.2.0",
+    "license": "MIT",
     "organization": "Yoshiko Studios LLC",
     "github": "dixson3"
   },
-  "license": "MIT",
   "plugins": [
-{
+    {
       "name": "roles",
-      "path": "plugins/roles",
+      "source": "./plugins/roles",
       "description": "Selective role loading for agents",
       "version": "1.0.0"
     },
     {
       "name": "workflows",
-      "path": "plugins/workflows",
+      "source": "./plugins/workflows",
       "description": "Plan lifecycle, beads decomposition, and execution orchestration",
       "version": "1.1.0"
     },
     {
       "name": "chronicler",
-      "path": "plugins/chronicler",
+      "source": "./plugins/chronicler",
       "description": "Context persistence using beads and diary generation",
       "version": "1.0.0"
     }
