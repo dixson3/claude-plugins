@@ -25,8 +25,8 @@
     {
       "name": "workflows",
       "path": "plugins/workflows",
-      "description": "Workflow utilities including beads initialization",
-      "version": "1.0.0"
+      "description": "Plan lifecycle, beads decomposition, and execution orchestration",
+      "version": "1.1.0"
     },
     {
       "name": "chronicler",
