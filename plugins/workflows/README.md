@@ -41,13 +41,11 @@ Draft ───► Ready ───► Executing ◄──► Paused ───►
 2. **Scripts**: `plan-exec.sh` handles atomic state transitions.
 3. **Hooks**: `plan-exec-guard.sh` blocks claim/close on non-executing plans.
 
-## Commands
+## Skills
 
-### `/workflows:engage-plan`
+### `/workflows:engage_plan`
 
 Plan lifecycle state machine. Detects intent from context and transitions the plan.
-
-## Skills
 
 ### `/workflows:init`
 

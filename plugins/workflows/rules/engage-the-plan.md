@@ -2,7 +2,7 @@
 
 **Applies:** Always (different triggers for different states)
 
-When the user says plan lifecycle phrases, invoke the appropriate action via `/workflows:engage-plan`.
+When the user says plan lifecycle phrases, invoke the appropriate action via `/workflows:engage_plan`.
 
 ## Trigger Phrases
 
@@ -33,6 +33,6 @@ When the user says plan lifecycle phrases, invoke the appropriate action via `/w
 
 ## Action
 
-Invoke: `/workflows:engage-plan` with the detected action context.
+Invoke: `/workflows:engage_plan` with the detected action context.
 
-**Important:** `/engage-plan` does NOT imply `ExitPlanMode`. They are independent.
+**Important:** `/workflows:engage_plan` does NOT imply `ExitPlanMode`. They are independent.

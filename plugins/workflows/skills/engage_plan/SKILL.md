@@ -1,5 +1,5 @@
 ---
-name: engage-plan
+name: engage_plan
 description: Plan lifecycle state machine - manages Draft, Ready, Executing, Paused, and Completed states
 arguments:
   - name: action
@@ -7,7 +7,7 @@ arguments:
     required: false
 ---
 
-# Engage Plan Command
+# Engage Plan Skill
 
 Full lifecycle state machine for plan management. Transitions plans through Draft, Ready, Executing, Paused, and Completed states.
 
@@ -59,7 +59,7 @@ When the user says "engage the plan" during plan mode:
 
 5. **Present summary**: Show what was saved, offer next steps
 
-**Important**: `/engage-plan` does NOT imply `ExitPlanMode`. They are independent actions.
+**Important**: `/workflows:engage_plan` does NOT imply `ExitPlanMode`. They are independent actions.
 
 ### Transition: → Ready
 

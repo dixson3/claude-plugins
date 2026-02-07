@@ -16,7 +16,7 @@ Orchestrates plan execution. Dispatches ready tasks to appropriate agents, respe
 
 ## When to Invoke
 
-- Called by `/workflows:engage-plan` during the Ready → Executing transition
+- Called by `/workflows:engage_plan` during the Ready → Executing transition
 - Can be invoked directly: `/workflows:execute_plan`
 
 ## Prerequisites

@@ -129,7 +129,7 @@ Initializing workflows plugin...
 Workflows plugin initialized!
 
 Available commands:
-  /workflows:engage-plan    Plan lifecycle management
+  /workflows:engage_plan    Plan lifecycle management
   /workflows:plan_to_beads  Convert plan to beads hierarchy
   /workflows:execute_plan   Orchestrate plan execution
   /workflows:breakdown_task Decompose non-trivial tasks

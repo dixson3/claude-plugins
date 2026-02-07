@@ -16,7 +16,7 @@ Reads a plan document and creates a structured beads hierarchy with proper depen
 
 ## When to Invoke
 
-- Called by `/workflows:engage-plan` during the Draft → Ready transition
+- Called by `/workflows:engage_plan` during the Draft → Ready transition
 - Can be invoked directly: `/workflows:plan_to_beads [plan_file]`
 
 ## Behavior
