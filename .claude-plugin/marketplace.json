@@ -10,13 +10,7 @@
   },
   "license": "MIT",
   "plugins": [
-    {
-      "name": "hello-world",
-      "path": "plugins/hello-world",
-      "description": "A placeholder plugin demonstrating all plugin components",
-      "version": "1.0.0"
-    },
-    {
+{
       "name": "roles",
       "path": "plugins/roles",
       "description": "Selective role loading for agents",

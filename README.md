@@ -14,18 +14,11 @@ claude --plugin-dir /path/to/yoshiko-studios-marketplace
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| [hello-world](plugins/hello-world/) | Placeholder plugin demonstrating all plugin components | 1.0.0 |
 | [roles](plugins/roles/) | Selective role loading for agents | 1.0.0 |
 | [workflows](plugins/workflows/) | Plan lifecycle, beads decomposition, and execution orchestration | 1.1.0 |
 | [chronicler](plugins/chronicler/) | Context persistence using beads and diary generation | 1.0.0 |
 
 ## Plugins Overview
-
-### hello-world
-
-Demonstration plugin showing all component types: commands, skills, and agents.
-
-- `/hello-world:greet` — Friendly greeting command
 
 ### roles
 
@@ -98,7 +91,7 @@ claude --plugin-dir /Users/james/workspace/spikes/marketplace
 4. Register your plugin in `.claude-plugin/marketplace.json`
 5. Add documentation in a README.md
 
-See the [hello-world](plugins/hello-world/) plugin for a minimal example, or [workflows](plugins/workflows/) for a full-featured plugin.
+See the [workflows](plugins/workflows/) plugin for a full-featured example.
 
 ## Repository Structure
 
@@ -107,7 +100,6 @@ marketplace/
 ├── .claude-plugin/
 │   └── marketplace.json    # Marketplace catalog
 ├── plugins/
-│   ├── hello-world/        # Demo plugin
 │   ├── roles/              # Role management
 │   ├── workflows/          # Plan lifecycle & execution
 │   └── chronicler/         # Context persistence

@@ -46,7 +46,6 @@ For each discovered agent, extract:
 
 | Agent | Plugin | Specialization |
 |---|---|---|
-| `greeter` | hello-world | User onboarding, marketplace guidance |
 | `chronicler_recall` | chronicler | Context recovery from beads |
 | `chronicler_diary` | chronicler | Diary generation from chronicles |
 
@@ -69,7 +68,6 @@ Compare task content against each agent's capabilities:
 **Matching rules:**
 - If the task involves diary generation, chronicles → `chronicler_diary`
 - If the task involves context recall, recovery → `chronicler_recall`
-- If the task involves user onboarding, marketplace intro → `greeter`
 - If no agent specializes in this area → no label (primary agent handles it)
 - If multiple agents match → prefer the most specific match
 

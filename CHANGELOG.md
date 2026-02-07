@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- `hello-world` plugin (placeholder, no longer needed)
 - `.claude/commands/engage-plan.md` (replaced by `/workflows:engage_plan`)
 - `.claude/rules/engage-the-plan.md` (replaced by plugin-installed rule)
 
