@@ -1,0 +1,44 @@
+name: "Unit: plan-exec.sh gate removal"
+setup:
+  - "git init"
+  - "mkdir -p .claude docs/plans"
+  - "echo '# test' > CLAUDE.md"
+  - "git add -A && git commit -m 'init'"
+  - "bd init 2>/dev/null || true"
+  - |
+    ROOT=$(bd create --title="Test Epic" --type=epic --priority=2 -l ys:plan,plan:99 --silent)
+    echo "$ROOT" > .test-epic-id
+
+steps:
+  # Case 1: .plan-gate removed during start
+  - name: "gate_removed_on_start"
+    run: |
+      echo '{"plan_idx":"99"}' > .claude/.plan-gate
+      ROOT=$(cat .test-epic-id)
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/plan-exec.sh" start "$ROOT"
+    assertions:
+      - type: file_not_exists
+        path: ".claude/.plan-gate"
+
+  # Case 2: No gate → no error
+  - name: "no_gate_no_error"
+    run: |
+      ROOT=$(cat .test-epic-id)
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/plan-exec.sh" start "$ROOT"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 3: Gate removal message in stdout
+  - name: "gate_removal_message"
+    run: |
+      echo '{"plan_idx":"99"}' > .claude/.plan-gate
+      ROOT=$(cat .test-epic-id)
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/plan-exec.sh" start "$ROOT" 2>&1
+    assertions:
+      - type: output_contains
+        value: "Plan gate removed"
+
+teardown:
+  - "rm -f .claude/.plan-gate"
+  - "rm -f .test-epic-id"

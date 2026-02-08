@@ -1,0 +1,100 @@
+name: "Integration: Full Plan Lifecycle"
+setup:
+  - "git init"
+  - "mkdir -p .claude/rules .claude/plans docs/plans src"
+  - "echo '# Test Project' > CLAUDE.md"
+  - "echo '{}' > .claude/settings.json"
+  - "git add -A && git commit -m 'init'"
+  - "bd init 2>/dev/null || true"
+
+steps:
+  # Phase 1: Create a plan document
+  - name: "write_plan"
+    run: |
+      cat > docs/plans/plan-01.md <<'PLAN'
+      # Plan 01: Hello World
+      **Status:** Draft
+      ## Overview
+      Add a hello world Python script.
+      ## Implementation
+      1. Create src/hello.py with hello() function
+      ## Completion Criteria
+      - [ ] src/hello.py exists
+      PLAN
+      git add -A && git commit -m "Plan 01 draft"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Phase 2: Simulate engage_plan (creates gate)
+  - name: "engage_plan_gate"
+    run: |
+      echo '{"plan_idx":"01","plan_file":"docs/plans/plan-01.md","created":"2026-02-07T00:00:00Z"}' > .claude/.plan-gate
+    assertions:
+      - type: file_exists
+        path: ".claude/.plan-gate"
+
+  # Phase 3: Verify Write is blocked
+  - name: "write_blocked_by_gate"
+    prompt: "Create src/hello.py with content: def hello(): return 'hello world'. Use the Write tool."
+    max_turns: 2
+    allowed_tools: ["Write", "Read", "Bash"]
+    assertions:
+      - type: file_not_exists
+        path: "src/hello.py"
+
+  # Phase 4: Create beads (simulating plan_to_beads)
+  - name: "create_beads"
+    run: |
+      ROOT=$(bd create --title="Plan 01: Hello World" --type=epic --priority=2 -l ys:plan,plan:01 --silent)
+      echo "$ROOT" > .test-root-epic
+      TASK=$(bd create --title="Create hello.py" --type=task --parent="$ROOT" -l plan:01 --silent)
+      echo "$TASK" > .test-task-id
+    assertions:
+      - type: file_exists
+        path: ".test-root-epic"
+
+  # Phase 5: Transition to Executing (gate should be removed)
+  - name: "start_execution"
+    run: |
+      ROOT=$(cat .test-root-epic)
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/plan-exec.sh" start "$ROOT" 2>&1
+    assertions:
+      - type: file_not_exists
+        path: ".claude/.plan-gate"
+      - type: output_contains
+        value: "executing"
+
+  # Phase 6: Verify Write is now allowed (same session)
+  - name: "write_allowed_after_execute"
+    prompt: "Now that the plan is executing, create src/hello.py with: def hello(): return 'hello world'. Use the Write tool."
+    max_turns: 3
+    allowed_tools: ["Write", "Bash"]
+    assertions:
+      - type: file_exists
+        path: "src/hello.py"
+      - type: file_contains
+        path: "src/hello.py"
+        value: "hello"
+
+  # Phase 7: Claim and close the task
+  - name: "claim_and_close"
+    run: |
+      TASK=$(cat .test-task-id)
+      bd update "$TASK" --status=in_progress
+      bd close "$TASK"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Phase 8: Verify completion
+  - name: "verify_completion"
+    run: |
+      ROOT=$(cat .test-root-epic)
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/plan-exec.sh" status "$ROOT"
+    assertions:
+      - type: output_contains
+        value: "completed"
+
+teardown:
+  - "rm -f .test-root-epic .test-task-id"

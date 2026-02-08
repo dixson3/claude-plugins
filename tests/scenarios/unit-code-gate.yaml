@@ -1,0 +1,119 @@
+name: "Unit: code-gate.sh"
+setup:
+  - "mkdir -p src .claude .claude-plugin .beads docs/plans"
+  - "echo '# test' > README.md"
+  - "echo '# changelog' > CHANGELOG.md"
+  - "echo '# memory' > MEMORY.md"
+
+steps:
+  # Case 1: No gate file → allow
+  - name: "no_gate_allows"
+    run: |
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 2: Gate + exempt docs/plans → allow
+  - name: "gate_exempt_docs_plans"
+    run: |
+      echo '{"plan_idx":"05"}' > .claude/.plan-gate
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/docs/plans/plan-01.md"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 3: Gate + exempt .claude/ → allow
+  - name: "gate_exempt_claude_dir"
+    run: |
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/.claude/rules/foo.md"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 4: Gate + exempt CHANGELOG.md → allow
+  - name: "gate_exempt_changelog"
+    run: |
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/CHANGELOG.md"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 5: Gate + exempt README.md → allow
+  - name: "gate_exempt_readme"
+    run: |
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/README.md"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 6: Gate + exempt .beads/ → allow
+  - name: "gate_exempt_beads"
+    run: |
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/.beads/issues.jsonl"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 7: Gate + exempt .claude-plugin/*.json → allow
+  - name: "gate_exempt_plugin_json"
+    run: |
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/.claude-plugin/plugin.json"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 8: Gate + exempt MEMORY.md → allow
+  - name: "gate_exempt_memory"
+    run: |
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/MEMORY.md"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 9: Gate + non-exempt source file → block (exit 2)
+  - name: "gate_blocks_source"
+    run: |
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/code-gate.sh" 2>/dev/null
+    assertions:
+      - type: exit_code
+        value: "2"
+
+  # Case 10: Gate + empty file_path → fail-open
+  - name: "gate_failopen_empty_path"
+    run: |
+      echo '{"tool_input":{}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 11: Gate + invalid JSON → fail-open
+  - name: "gate_failopen_bad_json"
+    run: |
+      echo 'not json at all' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 12: Block output contains BLOCKED message
+  - name: "gate_block_message"
+    run: |
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/app.js"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/code-gate.sh" 2>/dev/null || true
+    assertions:
+      - type: output_contains
+        value: "BLOCKED"
+
+teardown:
+  - "rm -f .claude/.plan-gate"
