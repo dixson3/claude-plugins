@@ -8,3 +8,6 @@
 
 # Plugin preflight - per-project lock file
 .claude/plugin-lock.json
+
+# Test harness binary
+tests/bin/
