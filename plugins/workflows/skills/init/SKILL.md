@@ -51,6 +51,8 @@ cp plugins/workflows/rules/breakdown-the-work.md .claude/rules/
 ```bash
 chmod +x plugins/workflows/scripts/plan-exec.sh
 chmod +x plugins/workflows/hooks/plan-exec-guard.sh
+chmod +x plugins/workflows/hooks/code-gate.sh
+chmod +x plugins/workflows/hooks/exit-plan-gate.sh
 ```
 
 ### Step 5: Install Hook Configuration
@@ -63,6 +65,33 @@ Read the existing file (if any), merge in the new hook entries, and write back:
 {
   "hooks": {
     "PreToolUse": [
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "plugins/workflows/hooks/exit-plan-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "plugins/workflows/hooks/code-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "plugins/workflows/hooks/code-gate.sh"
+          }
+        ]
+      },
       {
         "matcher": "Bash(bd update*--status*in_progress*)",
         "hooks": [
@@ -114,6 +143,8 @@ ls .claude/rules/breakdown-the-work.md
 # Scripts executable
 test -x plugins/workflows/scripts/plan-exec.sh && echo "plan-exec.sh: OK"
 test -x plugins/workflows/hooks/plan-exec-guard.sh && echo "plan-exec-guard.sh: OK"
+test -x plugins/workflows/hooks/code-gate.sh && echo "code-gate.sh: OK"
+test -x plugins/workflows/hooks/exit-plan-gate.sh && echo "exit-plan-gate.sh: OK"
 ```
 
 ## Expected Output
@@ -138,7 +169,7 @@ Initializing workflows plugin...
       plan-exec-guard.sh: OK
 
 [5/6] Installing hook configuration...
-      Added 3 PreToolUse hooks to .claude/settings.local.json
+      Added 6 PreToolUse hooks to .claude/settings.local.json
 
 [6/6] Verifying installation...
       All components installed successfully.
@@ -151,6 +182,7 @@ Available commands:
   /workflows:execute_plan   Orchestrate plan execution
   /workflows:breakdown_task Decompose non-trivial tasks
   /workflows:select_agent   Match tasks to agents
+  /workflows:dismiss_gate   Remove plan gate (abandon plan lifecycle)
 ```
 
 ## Post-Initialization

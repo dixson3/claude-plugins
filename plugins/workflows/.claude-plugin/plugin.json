@@ -1,6 +1,6 @@
 {
   "name": "workflows",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Plan lifecycle, beads decomposition, and execution orchestration",
   "author": {
     "name": "James Dixson",
@@ -9,6 +9,33 @@
   "license": "MIT",
   "hooks": {
     "PreToolUse": [
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/exit-plan-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/code-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/code-gate.sh"
+          }
+        ]
+      },
       {
         "matcher": "Bash(bd update*--status*in_progress*)",
         "hooks": [

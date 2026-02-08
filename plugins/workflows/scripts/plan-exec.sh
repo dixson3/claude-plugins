@@ -67,6 +67,13 @@ case "$COMMAND" in
             echo "No open gate found (plan may already be executing)."
         fi
 
+        # Remove plan gate file if it exists (unblock Edit/Write)
+        PLAN_GATE="${CLAUDE_PROJECT_DIR:-.}/.claude/.plan-gate"
+        if [[ -f "$PLAN_GATE" ]]; then
+            rm -f "$PLAN_GATE"
+            echo "Plan gate removed (code edits unblocked)."
+        fi
+
         # Get plan label
         PLAN_LABEL=$(get_epic_plan_label "$ROOT_EPIC")
         if [[ -z "$PLAN_LABEL" ]]; then

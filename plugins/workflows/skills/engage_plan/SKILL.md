@@ -51,13 +51,26 @@ When the user says "engage the plan" during plan mode:
 - [ ] Criterion 2
 ```
 
-3. **Factor into parts** (if complex): Create `plan-<idx>-part<N>-<name>.md` files with:
+3. **Create plan gate**: Write `.claude/.plan-gate` with plan metadata:
+   ```bash
+   mkdir -p .claude
+   cat > .claude/.plan-gate <<GATE_EOF
+   {"plan_idx":"<idx>","plan_file":"docs/plans/plan-<idx>.md","created":"<ISO-8601 timestamp>"}
+   GATE_EOF
+   ```
+   This blocks Edit/Write operations on implementation files until the plan reaches Executing state.
+   To dismiss: `/workflows:dismiss_gate`
+
+4. **Factor into parts** (if complex): Create `plan-<idx>-part<N>-<name>.md` files with:
    - Status, Parent reference, Dependencies
    - Detailed content, files to create, completion criteria
 
-4. **Update MEMORY.md**: Add plan reference under "Current Plans"
+5. **Update MEMORY.md**: Add plan reference under "Current Plans"
 
-5. **Present summary**: Show what was saved, offer next steps
+6. **Present summary**: Show what was saved, offer next steps
+   Plan gate active — code edits blocked until lifecycle completes.
+   Next: "the plan is ready" → "execute the plan"
+   Or: /workflows:dismiss_gate to abandon
 
 **Important**: `/workflows:engage_plan` does NOT imply `ExitPlanMode`. They are independent actions.
 

@@ -5,6 +5,22 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-02-07
+
+### Added
+
+- `workflows` plugin: Plan gate enforcement system
+  - `code-gate.sh` hook — blocks Edit/Write on implementation files when plan is saved but not yet executing
+  - `exit-plan-gate.sh` hook — saves plan and creates gate on ExitPlanMode (hybrid trigger)
+  - `/workflows:dismiss_gate` skill — escape hatch to abandon plan gate
+  - `exit-plan-gate.md` rule — advisory backup ensuring engage_plan is called before ExitPlanMode
+  - Gate created by engage_plan skill (Draft transition) and/or ExitPlanMode hook
+  - Gate removed by `plan-exec.sh start` (Ready/Paused → Executing transition)
+
+### Changed
+
+- Updated workflows plugin to v1.2.0
+
 ## [1.3.0] - 2026-02-07
 
 ### Added
