@@ -25,16 +25,14 @@ steps:
       - type: file_not_exists
         path: ".claude/.plan-gate"
 
-  # Case 3: Empty .claude/plans/ → exit 1 (pipefail on ls *.md with no matches)
-  # NOTE: This is a known bug — the script should exit 0 gracefully.
-  # The test documents actual behavior.
+  # Case 3: Empty .claude/plans/ → exit 0, no gate
   - name: "empty_plans_dir"
     run: |
       mkdir -p .claude/plans
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/exit-plan-gate.sh"
     assertions:
       - type: exit_code
-        value: "1"
+        value: "0"
       - type: file_not_exists
         path: ".claude/.plan-gate"
 

@@ -42,7 +42,8 @@ if [[ ! -d "$CLAUDE_PLANS_DIR" ]]; then
     exit 0
 fi
 
-PLAN_FILE=$(ls -t "$CLAUDE_PLANS_DIR"/*.md 2>/dev/null | head -1)
+PLAN_FILE=$(find "$CLAUDE_PLANS_DIR" -maxdepth 1 -name '*.md' -print0 2>/dev/null \
+    | xargs -0 ls -t 2>/dev/null | head -1)
 
 if [[ -z "$PLAN_FILE" ]]; then
     exit 0
