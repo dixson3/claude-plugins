@@ -22,7 +22,7 @@
       "name": "workflows",
       "source": "./plugins/workflows",
       "description": "Plan lifecycle, beads decomposition, task pump dispatch, and execution orchestration",
-      "version": "1.3.0"
+      "version": "1.4.0"
     },
     {
       "name": "chronicler",
