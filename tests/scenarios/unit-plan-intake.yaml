@@ -1,0 +1,165 @@
+name: "Unit: plan-intake rule content"
+
+setup:
+  - "mkdir -p .claude/rules"
+
+steps:
+  # Case 1: plan-intake.md source exists in workflows plugin
+  - name: "source_file_exists"
+    run: |
+      if [ -f "$PLUGIN_DIR/plugins/workflows/rules/plan-intake.md" ]; then
+        echo "OK: source exists"
+      else
+        echo "FAIL: source not found"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Rule contains key detection triggers
+  - name: "has_detection_section"
+    run: |
+      if grep -q "## Detection" "$PLUGIN_DIR/plugins/workflows/rules/plan-intake.md"; then
+        echo "OK: detection section present"
+      else
+        echo "FAIL: missing detection section"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Rule references plan_to_beads
+  - name: "references_plan_to_beads"
+    run: |
+      if grep -q "plan_to_beads" "$PLUGIN_DIR/plugins/workflows/rules/plan-intake.md"; then
+        echo "OK: references plan_to_beads"
+      else
+        echo "FAIL: missing plan_to_beads reference"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Rule references execute_plan
+  - name: "references_execute_plan"
+    run: |
+      if grep -q "execute_plan" "$PLUGIN_DIR/plugins/workflows/rules/plan-intake.md"; then
+        echo "OK: references execute_plan"
+      else
+        echo "FAIL: missing execute_plan reference"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Rule references chronicler capture
+  - name: "references_chronicle_capture"
+    run: |
+      if grep -q "chronicler:capture" "$PLUGIN_DIR/plugins/workflows/rules/plan-intake.md"; then
+        echo "OK: references chronicler:capture"
+      else
+        echo "FAIL: missing chronicler:capture reference"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: Rule has non-triggers section
+  - name: "has_non_triggers"
+    run: |
+      if grep -q "## Non-Triggers" "$PLUGIN_DIR/plugins/workflows/rules/plan-intake.md"; then
+        echo "OK: non-triggers section present"
+      else
+        echo "FAIL: missing non-triggers section"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: Rule is in plugin.json artifacts
+  - name: "in_artifact_manifest"
+    run: |
+      if jq -e '.artifacts.rules[] | select(.source == "rules/plan-intake.md")' "$PLUGIN_DIR/plugins/workflows/.claude-plugin/plugin.json" >/dev/null 2>&1; then
+        echo "OK: in artifact manifest"
+      else
+        echo "FAIL: not in artifact manifest"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: Preflight syncs the rule
+  - name: "preflight_syncs_rule"
+    run: |
+      rm -f "$WORK_DIR/.claude/plugin-lock.json"
+      rm -f "$WORK_DIR/.claude/rules/"*.md
+      mkdir -p "$WORK_DIR/.claude/rules" "$WORK_DIR/docs/plans" "$WORK_DIR/docs/diary"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if [ -f "$WORK_DIR/.claude/rules/plan-intake.md" ]; then
+        echo "OK: rule synced by preflight"
+      else
+        echo "FAIL: rule not synced"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "plan-intake.md"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: BEADS.md contains chronicle capture step
+  - name: "beads_has_chronicle_step"
+    run: |
+      if grep -q "chronicler:capture topic:session-close" "$PLUGIN_DIR/plugins/workflows/rules/BEADS.md"; then
+        echo "OK: BEADS.md has chronicle capture step"
+      else
+        echo "FAIL: BEADS.md missing chronicle capture"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: execute_plan has chronicle capture on completion
+  - name: "execute_plan_has_chronicle_capture"
+    run: |
+      if grep -q "chronicler:capture topic:completion" "$PLUGIN_DIR/plugins/workflows/skills/execute_plan/SKILL.md"; then
+        echo "OK: execute_plan has chronicle capture"
+      else
+        echo "FAIL: execute_plan missing chronicle capture"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .claude/plugin-lock.json"

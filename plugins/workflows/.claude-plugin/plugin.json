@@ -1,6 +1,6 @@
 {
   "name": "workflows",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Plan lifecycle, beads decomposition, task pump dispatch, and execution orchestration",
   "author": {
     "name": "James Dixson",
@@ -15,7 +15,8 @@
       { "source": "rules/plan-to-beads.md", "target": ".claude/rules/plan-to-beads.md" },
       { "source": "rules/breakdown-the-work.md", "target": ".claude/rules/breakdown-the-work.md" },
       { "source": "rules/auto-chain-plan.md", "target": ".claude/rules/auto-chain-plan.md" },
-      { "source": "rules/beads-drive-tasks.md", "target": ".claude/rules/beads-drive-tasks.md" }
+      { "source": "rules/beads-drive-tasks.md", "target": ".claude/rules/beads-drive-tasks.md" },
+      { "source": "rules/plan-intake.md", "target": ".claude/rules/plan-intake.md" }
     ],
     "directories": ["docs/plans"],
     "setup": [

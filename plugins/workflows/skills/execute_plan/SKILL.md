@@ -119,9 +119,10 @@ After dispatching a batch:
 
 When `plan-exec.sh status` returns `completed` (which also closes any chronicle gates):
 
-1. Update plan file status to "Completed"
-2. Close root epic if not already closed
-3. Report completion summary
+1. Capture completion context: Invoke `/chronicler:capture topic:completion` to preserve the execution summary as a chronicle bead before closing everything out.
+2. Update plan file status to "Completed"
+3. Close root epic if not already closed
+4. Report completion summary
 
 ```
 Plan Execution Complete

@@ -5,6 +5,26 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-02-08
+
+### Added
+
+- `workflows` plugin: `plan-intake.md` rule — catches pasted/manual plans and redirects through the proper lifecycle (save plan file, create beads via `plan_to_beads`, start execution via `plan-exec.sh`, dispatch via `execute_plan`)
+  - Detects when a plan is being implemented without the auto-chain having fired
+  - Ensures plans always go through structured lifecycle regardless of entry path
+  - Captures planning context as a chronicle bead at plan start
+- Semi-automatic chronicle capture at lifecycle boundaries:
+  - **Plan start**: `plan-intake.md` invokes `/chronicler:capture topic:planning`
+  - **Plan completion**: `execute_plan` skill invokes `/chronicler:capture topic:completion`
+  - **Session close**: BEADS.md "Landing the Plane" step 1.5 invokes `/chronicler:capture topic:session-close`
+- Test scenario: `unit-plan-intake.yaml` — verifies rule content, manifest entry, and preflight sync
+
+### Changed
+
+- Version bumps: workflows 1.5.0 → 1.6.0, marketplace 1.7.0 → 1.8.0
+- `BEADS.md` rule: Added chronicle capture step 1.5 to Landing the Plane protocol
+- `execute_plan` skill: Added chronicle capture on plan completion (Step 4, before marking complete)
+
 ## [1.7.0] - 2026-02-08
 
 ### Added
