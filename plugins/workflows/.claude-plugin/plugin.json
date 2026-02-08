@@ -1,13 +1,39 @@
 {
   "name": "workflows",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Plan lifecycle, beads decomposition, task pump dispatch, and execution orchestration",
   "author": {
     "name": "James Dixson",
     "email": "dixson3@gmail.com"
   },
   "license": "MIT",
+  "dependencies": [],
+  "artifacts": {
+    "rules": [
+      { "source": "rules/BEADS.md", "target": ".claude/rules/BEADS.md" },
+      { "source": "rules/engage-the-plan.md", "target": ".claude/rules/engage-the-plan.md" },
+      { "source": "rules/plan-to-beads.md", "target": ".claude/rules/plan-to-beads.md" },
+      { "source": "rules/breakdown-the-work.md", "target": ".claude/rules/breakdown-the-work.md" },
+      { "source": "rules/auto-chain-plan.md", "target": ".claude/rules/auto-chain-plan.md" },
+      { "source": "rules/beads-drive-tasks.md", "target": ".claude/rules/beads-drive-tasks.md" }
+    ],
+    "directories": ["docs/plans"],
+    "setup": [
+      { "name": "beads", "check": "test -d .beads", "run": "bd init" }
+    ]
+  },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/preflight-wrapper.sh"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "ExitPlanMode",

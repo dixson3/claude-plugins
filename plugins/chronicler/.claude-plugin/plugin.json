@@ -1,12 +1,20 @@
 {
   "name": "chronicler",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Context persistence across Claude sessions using beads and diary generation",
   "author": {
     "name": "James Dixson",
     "email": "dixson3@gmail.com"
   },
   "license": "MIT",
+  "dependencies": ["workflows"],
+  "artifacts": {
+    "rules": [
+      { "source": "rules/watch-for-chronicle-worthiness.md", "target": ".claude/rules/watch-for-chronicle-worthiness.md" },
+      { "source": "rules/plan-transition-chronicle.md", "target": ".claude/rules/plan-transition-chronicle.md" }
+    ],
+    "directories": ["docs/diary"]
+  },
   "hooks": {
     "PreToolUse": [
       {

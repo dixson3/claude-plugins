@@ -1,0 +1,91 @@
+name: "Unit: plugin-preflight.sh — stale artifact removal"
+
+setup:
+  - "mkdir -p .claude/rules docs/plans docs/diary"
+
+steps:
+  # Case 1: Stale rule gets removed
+  - name: "stale_rule_removed"
+    run: |
+      # First, do a clean preflight to get a lock file
+      rm -f "$WORK_DIR/.claude/plugin-lock.json"
+      rm -f "$WORK_DIR/.claude/rules/"*.md
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" >/dev/null 2>&1
+      # Inject a fake stale entry into the lock
+      LOCK=$(cat "$WORK_DIR/.claude/plugin-lock.json")
+      echo "$LOCK" | jq '.plugins.workflows.artifacts.rules += [{"target": ".claude/rules/deprecated-rule.md", "checksum": "sha256:fakefake"}]' > "$WORK_DIR/.claude/plugin-lock.json"
+      # Create the file
+      echo "# deprecated" > "$WORK_DIR/.claude/rules/deprecated-rule.md"
+      # Run preflight
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      # Verify file removed
+      if [ ! -f "$WORK_DIR/.claude/rules/deprecated-rule.md" ]; then
+        echo "OK: stale file removed"
+      else
+        echo "FAIL: stale file still exists"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "removed stale"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Stale entry no longer in lock after cleanup
+  - name: "stale_entry_gone_from_lock"
+    run: |
+      TARGETS=$(jq -r '.plugins.workflows.artifacts.rules[].target' "$WORK_DIR/.claude/plugin-lock.json")
+      if echo "$TARGETS" | grep -q 'deprecated-rule.md'; then
+        echo "FAIL: deprecated-rule.md still in lock"
+        exit 1
+      fi
+      echo "OK: stale entry removed from lock"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Removed plugin cleanup
+  - name: "removed_plugin_cleanup"
+    run: |
+      # Inject a fake plugin entry into the lock
+      LOCK=$(cat "$WORK_DIR/.claude/plugin-lock.json")
+      echo "$LOCK" | jq '.plugins.fakeplugin = {"version": "1.0.0", "artifacts": {"rules": [{"target": ".claude/rules/fake-rule.md", "checksum": "sha256:abc"}], "directories": [], "setup": []}}' > "$WORK_DIR/.claude/plugin-lock.json"
+      echo "# fake" > "$WORK_DIR/.claude/rules/fake-rule.md"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if [ ! -f "$WORK_DIR/.claude/rules/fake-rule.md" ]; then
+        echo "OK: removed plugin artifact cleaned up"
+      else
+        echo "FAIL: fake plugin artifact still exists"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "plugin removed"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Removed plugin no longer in lock
+  - name: "removed_plugin_gone_from_lock"
+    run: |
+      if jq -e '.plugins.fakeplugin' "$WORK_DIR/.claude/plugin-lock.json" >/dev/null 2>&1; then
+        echo "FAIL: fakeplugin still in lock"
+        exit 1
+      fi
+      echo "OK: removed plugin not in lock"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .claude/plugin-lock.json"
+  - "rm -f .claude/rules/deprecated-rule.md .claude/rules/fake-rule.md"

@@ -1,28 +1,29 @@
-name: "Unit: chronicler init — no roles dependency"
+name: "Unit: chronicler — no roles dependency, artifacts declared"
 
 steps:
-  # Case 1: Init skill has no /roles: references
-  - name: "init_skill_no_roles_references"
+  # Case 1: Init skill removed (replaced by preflight)
+  - name: "init_skill_removed"
     run: |
-      if grep -q '/roles:' "$PLUGIN_DIR/plugins/chronicler/skills/init/SKILL.md"; then
-        echo "FAIL: init skill still references /roles:"
+      if [ -f "$PLUGIN_DIR/plugins/chronicler/skills/init/SKILL.md" ]; then
+        echo "FAIL: init skill still exists"
         exit 1
       fi
-      echo "OK: no /roles: references in init skill"
+      echo "OK: init skill removed"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 2: Init skill references watch-for-chronicle-worthiness in rules install
-  - name: "init_skill_installs_rule"
+  # Case 2: Artifacts declared in plugin.json
+  - name: "artifacts_declared"
     run: |
-      if ! grep -q 'watch-for-chronicle-worthiness.md' "$PLUGIN_DIR/plugins/chronicler/skills/init/SKILL.md"; then
-        echo "FAIL: init skill does not reference watch-for-chronicle-worthiness.md"
+      RULE_COUNT=$(jq -r '(.artifacts.rules // []) | length' "$PLUGIN_DIR/plugins/chronicler/.claude-plugin/plugin.json")
+      if [ "$RULE_COUNT" -lt 2 ]; then
+        echo "FAIL: expected at least 2 artifact rules, got $RULE_COUNT"
         exit 1
       fi
-      echo "OK: init skill installs watch-for-chronicle-worthiness rule"
+      echo "OK: $RULE_COUNT artifact rules declared"
     assertions:
       - type: exit_code
         value: "0"
@@ -95,6 +96,21 @@ steps:
         exit 1
       fi
       echo "OK: marketplace.json has no roles entry"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: Dependencies declared
+  - name: "dependencies_declared"
+    run: |
+      DEPS=$(jq -r '(.dependencies // []) | join(",")' "$PLUGIN_DIR/plugins/chronicler/.claude-plugin/plugin.json")
+      if [ "$DEPS" != "workflows" ]; then
+        echo "FAIL: expected dependency 'workflows', got '$DEPS'"
+        exit 1
+      fi
+      echo "OK: depends on workflows"
     assertions:
       - type: exit_code
         value: "0"

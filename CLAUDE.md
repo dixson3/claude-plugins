@@ -61,7 +61,7 @@ name: do_thing                   # WRONG — will collide with other plugins
 ---
 ```
 
-Cross-plugin skill references in content also use this format: `/workflows:init_beads`, `/chronicler:capture`.
+Cross-plugin skill references in content also use this format: `/workflows:execute_plan`, `/chronicler:capture`.
 
 ### Agents
 
@@ -84,19 +84,8 @@ Rule files installed to `.claude/rules/` should use descriptive names that indic
 
 2. **Add plugin manifest**: `.claude-plugin/plugin.json`
 
-   Skills and agents are auto-discovered from directory structure — do NOT list them in the manifest. Only include metadata and hooks.
+   Skills and agents are auto-discovered from directory structure — do NOT list them in the manifest. Include metadata, hooks, and artifact declarations.
 
-   ```json
-   {
-     "name": "plugin-name",
-     "version": "1.0.0",
-     "description": "Plugin description",
-     "author": { "name": "James Dixson", "email": "dixson3@gmail.com" },
-     "license": "MIT"
-   }
-   ```
-
-   With hooks (optional):
    ```json
    {
      "name": "plugin-name",
@@ -104,6 +93,22 @@ Rule files installed to `.claude/rules/` should use descriptive names that indic
      "description": "Plugin description",
      "author": { "name": "James Dixson", "email": "dixson3@gmail.com" },
      "license": "MIT",
+     "dependencies": [],
+     "artifacts": {
+       "rules": [
+         { "source": "rules/my-rule.md", "target": ".claude/rules/my-rule.md" }
+       ],
+       "directories": ["docs/my-dir"],
+       "setup": [
+         { "name": "my-setup", "check": "test -d .my-dir", "run": "my-init-cmd" }
+       ]
+     }
+   }
+   ```
+
+   With hooks (optional):
+   ```json
+   {
      "hooks": {
        "PreToolUse": [
          {
@@ -147,7 +152,7 @@ Automatic behaviors Claude can invoke contextually. Defined in `skills/<name>/SK
 Specialized agents for specific tasks. Defined in `agents/<name>.md`. Auto-discovered by the plugin system (not listed in `plugin.json`).
 
 ### Rules
-Behavioral rules installed to `.claude/rules/` that enforce conventions across all agents.
+Behavioral rules declared in `plugin.json` under `artifacts.rules`. Source files live in `rules/` within the plugin; they are synced to `.claude/rules/` in the project by the preflight system.
 
 ### Scripts
 Shell scripts for deterministic operations (e.g., state transitions). Referenced via `${CLAUDE_PLUGIN_ROOT}/scripts/` in hooks and skills.
@@ -155,7 +160,18 @@ Shell scripts for deterministic operations (e.g., state transitions). Referenced
 ### Hooks
 Pre/post tool-use hooks declared in `plugin.json` under the `hooks` key. Hook commands use `${CLAUDE_PLUGIN_ROOT}` to reference the plugin directory.
 
+## Preflight System
+
+Plugins declare their artifacts (rules, directories, setup commands) in `plugin.json`. A preflight script (`scripts/plugin-preflight.sh`) runs automatically on SessionStart and syncs artifacts to the project:
+
+- **Install**: Missing rules are copied from plugin source to project
+- **Update**: Changed rules are overwritten (unless user modified them)
+- **Remove**: Rules that were in the lock but are no longer in the manifest are deleted
+- **Conflict**: If a user modified an installed rule and the source also changed, the update is skipped with a warning
+
+State is tracked in `.claude/plugin-lock.json` (project-level, gitignored).
+
 ## Current Plugins
 
-- **workflows** (v1.4.0) - Plan lifecycle, beads decomposition, task pump dispatch, and execution orchestration
-- **chronicler** (v1.2.0) - Context persistence using beads and diary generation
+- **workflows** (v1.5.0) - Plan lifecycle, beads decomposition, task pump dispatch, and execution orchestration
+- **chronicler** (v1.3.0) - Context persistence using beads and diary generation

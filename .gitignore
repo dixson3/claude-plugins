@@ -5,3 +5,6 @@
 # Workflows plugin - ephemeral session state
 .claude/.task-pump.json
 .claude/.plan-gate
+
+# Plugin preflight - per-project lock file
+.claude/plugin-lock.json
