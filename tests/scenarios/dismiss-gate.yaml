@@ -28,7 +28,7 @@ steps:
         path: "src/test.py"
 
   - name: "dismiss_gate"
-    prompt: "Run /workflows:dismiss_gate to remove the plan gate."
+    prompt: "Run /yf:dismiss_gate to remove the plan gate."
     max_turns: 5
     allowed_tools: ["Bash", "Read", "Edit", "Write"]
     assertions:

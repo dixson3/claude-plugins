@@ -13,9 +13,10 @@ marketplace/
 ├── .claude-plugin/
 │   └── marketplace.json    # Marketplace catalog with plugin registry
 ├── plugins/
-│   └── <plugin-name>/      # Individual plugins
+│   └── yf/                 # Yoshiko Flow — unified plugin
 │       ├── .claude-plugin/
-│       │   └── plugin.json # Plugin manifest
+│       │   ├── plugin.json     # Plugin manifest
+│       │   └── preflight.json  # Artifact declarations
 │       ├── skills/         # Auto-invoked skills (*/SKILL.md)
 │       ├── agents/         # Specialized agents (*.md)
 │       ├── rules/          # Behavioral rules (*.md)
@@ -23,7 +24,8 @@ marketplace/
 │       ├── hooks/          # Pre/post tool-use hooks (*.sh)
 │       └── README.md       # Plugin documentation
 ├── docs/
-│   └── plans/              # Plan documentation
+│   ├── plans/              # Plan documentation
+│   └── diary/              # Generated diary entries
 ├── CLAUDE.md               # This file
 ├── README.md               # Marketplace overview
 ├── LICENSE                 # MIT License
@@ -37,7 +39,10 @@ marketplace/
 claude --plugin-dir /Users/james/workspace/spikes/marketplace
 
 # Test a specific plugin
-claude --plugin-dir /Users/james/workspace/spikes/marketplace/plugins/workflows
+claude --plugin-dir /Users/james/workspace/spikes/marketplace/plugins/yf
+
+# Run unit tests
+bash tests/run-tests.sh --unit-only
 ```
 
 ## Naming & Namespacing Convention
@@ -50,18 +55,18 @@ The `name` field in SKILL.md frontmatter uses `plugin:skill_name` format:
 
 ```yaml
 ---
-name: myplugin:do_thing          # CORRECT — namespaced
-description: Does the thing
+name: yf:capture          # CORRECT — namespaced
+description: Capture context
 ---
 ```
 
 ```yaml
 ---
-name: do_thing                   # WRONG — will collide with other plugins
+name: capture              # WRONG — will collide with other plugins
 ---
 ```
 
-Cross-plugin skill references in content also use this format: `/workflows:execute_plan`, `/chronicler:capture`.
+Cross-plugin skill references in content also use this format: `/yf:execute_plan`, `/yf:capture`.
 
 ### Agents
 
@@ -69,14 +74,14 @@ Agent `name` fields use a `plugin_` prefix (underscore, not colon):
 
 ```yaml
 ---
-name: chronicler_recall          # CORRECT — prefixed with plugin name
+name: yf_recall              # CORRECT — prefixed with plugin name
 description: Context recovery agent
 ---
 ```
 
 ### Rules
 
-Rule files installed to `.claude/rules/` should use descriptive names that indicate origin (e.g., `BEADS.md`, `engage-the-plan.md`). Rules are project-scoped, not plugin-scoped, so avoid generic names like `rules.md`.
+Rule files installed to `.claude/rules/` use `yf-` prefix (e.g., `yf-beads.md`, `yf-engage-the-plan.md`). Rules are project-scoped, not plugin-scoped, so the prefix prevents collisions.
 
 ## Creating a New Plugin
 
@@ -134,13 +139,13 @@ Rule files installed to `.claude/rules/` should use descriptive names that indic
    - Behavior guidelines and instructions in body
 
 4. **Add agents** (optional): `agents/<plugin_agentname>.md`
-   - Frontmatter `name` MUST be prefixed with plugin name (e.g., `chronicler_recall`)
+   - Frontmatter `name` MUST be prefixed with plugin name (e.g., `yf_recall`)
    - Include `description` and optional `on-start` in frontmatter
    - Role, personality, and interaction guidelines in body
 
 5. **Add rules** (optional): `rules/<descriptive-name>.md`
    - Behavioral enforcement installed to `.claude/rules/`
-   - Use descriptive names, not generic ones
+   - Use plugin-prefixed names (e.g., `yf-beads.md`)
 
 6. **Register in marketplace**: Update `.claude-plugin/marketplace.json`
 
@@ -155,7 +160,7 @@ Automatic behaviors Claude can invoke contextually. Defined in `skills/<name>/SK
 Specialized agents for specific tasks. Defined in `agents/<name>.md`. Auto-discovered by the plugin system (not listed in `plugin.json`).
 
 ### Rules
-Behavioral rules declared in `plugin.json` under `artifacts.rules`. Source files live in `rules/` within the plugin; they are synced to `.claude/rules/` in the project by the preflight system.
+Behavioral rules declared in `preflight.json` under `artifacts.rules`. Source files live in `rules/` within the plugin; they are synced to `.claude/rules/` in the project by the preflight system.
 
 ### Scripts
 Shell scripts for deterministic operations (e.g., state transitions). Referenced via `${CLAUDE_PLUGIN_ROOT}/scripts/` in hooks and skills.
@@ -172,9 +177,8 @@ Plugins declare their artifacts (rules, directories, setup commands) in `.claude
 - **Remove**: Rules that were in the lock but are no longer in the manifest are deleted
 - **Conflict**: If a user modified an installed rule and the source also changed, the update is skipped with a warning
 
-State is tracked in `.claude/plugin-lock.json` (project-level, gitignored).
+State is tracked in `.claude/yf.json` under the `preflight` key (project-level, gitignored). Migration from the old `.claude/plugin-lock.json` format is automatic.
 
 ## Current Plugins
 
-- **workflows** (v1.5.0) - Plan lifecycle, beads decomposition, task pump dispatch, and execution orchestration
-- **chronicler** (v1.3.0) - Context persistence using beads and diary generation
+- **yf** (v2.0.0) - Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation

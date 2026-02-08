@@ -14,30 +14,27 @@ claude --plugin-dir /path/to/yoshiko-studios-marketplace
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| [workflows](plugins/workflows/) | Plan lifecycle, beads decomposition, and execution orchestration | 1.4.0 |
-| [chronicler](plugins/chronicler/) | Context persistence using beads and diary generation | 1.2.0 |
+| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation | 2.0.0 |
 
-## Plugins Overview
+## Plugin Overview
 
-### workflows
+### yf (Yoshiko Flow)
 
-Plan lifecycle management with three enforcement layers: beads gates, scripts, and hooks.
+Unified plan lifecycle management, execution orchestration, context persistence, and diary generation.
 
-- `/workflows:engage_plan` — State machine: Draft → Ready → Executing → Paused → Completed
-- `/workflows:plan_to_beads` — Convert plan docs to beads hierarchy (epics, tasks, dependencies)
-- `/workflows:execute_plan` — Orchestrated task dispatch with parallel agent routing
-- `/workflows:breakdown_task` — Recursive decomposition of non-trivial tasks
-- `/workflows:select_agent` — Auto-discover agents and match to tasks
-- `/workflows:init` — Install rules, scripts, and hooks
+**Plan Lifecycle & Orchestration:**
+- `/yf:engage_plan` — State machine: Draft → Ready → Executing → Paused → Completed
+- `/yf:plan_to_beads` — Convert plan docs to beads hierarchy (epics, tasks, dependencies)
+- `/yf:execute_plan` — Orchestrated task dispatch with parallel agent routing
+- `/yf:breakdown_task` — Recursive decomposition of non-trivial tasks
+- `/yf:select_agent` — Auto-discover agents and match to tasks
+- `/yf:dismiss_gate` — Escape hatch to abandon plan gate
 
-### chronicler
-
-Context persistence across sessions using beads and diary generation.
-
-- `/chronicler:capture` — Capture context as a chronicle bead
-- `/chronicler:recall` — Restore context from open chronicles
-- `/chronicler:diary` — Generate diary entries from chronicles
-- `/chronicler:init` — Initialize chronicler system
+**Context Persistence & Diary:**
+- `/yf:capture` — Capture context as a chronicle bead
+- `/yf:recall` — Restore context from open chronicles
+- `/yf:diary` — Generate diary entries from chronicles
+- `/yf:disable` — Close chronicles without diary generation
 
 ## Plugin Structure
 
@@ -66,13 +63,9 @@ plugin-name/
 ```bash
 # Load the marketplace
 claude --plugin-dir /Users/james/workspace/spikes/marketplace
-
-# Initialize workflows (beads, rules, hooks)
-/workflows:init
-
-# Initialize chronicler (beads, rules, diary directory)
-/chronicler:init
 ```
+
+The preflight system automatically installs rules, creates directories, and initializes beads on first session start.
 
 ## Creating a New Plugin
 
@@ -82,7 +75,7 @@ claude --plugin-dir /Users/james/workspace/spikes/marketplace
 4. Register your plugin in `.claude-plugin/marketplace.json`
 5. Add documentation in a README.md
 
-See the [workflows](plugins/workflows/) plugin for a full-featured example.
+See the [yf](plugins/yf/) plugin for a full-featured example.
 
 ## Repository Structure
 
@@ -91,10 +84,10 @@ marketplace/
 ├── .claude-plugin/
 │   └── marketplace.json    # Marketplace catalog
 ├── plugins/
-│   ├── workflows/          # Plan lifecycle & execution
-│   └── chronicler/         # Context persistence
+│   └── yf/                 # Yoshiko Flow — unified plugin
 ├── docs/
-│   └── plans/              # Plan documentation
+│   ├── plans/              # Plan documentation
+│   └── diary/              # Generated diary entries
 ├── CLAUDE.md               # Claude Code guidance
 ├── README.md               # This file
 ├── LICENSE                 # MIT License

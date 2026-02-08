@@ -1,0 +1,88 @@
+{
+  "name": "yf",
+  "version": "2.0.0",
+  "description": "Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation",
+  "author": {
+    "name": "James Dixson",
+    "email": "dixson3@gmail.com"
+  },
+  "license": "MIT",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/preflight-wrapper.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/exit-plan-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/code-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/code-gate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(bd update*--status*in_progress*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/plan-exec-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(bd update*--claim*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/plan-exec-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(bd close*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/plan-exec-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(git push*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/pre-push-diary.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

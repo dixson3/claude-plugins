@@ -2,8 +2,8 @@
 # plugin-preflight.sh — Declarative artifact sync engine for Claude plugins
 #
 # Reads each plugin's artifacts manifest from plugin.json, compares against
-# a lock file (.claude/plugin-lock.json), and installs/updates/removes
-# artifacts as needed.
+# a lock file (.claude/yf.json under the "preflight" key), and installs/
+# updates/removes artifacts as needed.
 #
 # Compatible with bash 3.2+ (macOS default).
 #
@@ -23,7 +23,8 @@ if [ ! -d "$PROJECT_DIR" ]; then
   exit 0
 fi
 
-LOCK_FILE="$PROJECT_DIR/.claude/plugin-lock.json"
+LOCK_FILE="$PROJECT_DIR/.claude/yf.json"
+OLD_LOCK_FILE="$PROJECT_DIR/.claude/plugin-lock.json"
 MARKETPLACE_JSON="$MARKETPLACE_ROOT/.claude-plugin/marketplace.json"
 
 if [ ! -f "$MARKETPLACE_JSON" ]; then
@@ -48,6 +49,17 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
+# --- Migration: plugin-lock.json → yf.json ---
+if [ ! -f "$LOCK_FILE" ] && [ -f "$OLD_LOCK_FILE" ]; then
+  echo "preflight: migrating plugin-lock.json → yf.json"
+  OLD_DATA=$(cat "$OLD_LOCK_FILE")
+  # Wrap existing data under "preflight" key
+  MIGRATED=$(echo "$OLD_DATA" | jq '{version: 1, updated: .updated, preflight: {plugins: .plugins}}')
+  mkdir -p "$(dirname "$LOCK_FILE")"
+  echo "$MIGRATED" | jq '.' > "$LOCK_FILE"
+  rm -f "$OLD_LOCK_FILE"
+fi
+
 # --- Read marketplace plugin list ---
 PLUGIN_COUNT=$(jq -r '.plugins | length' "$MARKETPLACE_JSON" 2>/dev/null)
 if [ -z "$PLUGIN_COUNT" ] || [ "$PLUGIN_COUNT" = "0" ] || [ "$PLUGIN_COUNT" = "null" ]; then
@@ -55,9 +67,10 @@ if [ -z "$PLUGIN_COUNT" ] || [ "$PLUGIN_COUNT" = "0" ] || [ "$PLUGIN_COUNT" = "n
 fi
 
 # --- Read lock file (may not exist) ---
+# Extract the preflight.plugins subtree for compatibility with existing logic
 LOCK="{}"
 if [ -f "$LOCK_FILE" ]; then
-  LOCK=$(cat "$LOCK_FILE")
+  LOCK=$(jq '.preflight // {}' "$LOCK_FILE" 2>/dev/null || echo "{}")
 fi
 
 # --- Build plugin metadata arrays (bash 3 compatible) ---
@@ -198,8 +211,8 @@ SUMMARY_SKIP=0
 SUMMARY_DIR=0
 SUMMARY_SETUP=0
 
-# New lock structure
-NEW_LOCK=$(jq -n '{version: 1, updated: (now | strftime("%Y-%m-%dT%H:%M:%SZ")), plugins: {}}')
+# New lock structure with preflight nesting
+NEW_LOCK_PLUGINS=$(jq -n '{plugins: {}}')
 
 for idx in $ORDERED; do
   NAME="${PNAMES[$idx]}"
@@ -351,7 +364,7 @@ $TARGET_REL"
   fi
 
   # Add plugin to new lock
-  NEW_LOCK=$(echo "$NEW_LOCK" | jq ".plugins.\"$NAME\" = $PLUGIN_LOCK")
+  NEW_LOCK_PLUGINS=$(echo "$NEW_LOCK_PLUGINS" | jq ".plugins.\"$NAME\" = $PLUGIN_LOCK")
 done
 
 # --- Removed plugins: clean up artifacts ---
@@ -376,8 +389,10 @@ for LP in $LOCK_PLUGINS; do
   fi
 done
 
-# --- Write lock file ---
+# --- Write lock file (nested under preflight) ---
 mkdir -p "$(dirname "$LOCK_FILE")"
+NEW_LOCK=$(jq -n --argjson plugins "$NEW_LOCK_PLUGINS" \
+  '{version: 1, updated: (now | strftime("%Y-%m-%dT%H:%M:%SZ")), preflight: $plugins}')
 echo "$NEW_LOCK" | jq '.' > "$LOCK_FILE"
 
 # --- Summary ---

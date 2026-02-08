@@ -6,23 +6,17 @@
   },
   "metadata": {
     "description": "Yoshiko Studios Claude Marketplace - A collection of Claude plugins",
-    "version": "1.9.0",
+    "version": "2.0.0",
     "license": "MIT",
     "organization": "Yoshiko Studios LLC",
     "github": "dixson3"
   },
   "plugins": [
     {
-      "name": "workflows",
-      "source": "./plugins/workflows",
-      "description": "Plan lifecycle, beads decomposition, task pump dispatch, and execution orchestration",
-      "version": "1.7.0"
-    },
-    {
-      "name": "chronicler",
-      "source": "./plugins/chronicler",
-      "description": "Context persistence using beads and diary generation",
-      "version": "1.3.0"
+      "name": "yf",
+      "source": "./plugins/yf",
+      "description": "Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation",
+      "version": "2.0.0"
     }
   ]
 }

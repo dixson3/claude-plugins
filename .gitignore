@@ -6,8 +6,8 @@
 .claude/.task-pump.json
 .claude/.plan-gate
 
-# Plugin preflight - per-project lock file
-.claude/plugin-lock.json
+# Plugin preflight - per-project config file
+.claude/yf.json
 
 # Test harness binary
 tests/bin/

@@ -1,0 +1,154 @@
+name: "Unit: yf plugin — merged structure verification"
+
+steps:
+  # Case 1: yf plugin directory exists
+  - name: "yf_plugin_exists"
+    run: |
+      if [ -d "$PLUGIN_DIR/plugins/yf" ]; then
+        echo "OK: plugins/yf/ exists"
+      else
+        echo "FAIL: plugins/yf/ not found"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Artifacts declared in preflight.json has at least 9 rules
+  - name: "artifacts_at_least_9_rules"
+    run: |
+      RULE_COUNT=$(jq -r '(.artifacts.rules // []) | length' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
+      if [ "$RULE_COUNT" -lt 9 ]; then
+        echo "FAIL: expected at least 9 artifact rules, got $RULE_COUNT"
+        exit 1
+      fi
+      echo "OK: $RULE_COUNT artifact rules declared"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: yf rule files exist in plugins/yf/rules/
+  - name: "rule_files_exist"
+    run: |
+      MISSING=""
+      for rule in yf-beads.md yf-engage-the-plan.md yf-plan-intake.md yf-watch-for-chronicle-worthiness.md; do
+        if [ ! -f "$PLUGIN_DIR/plugins/yf/rules/$rule" ]; then
+          MISSING="$MISSING $rule"
+        fi
+      done
+      if [ -n "$MISSING" ]; then
+        echo "FAIL: missing rule files:$MISSING"
+        exit 1
+      fi
+      echo "OK: all expected rule files exist in plugins/yf/rules/"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Agents have yf_ prefix not chronicler_
+  - name: "agents_have_yf_prefix"
+    run: |
+      FOUND_OLD=""
+      for agent in "$PLUGIN_DIR"/plugins/yf/agents/*.md; do
+        [ -f "$agent" ] || continue
+        BASENAME=$(basename "$agent" .md)
+        if echo "$BASENAME" | grep -q '^chronicler_'; then
+          FOUND_OLD="$FOUND_OLD $BASENAME"
+        fi
+      done
+      if [ -n "$FOUND_OLD" ]; then
+        echo "FAIL: agents still use chronicler_ prefix:$FOUND_OLD"
+        exit 1
+      fi
+      # Verify yf_ agents exist
+      YF_COUNT=0
+      for agent in "$PLUGIN_DIR"/plugins/yf/agents/yf_*.md; do
+        [ -f "$agent" ] && YF_COUNT=$((YF_COUNT + 1))
+      done
+      if [ "$YF_COUNT" -lt 1 ]; then
+        echo "FAIL: no yf_ prefixed agents found"
+        exit 1
+      fi
+      echo "OK: $YF_COUNT agents with yf_ prefix, no chronicler_ agents"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: No old workflows plugin directory
+  - name: "no_old_workflows_dir"
+    run: |
+      if [ -d "$PLUGIN_DIR/plugins/workflows" ]; then
+        echo "FAIL: plugins/workflows/ still exists"
+        exit 1
+      fi
+      echo "OK: plugins/workflows/ does not exist"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: No old chronicler plugin directory
+  - name: "no_old_chronicler_dir"
+    run: |
+      if [ -d "$PLUGIN_DIR/plugins/chronicler" ]; then
+        echo "FAIL: plugins/chronicler/ still exists"
+        exit 1
+      fi
+      echo "OK: plugins/chronicler/ does not exist"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: marketplace.json has yf entry
+  - name: "marketplace_has_yf"
+    run: |
+      if jq -e '.plugins[] | select(.name == "yf")' "$PLUGIN_DIR/.claude-plugin/marketplace.json" >/dev/null 2>&1; then
+        echo "OK: marketplace.json has yf entry"
+      else
+        echo "FAIL: marketplace.json missing yf entry"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: marketplace.json has no workflows entry
+  - name: "marketplace_no_workflows"
+    run: |
+      if jq -e '.plugins[] | select(.name == "workflows")' "$PLUGIN_DIR/.claude-plugin/marketplace.json" >/dev/null 2>&1; then
+        echo "FAIL: marketplace.json still has workflows entry"
+        exit 1
+      fi
+      echo "OK: marketplace.json has no workflows entry"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: marketplace.json has no chronicler entry
+  - name: "marketplace_no_chronicler"
+    run: |
+      if jq -e '.plugins[] | select(.name == "chronicler")' "$PLUGIN_DIR/.claude-plugin/marketplace.json" >/dev/null 2>&1; then
+        echo "FAIL: marketplace.json still has chronicler entry"
+        exit 1
+      fi
+      echo "OK: marketplace.json has no chronicler entry"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

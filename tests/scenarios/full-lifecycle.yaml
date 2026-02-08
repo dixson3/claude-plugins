@@ -58,7 +58,7 @@ steps:
   - name: "start_execution"
     run: |
       ROOT=$(cat .test-root-epic)
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/plan-exec.sh" start "$ROOT" 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT" 2>&1
     assertions:
       - type: file_not_exists
         path: ".claude/.plan-gate"
@@ -91,7 +91,7 @@ steps:
   - name: "verify_completion"
     run: |
       ROOT=$(cat .test-root-epic)
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/plan-exec.sh" status "$ROOT"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" status "$ROOT"
     assertions:
       - type: output_contains
         value: "completed"

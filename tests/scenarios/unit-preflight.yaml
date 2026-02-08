@@ -7,9 +7,9 @@ steps:
   # Case 1: No lock file → installs all rules
   - name: "fresh_install_creates_rules"
     run: |
-      rm -f "$WORK_DIR/.claude/plugin-lock.json"
-      rm -f "$WORK_DIR/.claude/rules/BEADS.md"
-      rm -f "$WORK_DIR/.claude/rules/beads-drive-tasks.md"
+      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/rules/yf-beads.md"
+      rm -f "$WORK_DIR/.claude/rules/yf-beads-drive-tasks.md"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1
     assertions:
       - type: exit_code
@@ -20,31 +20,26 @@ steps:
   # Case 2: Lock file created after preflight
   - name: "lock_file_created"
     run: |
-      if [ ! -f "$WORK_DIR/.claude/plugin-lock.json" ]; then
+      if [ ! -f "$WORK_DIR/.claude/yf.json" ]; then
         echo "FAIL: lock file not created"
         exit 1
       fi
-      jq -r '.version' "$WORK_DIR/.claude/plugin-lock.json"
+      jq -r '.version' "$WORK_DIR/.claude/yf.json"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "1"
 
-  # Case 3: Lock file contains both plugins
-  - name: "lock_has_both_plugins"
+  # Case 3: Lock file contains yf plugin
+  - name: "lock_has_yf_plugin"
     run: |
-      WF=$(jq -r '.plugins.workflows.version' "$WORK_DIR/.claude/plugin-lock.json")
-      CH=$(jq -r '.plugins.chronicler.version' "$WORK_DIR/.claude/plugin-lock.json")
-      if [ -z "$WF" ] || [ "$WF" = "null" ]; then
-        echo "FAIL: workflows not in lock"
+      YF=$(jq -r '.preflight.plugins.yf.version' "$WORK_DIR/.claude/yf.json")
+      if [ -z "$YF" ] || [ "$YF" = "null" ]; then
+        echo "FAIL: yf not in lock"
         exit 1
       fi
-      if [ -z "$CH" ] || [ "$CH" = "null" ]; then
-        echo "FAIL: chronicler not in lock"
-        exit 1
-      fi
-      echo "OK: workflows=$WF chronicler=$CH"
+      echo "OK: yf=$YF"
     assertions:
       - type: exit_code
         value: "0"
@@ -64,30 +59,25 @@ steps:
   # Case 5: Missing rule gets reinstalled
   - name: "reinstall_missing_rule"
     run: |
-      rm -f "$WORK_DIR/.claude/rules/BEADS.md"
+      rm -f "$WORK_DIR/.claude/rules/yf-beads.md"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
-        value: "installed .claude/rules/BEADS.md"
+        value: "installed .claude/rules/yf-beads.md"
 
-  # Case 6: Dependency ordering — workflows before chronicler
-  - name: "dependency_ordering"
+  # Case 6: Single plugin processed correctly
+  - name: "single_plugin_processed"
     run: |
-      rm -f "$WORK_DIR/.claude/plugin-lock.json"
+      rm -f "$WORK_DIR/.claude/yf.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
-      # workflows lines should appear before chronicler lines
-      WF_LINE=$(echo "$OUTPUT" | grep -n "workflows" | head -1 | cut -d: -f1)
-      CH_LINE=$(echo "$OUTPUT" | grep -n "chronicler" | head -1 | cut -d: -f1)
-      if [ -n "$WF_LINE" ] && [ -n "$CH_LINE" ] && [ "$WF_LINE" -lt "$CH_LINE" ]; then
-        echo "OK: workflows before chronicler"
-      elif [ -z "$CH_LINE" ]; then
-        echo "OK: only workflows had changes (chronicler up to date)"
+      if echo "$OUTPUT" | grep -q "yf"; then
+        echo "OK: yf plugin processed"
       else
-        echo "FAIL: ordering wrong"
+        echo "FAIL: yf not found in output"
         exit 1
       fi
     assertions:
@@ -99,7 +89,7 @@ steps:
   # Case 7: Directories created when missing
   - name: "creates_missing_directories"
     run: |
-      rm -f "$WORK_DIR/.claude/plugin-lock.json"
+      rm -f "$WORK_DIR/.claude/yf.json"
       rm -rf "$WORK_DIR/docs/plans" "$WORK_DIR/docs/diary"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
@@ -118,7 +108,7 @@ steps:
   # Case 8: Checksums recorded in lock
   - name: "checksums_in_lock"
     run: |
-      CKSUM=$(jq -r '.plugins.workflows.artifacts.rules[0].checksum' "$WORK_DIR/.claude/plugin-lock.json")
+      CKSUM=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].checksum' "$WORK_DIR/.claude/yf.json")
       if echo "$CKSUM" | grep -q '^sha256:'; then
         echo "OK: checksum format correct: $CKSUM"
       else
@@ -142,4 +132,4 @@ steps:
         value: "warn"
 
 teardown:
-  - "rm -f .claude/plugin-lock.json"
+  - "rm -f .claude/yf.json"

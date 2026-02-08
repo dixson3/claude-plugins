@@ -15,7 +15,7 @@ steps:
     run: |
       echo '{"plan_idx":"99"}' > .claude/.plan-gate
       ROOT=$(cat .test-epic-id)
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/plan-exec.sh" start "$ROOT"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT"
     assertions:
       - type: file_not_exists
         path: ".claude/.plan-gate"
@@ -24,7 +24,7 @@ steps:
   - name: "no_gate_no_error"
     run: |
       ROOT=$(cat .test-epic-id)
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/plan-exec.sh" start "$ROOT"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT"
     assertions:
       - type: exit_code
         value: "0"
@@ -34,7 +34,7 @@ steps:
     run: |
       echo '{"plan_idx":"99"}' > .claude/.plan-gate
       ROOT=$(cat .test-epic-id)
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/plan-exec.sh" start "$ROOT" 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT" 2>&1
     assertions:
       - type: output_contains
         value: "Plan gate removed"

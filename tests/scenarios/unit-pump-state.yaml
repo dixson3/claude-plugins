@@ -7,7 +7,7 @@ steps:
   - name: "missing_file_not_dispatched"
     run: |
       rm -f .claude/.task-pump.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" is-dispatched marketplace-abc 2>/dev/null || true
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" is-dispatched marketplace-abc 2>/dev/null || true
     assertions:
       - type: output_contains
         value: "not-dispatched"
@@ -16,8 +16,8 @@ steps:
   - name: "mark_then_check_dispatched"
     run: |
       rm -f .claude/.task-pump.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" is-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" is-dispatched marketplace-abc
     assertions:
       - type: output_contains
         value: "dispatched"
@@ -28,9 +28,9 @@ steps:
   - name: "duplicate_mark_idempotent"
     run: |
       rm -f .claude/.task-pump.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" is-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" is-dispatched marketplace-abc
     assertions:
       - type: output_contains
         value: "dispatched"
@@ -39,9 +39,9 @@ steps:
   - name: "mark_done_removes_dispatched"
     run: |
       rm -f .claude/.task-pump.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-done marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" is-dispatched marketplace-abc 2>/dev/null || true
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-done marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" is-dispatched marketplace-abc 2>/dev/null || true
     assertions:
       - type: output_contains
         value: "not-dispatched"
@@ -50,10 +50,10 @@ steps:
   - name: "pending_lists_dispatched"
     run: |
       rm -f .claude/.task-pump.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-def
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-done marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" pending
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-def
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-done marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" pending
     assertions:
       - type: output_contains
         value: "marketplace-def"
@@ -62,9 +62,9 @@ steps:
   - name: "clear_resets_all"
     run: |
       rm -f .claude/.task-pump.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" clear
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" pending
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" clear
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" pending
     assertions:
       - type: exit_code
         value: "0"
@@ -73,9 +73,9 @@ steps:
   - name: "clear_empty_pending"
     run: |
       rm -f .claude/.task-pump.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" clear
-      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" pending)
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" clear
+      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" pending)
       if [ -z "$RESULT" ]; then echo "empty"; else echo "not-empty"; fi
     assertions:
       - type: output_contains

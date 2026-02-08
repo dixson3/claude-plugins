@@ -5,6 +5,38 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-02-08
+
+### Added
+
+- **yf** plugin (Yoshiko Flow) v2.0.0 — consolidated from `workflows` + `chronicler`
+  - 11 skills: `yf:plan_to_beads`, `yf:execute_plan`, `yf:task_pump`, `yf:breakdown_task`, `yf:select_agent`, `yf:dismiss_gate`, `yf:engage_plan`, `yf:capture`, `yf:recall`, `yf:diary`, `yf:disable`
+  - 2 agents: `yf_recall`, `yf_diary`
+  - 9 rules: all `yf-` prefixed (e.g., `yf-beads.md`, `yf-auto-chain-plan.md`)
+  - 5 hooks: `code-gate.sh`, `exit-plan-gate.sh`, `plan-exec-guard.sh`, `preflight-wrapper.sh`, `pre-push-diary.sh`
+  - 2 scripts: `plan-exec.sh`, `pump-state.sh`
+- Lock file migration: `.claude/plugin-lock.json` → `.claude/yf.json` with `preflight` nesting
+  - Automatic migration on first preflight run
+  - New JSON structure: `{version, updated, preflight: {plugins: {...}}}`
+- Test scenario: `unit-yf-migration.yaml` — verifies old lock file migrates to new format
+
+### Removed
+
+- `workflows` plugin (v1.7.0) — merged into `yf`
+- `chronicler` plugin (v1.3.0) — merged into `yf`
+- Old un-prefixed rule files from `.claude/rules/` (auto-cleaned by preflight stale artifact removal)
+
+### Changed
+
+- All skill names: `/workflows:*` → `/yf:*`, `/chronicler:*` → `/yf:*`
+- All agent names: `chronicler_recall` → `yf_recall`, `chronicler_diary` → `yf_diary`
+- All rule filenames: `BEADS.md` → `yf-beads.md`, `engage-the-plan.md` → `yf-engage-the-plan.md`, etc.
+- Lock file path: `.claude/plugin-lock.json` → `.claude/yf.json`
+- Lock file JSON structure: flat `{plugins: {...}}` → nested `{preflight: {plugins: {...}}}`
+- `.gitignore`: updated lock file entry
+- Marketplace version: 1.9.0 → 2.0.0
+- All test scenarios updated for new paths, names, and JSON structure
+
 ## [1.9.0] - 2026-02-08
 
 ### Added

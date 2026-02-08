@@ -1,0 +1,20 @@
+{
+  "dependencies": [],
+  "artifacts": {
+    "rules": [
+      { "source": "rules/yf-beads.md", "target": ".claude/rules/yf-beads.md" },
+      { "source": "rules/yf-engage-the-plan.md", "target": ".claude/rules/yf-engage-the-plan.md" },
+      { "source": "rules/yf-plan-to-beads.md", "target": ".claude/rules/yf-plan-to-beads.md" },
+      { "source": "rules/yf-breakdown-the-work.md", "target": ".claude/rules/yf-breakdown-the-work.md" },
+      { "source": "rules/yf-auto-chain-plan.md", "target": ".claude/rules/yf-auto-chain-plan.md" },
+      { "source": "rules/yf-beads-drive-tasks.md", "target": ".claude/rules/yf-beads-drive-tasks.md" },
+      { "source": "rules/yf-plan-intake.md", "target": ".claude/rules/yf-plan-intake.md" },
+      { "source": "rules/yf-watch-for-chronicle-worthiness.md", "target": ".claude/rules/yf-watch-for-chronicle-worthiness.md" },
+      { "source": "rules/yf-plan-transition-chronicle.md", "target": ".claude/rules/yf-plan-transition-chronicle.md" }
+    ],
+    "directories": ["docs/plans", "docs/diary"],
+    "setup": [
+      { "name": "beads", "check": "test -d .beads", "run": "bd init" }
+    ]
+  }
+}
