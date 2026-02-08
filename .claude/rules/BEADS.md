@@ -20,6 +20,7 @@ bd sync               # Sync with git
 
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
 1.5. **Capture context** (if significant work was done) - Invoke `/chronicler:capture topic:session-close` to preserve session context as a chronicle bead. Skip if the session was trivial (only minor changes or routine operations).
+1.6. **Generate diary** (if open chronicles exist) - Invoke `/chronicler:diary` to process all open chronicles into diary entries. Stage the generated files for commit.
 2. **Run quality gates** (if code changed) - Tests, linters, builds
 3. **Update issue status** - Close finished work, update in-progress items
 4. **PUSH TO REMOTE** - This is MANDATORY:

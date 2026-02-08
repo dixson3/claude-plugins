@@ -120,9 +120,10 @@ After dispatching a batch:
 When `plan-exec.sh status` returns `completed` (which also closes any chronicle gates):
 
 1. Capture completion context: Invoke `/chronicler:capture topic:completion` to preserve the execution summary as a chronicle bead before closing everything out.
-2. Update plan file status to "Completed"
-3. Close root epic if not already closed
-4. Report completion summary
+2. Generate diary: Invoke `/chronicler:diary plan:<idx>` to process all plan chronicles into diary entries. This is scoped to the plan so it only processes chronicles tagged with that plan label.
+3. Update plan file status to "Completed"
+4. Close root epic if not already closed
+5. Report completion summary (include diary file paths in the report)
 
 ```
 Plan Execution Complete
@@ -131,7 +132,7 @@ Plan: plan-07 — <Title>
 Tasks completed: 12/12
 Duration: <time from first claim to last close>
 
-Chronicle gate closed — run /chronicler:diary plan:07 to generate diary.
+Diary entries generated for plan:07.
 ```
 
 ## Parallel Dispatch Rules

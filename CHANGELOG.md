@@ -5,6 +5,21 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-02-08
+
+### Added
+
+- Automatic diary generation at lifecycle boundaries:
+  - **Plan completion**: `execute_plan` skill Step 4 now invokes `/chronicler:diary plan:<idx>` after chronicle capture, generating plan-scoped diary entries automatically
+  - **Session close**: BEADS.md "Landing the Plane" step 1.6 invokes `/chronicler:diary` to process all open chronicles into diary entries before the final commit
+- Test cases verifying diary generation references in `execute_plan` and BEADS.md
+
+### Changed
+
+- Version bumps: workflows 1.6.0 → 1.7.0, marketplace 1.8.0 → 1.9.0
+- `execute_plan` completion report now includes diary file paths instead of a manual diary reminder
+- BEADS.md Landing the Plane protocol: added step 1.6 for diary generation after chronicle capture
+
 ## [1.8.0] - 2026-02-08
 
 ### Added

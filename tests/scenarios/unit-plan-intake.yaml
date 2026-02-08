@@ -161,5 +161,35 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 11: execute_plan has diary generation on completion
+  - name: "execute_plan_has_diary_generation"
+    run: |
+      if grep -q "chronicler:diary" "$PLUGIN_DIR/plugins/workflows/skills/execute_plan/SKILL.md"; then
+        echo "OK: execute_plan has diary generation"
+      else
+        echo "FAIL: execute_plan missing diary generation"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 12: BEADS.md has diary generation step
+  - name: "beads_has_diary_step"
+    run: |
+      if grep -q "chronicler:diary" "$PLUGIN_DIR/plugins/workflows/rules/BEADS.md"; then
+        echo "OK: BEADS.md has diary generation step"
+      else
+        echo "FAIL: BEADS.md missing diary generation"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
   - "rm -f .claude/plugin-lock.json"

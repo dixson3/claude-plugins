@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Yoshiko Studios Claude Marketplace - A collection of Claude plugins",
-    "version": "1.8.0",
+    "version": "1.9.0",
     "license": "MIT",
     "organization": "Yoshiko Studios LLC",
     "github": "dixson3"
@@ -16,7 +16,7 @@
       "name": "workflows",
       "source": "./plugins/workflows",
       "description": "Plan lifecycle, beads decomposition, task pump dispatch, and execution orchestration",
-      "version": "1.6.0"
+      "version": "1.7.0"
     },
     {
       "name": "chronicler",
