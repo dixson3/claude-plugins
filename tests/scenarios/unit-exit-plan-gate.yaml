@@ -95,6 +95,23 @@ steps:
       - type: exit_code
         value: "0"
 
+  # Case 8: Auto-chain signal in output
+  - name: "auto_chain_output"
+    run: |
+      rm -f .claude/.plan-gate
+      rm -rf docs/plans
+      echo '# Auto Plan' > .claude/plans/auto.md
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/hooks/exit-plan-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "Auto-chaining plan lifecycle..."
+      - type: output_contains
+        value: "PLAN_IDX="
+      - type: output_contains
+        value: "PLAN_FILE=docs/plans/plan-"
+
 teardown:
   - "rm -f .claude/.plan-gate"
   - "rm -rf .claude/plans"

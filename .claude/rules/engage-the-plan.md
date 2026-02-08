@@ -4,15 +4,13 @@
 
 When the user says plan lifecycle phrases, invoke the appropriate action via `/workflows:engage_plan`.
 
+## Note
+
+The Draft transition is now handled automatically by ExitPlanMode. When the user exits plan mode, the `exit-plan-gate.sh` hook saves the plan and the `auto-chain-plan.md` rule drives the full lifecycle (plan_to_beads → execute). The phrases below are for manual overrides and non-Draft transitions.
+
 ## Trigger Phrases
 
-### Draft (Plan Mode Only)
-- "engage the plan" → Save plan to `docs/plans/`, transition to Draft
-- "engage plan"
-- "finalize the plan"
-- "lock in the plan"
-
-### Ready
+### Ready (Manual Override)
 - "the plan is ready" → Create beads hierarchy, transition to Ready
 - "activate the plan"
 
@@ -34,5 +32,3 @@ When the user says plan lifecycle phrases, invoke the appropriate action via `/w
 ## Action
 
 Invoke: `/workflows:engage_plan` with the detected action context.
-
-**Important:** `/workflows:engage_plan` does NOT imply `ExitPlanMode`. They are independent.

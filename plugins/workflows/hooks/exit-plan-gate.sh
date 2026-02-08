@@ -2,11 +2,11 @@
 # exit-plan-gate.sh — PreToolUse hook for ExitPlanMode
 #
 # Fires when Claude exits plan mode. Saves the plan to docs/plans/ and
-# creates a gate file so the plan lifecycle can proceed (plan_to_beads,
-# then execute).
+# creates a gate file. Outputs auto-chain signal so the auto-chain-plan
+# rule drives the full lifecycle (plan_to_beads → execute) automatically.
 #
-# If ExitPlanMode isn't a valid hook matcher, the engage_plan skill
-# handles gating as a fallback — this hook is a best-effort intercept.
+# If engage_plan already created the gate, this hook exits silently
+# (idempotent) and the auto-chain rule does NOT fire.
 #
 # Install in plugin.json:
 # {
@@ -84,10 +84,9 @@ printf '{"plan_idx":"%s","plan_file":"docs/plans/plan-%s.md","created":"%s"}\n' 
 # Inform the agent
 cat <<EOF
 Plan saved to docs/plans/plan-${NEXT_PAD}.md
-Plan gate activated. Complete the lifecycle:
-  1. Run /workflows:plan_to_beads to create beads
-  2. Say "execute the plan" to start
-  Or: /workflows:dismiss_gate to abandon
+Plan gate activated. Auto-chaining plan lifecycle...
+PLAN_IDX=${NEXT_PAD}
+PLAN_FILE=docs/plans/plan-${NEXT_PAD}.md
 EOF
 
 exit 0

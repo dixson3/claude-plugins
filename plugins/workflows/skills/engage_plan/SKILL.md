@@ -27,7 +27,9 @@ Draft ───► Ready ───► Executing ◄──► Paused ───►
 
 ## Workflow
 
-### Transition: → Draft
+### Transition: → Draft (Legacy Fallback)
+
+> **Note:** The Draft transition is normally handled automatically by the ExitPlanMode auto-chain (see `auto-chain-plan.md` rule). This section is retained as a manual fallback for when the user explicitly says "engage the plan" during plan mode.
 
 When the user says "engage the plan" during plan mode:
 

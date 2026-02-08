@@ -16,6 +16,7 @@ Set up all components needed for chronicler to function:
 3. Install the `watch-for-chronicle-worthiness` role to `.claude/roles/`
 4. Assign the role to all agents by default
 5. Create `docs/diary/` directory
+6. Install rules to `.claude/rules/`
 
 ## Behavior
 
@@ -46,25 +47,37 @@ Copy `roles/watch-for-chronicle-worthiness.md` from the plugin to `.claude/roles
 mkdir -p docs/diary
 ```
 
+### Step 6: Install Rules
+
+Copy rules from the plugin to `.claude/rules/`:
+
+```bash
+mkdir -p .claude/rules
+cp plugins/chronicler/rules/plan-transition-chronicle.md .claude/rules/
+```
+
 ## Expected Output
 
 ```
 Initializing chronicler...
 
-[1/5] Initializing beads...
+[1/6] Initializing beads...
       Beads initialized successfully.
 
-[2/5] Initializing roles...
+[2/6] Initializing roles...
       Roles plugin initialized.
 
-[3/5] Installing watch-for-chronicle-worthiness role...
+[3/6] Installing watch-for-chronicle-worthiness role...
       Role installed to .claude/roles/watch-for-chronicle-worthiness.md
 
-[4/5] Assigning role to primary agent...
+[4/6] Assigning role to primary agent...
       Role assigned to: primary
 
-[5/5] Creating docs/diary/ directory...
+[5/6] Creating docs/diary/ directory...
       Directory created.
+
+[6/6] Installing rules...
+      plan-transition-chronicle.md → .claude/rules/
 
 Chronicler initialized successfully!
 
