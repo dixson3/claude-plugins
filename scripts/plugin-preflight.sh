@@ -73,9 +73,9 @@ for i in $(seq 0 $((PLUGIN_COUNT - 1))); do
   PNAMES+=("$NAME")
   PDIRS+=("$PLUGIN_DIR")
 
-  PJSON="$PLUGIN_DIR/.claude-plugin/plugin.json"
-  if [ -f "$PJSON" ]; then
-    DEPS=$(jq -r '(.dependencies // []) | join(",")' "$PJSON" 2>/dev/null)
+  PPRE="$PLUGIN_DIR/.claude-plugin/preflight.json"
+  if [ -f "$PPRE" ]; then
+    DEPS=$(jq -r '(.dependencies // []) | join(",")' "$PPRE" 2>/dev/null)
     PDEPS+=("$DEPS")
   else
     PDEPS+=("")
@@ -141,16 +141,20 @@ for idx in $ORDERED; do
     break
   fi
 
-  RULE_COUNT=$(jq -r '(.artifacts.rules // []) | length' "$PJSON" 2>/dev/null)
-  [ -z "$RULE_COUNT" ] && RULE_COUNT=0
+  PPRE="$PLUGIN_DIR/.claude-plugin/preflight.json"
+  RULE_COUNT=0
+  if [ -f "$PPRE" ]; then
+    RULE_COUNT=$(jq -r '(.artifacts.rules // []) | length' "$PPRE" 2>/dev/null)
+    [ -z "$RULE_COUNT" ] && RULE_COUNT=0
+  fi
   LOCK_RULE_COUNT=$(echo "$LOCK" | jq -r ".plugins.\"$NAME\".artifacts.rules | length" 2>/dev/null)
   [ -z "$LOCK_RULE_COUNT" ] && LOCK_RULE_COUNT=0
   if [ "$RULE_COUNT" != "$LOCK_RULE_COUNT" ]; then
     FAST_PATH=false; break
   fi
   j=0; while [ $j -lt "$RULE_COUNT" ] && $FAST_PATH; do
-    SOURCE_REL=$(jq -r ".artifacts.rules[$j].source" "$PJSON" 2>/dev/null)
-    TARGET_REL=$(jq -r ".artifacts.rules[$j].target" "$PJSON" 2>/dev/null)
+    SOURCE_REL=$(jq -r ".artifacts.rules[$j].source" "$PPRE" 2>/dev/null)
+    TARGET_REL=$(jq -r ".artifacts.rules[$j].target" "$PPRE" 2>/dev/null)
     SOURCE_ABS="$PLUGIN_DIR/$SOURCE_REL"
     TARGET_ABS="$PROJECT_DIR/$TARGET_REL"
 
@@ -201,19 +205,26 @@ for idx in $ORDERED; do
   NAME="${PNAMES[$idx]}"
   PLUGIN_DIR="${PDIRS[$idx]}"
   PJSON="$PLUGIN_DIR/.claude-plugin/plugin.json"
+  PPRE="$PLUGIN_DIR/.claude-plugin/preflight.json"
   if [ ! -f "$PJSON" ]; then
     echo "preflight: warn: $NAME — plugin.json not found, skipping" >&2
     continue
+  fi
+  if [ ! -f "$PPRE" ]; then
+    echo "preflight: warn: $NAME — preflight.json not found, skipping artifacts" >&2
   fi
 
   CUR_VER=$(jq -r '.version' "$PJSON" 2>/dev/null)
   PLUGIN_LOCK="{\"version\":\"$CUR_VER\",\"artifacts\":{\"rules\":[],\"directories\":[],\"setup\":[]}}"
 
   # --- Directories ---
-  DIR_COUNT=$(jq -r '(.artifacts.directories // []) | length' "$PJSON" 2>/dev/null)
-  [ -z "$DIR_COUNT" ] && DIR_COUNT=0
+  DIR_COUNT=0
+  if [ -f "$PPRE" ]; then
+    DIR_COUNT=$(jq -r '(.artifacts.directories // []) | length' "$PPRE" 2>/dev/null)
+    [ -z "$DIR_COUNT" ] && DIR_COUNT=0
+  fi
   j=0; while [ $j -lt "$DIR_COUNT" ]; do
-    DIR_REL=$(jq -r ".artifacts.directories[$j]" "$PJSON" 2>/dev/null)
+    DIR_REL=$(jq -r ".artifacts.directories[$j]" "$PPRE" 2>/dev/null)
     DIR_ABS="$PROJECT_DIR/$DIR_REL"
     if [ ! -d "$DIR_ABS" ]; then
       mkdir -p "$DIR_ABS"
@@ -224,12 +235,15 @@ for idx in $ORDERED; do
   j=$((j + 1)); done
 
   # --- Setup commands ---
-  SETUP_COUNT=$(jq -r '(.artifacts.setup // []) | length' "$PJSON" 2>/dev/null)
-  [ -z "$SETUP_COUNT" ] && SETUP_COUNT=0
+  SETUP_COUNT=0
+  if [ -f "$PPRE" ]; then
+    SETUP_COUNT=$(jq -r '(.artifacts.setup // []) | length' "$PPRE" 2>/dev/null)
+    [ -z "$SETUP_COUNT" ] && SETUP_COUNT=0
+  fi
   j=0; while [ $j -lt "$SETUP_COUNT" ]; do
-    SETUP_NAME=$(jq -r ".artifacts.setup[$j].name" "$PJSON" 2>/dev/null)
-    SETUP_CHECK=$(jq -r ".artifacts.setup[$j].check" "$PJSON" 2>/dev/null)
-    SETUP_RUN=$(jq -r ".artifacts.setup[$j].run" "$PJSON" 2>/dev/null)
+    SETUP_NAME=$(jq -r ".artifacts.setup[$j].name" "$PPRE" 2>/dev/null)
+    SETUP_CHECK=$(jq -r ".artifacts.setup[$j].check" "$PPRE" 2>/dev/null)
+    SETUP_RUN=$(jq -r ".artifacts.setup[$j].run" "$PPRE" 2>/dev/null)
 
     # Check if already completed in lock
     LOCK_COMPLETED=$(echo "$LOCK" | jq -r ".plugins.\"$NAME\".artifacts.setup[]? | select(.name == \"$SETUP_NAME\") | .completed // false" 2>/dev/null)
@@ -259,13 +273,16 @@ for idx in $ORDERED; do
   j=$((j + 1)); done
 
   # --- Rules: install/update ---
-  RULE_COUNT=$(jq -r '(.artifacts.rules // []) | length' "$PJSON" 2>/dev/null)
+  RULE_COUNT=0
   MANIFEST_TARGETS=""  # newline-separated
-  [ -z "$RULE_COUNT" ] && RULE_COUNT=0
+  if [ -f "$PPRE" ]; then
+    RULE_COUNT=$(jq -r '(.artifacts.rules // []) | length' "$PPRE" 2>/dev/null)
+    [ -z "$RULE_COUNT" ] && RULE_COUNT=0
+  fi
 
   j=0; while [ $j -lt "$RULE_COUNT" ]; do
-    SOURCE_REL=$(jq -r ".artifacts.rules[$j].source" "$PJSON" 2>/dev/null)
-    TARGET_REL=$(jq -r ".artifacts.rules[$j].target" "$PJSON" 2>/dev/null)
+    SOURCE_REL=$(jq -r ".artifacts.rules[$j].source" "$PPRE" 2>/dev/null)
+    TARGET_REL=$(jq -r ".artifacts.rules[$j].target" "$PPRE" 2>/dev/null)
     SOURCE_ABS="$PLUGIN_DIR/$SOURCE_REL"
     TARGET_ABS="$PROJECT_DIR/$TARGET_REL"
     MANIFEST_TARGETS="$MANIFEST_TARGETS

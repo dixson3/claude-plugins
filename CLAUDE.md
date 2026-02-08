@@ -84,7 +84,7 @@ Rule files installed to `.claude/rules/` should use descriptive names that indic
 
 2. **Add plugin manifest**: `.claude-plugin/plugin.json`
 
-   Skills and agents are auto-discovered from directory structure — do NOT list them in the manifest. Include metadata, hooks, and artifact declarations.
+   Skills and agents are auto-discovered from directory structure — do NOT list them in the manifest. Only include official Claude Code schema fields (name, version, description, author, license, hooks, etc.). Custom fields like `dependencies` and `artifacts` go in `preflight.json` (see step 2b).
 
    ```json
    {
@@ -93,22 +93,6 @@ Rule files installed to `.claude/rules/` should use descriptive names that indic
      "description": "Plugin description",
      "author": { "name": "James Dixson", "email": "dixson3@gmail.com" },
      "license": "MIT",
-     "dependencies": [],
-     "artifacts": {
-       "rules": [
-         { "source": "rules/my-rule.md", "target": ".claude/rules/my-rule.md" }
-       ],
-       "directories": ["docs/my-dir"],
-       "setup": [
-         { "name": "my-setup", "check": "test -d .my-dir", "run": "my-init-cmd" }
-       ]
-     }
-   }
-   ```
-
-   With hooks (optional):
-   ```json
-   {
      "hooks": {
        "PreToolUse": [
          {
@@ -120,6 +104,25 @@ Rule files installed to `.claude/rules/` should use descriptive names that indic
              }
            ]
          }
+       ]
+     }
+   }
+   ```
+
+2b. **Add preflight config** (optional): `.claude-plugin/preflight.json`
+
+   Artifact declarations, dependencies, and setup commands go here — separate from `plugin.json` to avoid Claude Code's strict schema validation.
+
+   ```json
+   {
+     "dependencies": [],
+     "artifacts": {
+       "rules": [
+         { "source": "rules/my-rule.md", "target": ".claude/rules/my-rule.md" }
+       ],
+       "directories": ["docs/my-dir"],
+       "setup": [
+         { "name": "my-setup", "check": "test -d .my-dir", "run": "my-init-cmd" }
        ]
      }
    }
@@ -162,7 +165,7 @@ Pre/post tool-use hooks declared in `plugin.json` under the `hooks` key. Hook co
 
 ## Preflight System
 
-Plugins declare their artifacts (rules, directories, setup commands) in `plugin.json`. A preflight script (`scripts/plugin-preflight.sh`) runs automatically on SessionStart and syncs artifacts to the project:
+Plugins declare their artifacts (rules, directories, setup commands) in `.claude-plugin/preflight.json` (separate from `plugin.json` to comply with Claude Code's strict manifest schema). A preflight script (`scripts/plugin-preflight.sh`) runs automatically on SessionStart and syncs artifacts to the project:
 
 - **Install**: Missing rules are copied from plugin source to project
 - **Update**: Changed rules are overwritten (unless user modified them)

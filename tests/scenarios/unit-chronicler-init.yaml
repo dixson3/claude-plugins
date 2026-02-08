@@ -15,10 +15,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Artifacts declared in plugin.json
+  # Case 2: Artifacts declared in preflight.json
   - name: "artifacts_declared"
     run: |
-      RULE_COUNT=$(jq -r '(.artifacts.rules // []) | length' "$PLUGIN_DIR/plugins/chronicler/.claude-plugin/plugin.json")
+      RULE_COUNT=$(jq -r '(.artifacts.rules // []) | length' "$PLUGIN_DIR/plugins/chronicler/.claude-plugin/preflight.json")
       if [ "$RULE_COUNT" -lt 2 ]; then
         echo "FAIL: expected at least 2 artifact rules, got $RULE_COUNT"
         exit 1
@@ -105,7 +105,7 @@ steps:
   # Case 8: Dependencies declared
   - name: "dependencies_declared"
     run: |
-      DEPS=$(jq -r '(.dependencies // []) | join(",")' "$PLUGIN_DIR/plugins/chronicler/.claude-plugin/plugin.json")
+      DEPS=$(jq -r '(.dependencies // []) | join(",")' "$PLUGIN_DIR/plugins/chronicler/.claude-plugin/preflight.json")
       if [ "$DEPS" != "workflows" ]; then
         echo "FAIL: expected dependency 'workflows', got '$DEPS'"
         exit 1

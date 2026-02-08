@@ -94,10 +94,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: Rule is in plugin.json artifacts
+  # Case 7: Rule is in preflight.json artifacts
   - name: "in_artifact_manifest"
     run: |
-      if jq -e '.artifacts.rules[] | select(.source == "rules/plan-intake.md")' "$PLUGIN_DIR/plugins/workflows/.claude-plugin/plugin.json" >/dev/null 2>&1; then
+      if jq -e '.artifacts.rules[] | select(.source == "rules/plan-intake.md")' "$PLUGIN_DIR/plugins/workflows/.claude-plugin/preflight.json" >/dev/null 2>&1; then
         echo "OK: in artifact manifest"
       else
         echo "FAIL: not in artifact manifest"
