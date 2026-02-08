@@ -8,12 +8,11 @@ Chronicler helps you maintain context across Claude sessions by:
 - Capturing important context as "chronicle" beads
 - Recalling context at session start
 - Generating consolidated diary entries from chronicles
-- Providing a role that reminds you to capture context
+- Providing a rule that reminds you to capture context
 
 ## Dependencies
 
 - **beads-cli** >= 0.44.0 - Git-backed issue tracker
-- **roles plugin** - For selective role loading
 - **workflows plugin** - For beads initialization
 
 ## Installation
@@ -24,9 +23,8 @@ Chronicler helps you maintain context across Claude sessions by:
 
 This will:
 1. Initialize beads in your project
-2. Initialize the roles plugin
-3. Install the `watch-for-chronicle-worthiness` role
-4. Create `docs/diary/` directory
+2. Create `docs/diary/` directory
+3. Install rules to `.claude/rules/`
 
 ## Skills
 
@@ -97,18 +95,18 @@ Diary generation agent that:
 - Generates consolidated diary entries
 - Returns structured data for file creation
 
-## Role: watch-for-chronicle-worthiness
+## Rule: watch-for-chronicle-worthiness
 
-Installed to `.claude/roles/watch-for-chronicle-worthiness.md`
+Installed to `.claude/rules/watch-for-chronicle-worthiness.md`
 
-This role monitors for chronicle-worthy events and suggests when to capture:
+This rule monitors for chronicle-worthy events and suggests when to capture:
 - Significant progress (features completed, bugs fixed)
 - Important decisions (architecture, technology choices)
 - Context switches (before breaks, task changes)
 - Blockers or questions
 - Session boundaries
 
-The role only **suggests** capture - it doesn't auto-capture.
+The rule only **suggests** capture - it doesn't auto-capture.
 
 ## Chronicle Bead Format
 
@@ -145,7 +143,7 @@ Consolidated narrative...
 ### Daily Use
 
 1. **Session Start**: `/chronicler:recall` (auto or manual)
-2. **During Work**: Role suggests capture at key moments
+2. **During Work**: Rule suggests capture at key moments
 3. **Capture Context**: `/chronicler:capture` when suggested
 4. **Before Push**: `/chronicler:diary` to generate entries
 5. **Session End**: Context is preserved in beads

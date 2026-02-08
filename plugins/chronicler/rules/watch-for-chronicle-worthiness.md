@@ -1,16 +1,14 @@
 ---
 name: watch-for-chronicle-worthiness
-applies-to:
-  - primary
 ---
 
-# Role: Watch for Chronicle-Worthiness
+# Rule: Watch for Chronicle-Worthiness
 
 **Purpose**: Monitor context for events worth recording in the project diary.
 
 ## Instructions
 
-When this role is active, watch for and flag chronicle-worthy moments during your work.
+When this rule is active, watch for and flag chronicle-worthy moments during your work.
 
 ### Capture Triggers
 

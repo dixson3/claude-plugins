@@ -1,7 +1,6 @@
 ---
 name: chronicler_recall
 description: Context recovery agent that synthesizes open chronicle beads into a summary
-on-start: /roles:apply chronicler_recall
 ---
 
 # Chronicler Recall Agent

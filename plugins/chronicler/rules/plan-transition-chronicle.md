@@ -19,5 +19,5 @@ This fires between the plan save and beads creation steps of the auto-chain. The
 ## Important
 
 - This rule only applies when the auto-chain is active (you see "Auto-chaining" in hook output)
-- For manual plan transitions (user says "engage the plan" explicitly), the watch-for-chronicle-worthiness role handles it normally
+- For manual plan transitions (user says "engage the plan" explicitly), the watch-for-chronicle-worthiness rule handles it normally
 - Do NOT capture if the planning discussion was trivial (less than a few exchanges)

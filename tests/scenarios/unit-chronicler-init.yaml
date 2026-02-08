@@ -1,0 +1,102 @@
+name: "Unit: chronicler init — no roles dependency"
+
+steps:
+  # Case 1: Init skill has no /roles: references
+  - name: "init_skill_no_roles_references"
+    run: |
+      if grep -q '/roles:' "$PLUGIN_DIR/plugins/chronicler/skills/init/SKILL.md"; then
+        echo "FAIL: init skill still references /roles:"
+        exit 1
+      fi
+      echo "OK: no /roles: references in init skill"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Init skill references watch-for-chronicle-worthiness in rules install
+  - name: "init_skill_installs_rule"
+    run: |
+      if ! grep -q 'watch-for-chronicle-worthiness.md' "$PLUGIN_DIR/plugins/chronicler/skills/init/SKILL.md"; then
+        echo "FAIL: init skill does not reference watch-for-chronicle-worthiness.md"
+        exit 1
+      fi
+      echo "OK: init skill installs watch-for-chronicle-worthiness rule"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Rule file exists in chronicler/rules/
+  - name: "rule_file_exists"
+    run: |
+      if [ ! -f "$PLUGIN_DIR/plugins/chronicler/rules/watch-for-chronicle-worthiness.md" ]; then
+        echo "FAIL: rule file not found"
+        exit 1
+      fi
+      echo "OK: rule file exists at plugins/chronicler/rules/"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Rule file has no applies-to frontmatter
+  - name: "rule_no_applies_to"
+    run: |
+      if grep -q 'applies-to:' "$PLUGIN_DIR/plugins/chronicler/rules/watch-for-chronicle-worthiness.md"; then
+        echo "FAIL: rule file still has applies-to frontmatter"
+        exit 1
+      fi
+      echo "OK: rule file has no applies-to"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Chronicler agents have no on-start referencing roles
+  - name: "agents_no_roles_on_start"
+    run: |
+      for agent in chronicler_recall chronicler_diary; do
+        if grep -q '/roles:' "$PLUGIN_DIR/plugins/chronicler/agents/${agent}.md"; then
+          echo "FAIL: ${agent}.md still references /roles:"
+          exit 1
+        fi
+      done
+      echo "OK: no agent references /roles:"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: roles plugin directory does not exist
+  - name: "roles_plugin_deleted"
+    run: |
+      if [ -d "$PLUGIN_DIR/plugins/roles" ]; then
+        echo "FAIL: plugins/roles/ still exists"
+        exit 1
+      fi
+      echo "OK: plugins/roles/ does not exist"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: marketplace.json has no roles entry
+  - name: "marketplace_no_roles"
+    run: |
+      if grep -q '"roles"' "$PLUGIN_DIR/.claude-plugin/marketplace.json"; then
+        echo "FAIL: marketplace.json still references roles"
+        exit 1
+      fi
+      echo "OK: marketplace.json has no roles entry"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

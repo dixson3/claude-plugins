@@ -1,7 +1,6 @@
 ---
 name: chronicler_diary
 description: Diary generation agent that consolidates chronicles into markdown entries
-on-start: /roles:apply chronicler_diary
 ---
 
 # Chronicler Diary Agent

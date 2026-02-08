@@ -5,6 +5,24 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-02-08
+
+### Removed
+
+- `roles` plugin — deleted entirely. The plugin was non-functional: the sole role (`watch-for-chronicle-worthiness`) never loaded for the primary session, and both chronicler agents had `on-start: /roles:apply` calls that matched zero roles.
+  - 5 skills removed: `/roles:init`, `/roles:apply`, `/roles:assign`, `/roles:unassign`, `/roles:list`
+  - `roles-apply.sh` script removed
+  - `.claude/roles/` directory removed
+
+### Changed
+
+- `chronicler` plugin: Migrated `watch-for-chronicle-worthiness` from a role to a rule
+  - Now installed to `.claude/rules/` (auto-loaded by Claude Code) instead of `.claude/roles/` (never auto-loaded)
+  - Removed `on-start: /roles:apply` from `chronicler_recall` and `chronicler_diary` agents (was a no-op)
+  - Simplified `/chronicler:init` — no longer depends on roles plugin (4 steps instead of 6)
+  - Removed roles plugin from chronicler dependencies
+- Version bumps: chronicler 1.1.0 → 1.2.0, marketplace 1.5.0 → 1.6.0
+
 ## [1.5.0] - 2026-02-07
 
 ### Added

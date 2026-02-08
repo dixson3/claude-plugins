@@ -14,19 +14,10 @@ claude --plugin-dir /path/to/yoshiko-studios-marketplace
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| [roles](plugins/roles/) | Selective role loading for agents | 1.0.0 |
-| [workflows](plugins/workflows/) | Plan lifecycle, beads decomposition, and execution orchestration | 1.1.0 |
-| [chronicler](plugins/chronicler/) | Context persistence using beads and diary generation | 1.0.0 |
+| [workflows](plugins/workflows/) | Plan lifecycle, beads decomposition, and execution orchestration | 1.4.0 |
+| [chronicler](plugins/chronicler/) | Context persistence using beads and diary generation | 1.2.0 |
 
 ## Plugins Overview
-
-### roles
-
-Infrastructure plugin for selective role loading. Agents receive only the roles assigned to them.
-
-- `/roles:apply` — Load active roles for current agent
-- `/roles:assign` / `/roles:unassign` — Manage role assignments
-- `/roles:list` — List all roles and assignments
 
 ### workflows
 
@@ -79,7 +70,7 @@ claude --plugin-dir /Users/james/workspace/spikes/marketplace
 # Initialize workflows (beads, rules, hooks)
 /workflows:init
 
-# Initialize chronicler (beads, roles, diary directory)
+# Initialize chronicler (beads, rules, diary directory)
 /chronicler:init
 ```
 
@@ -100,7 +91,6 @@ marketplace/
 ├── .claude-plugin/
 │   └── marketplace.json    # Marketplace catalog
 ├── plugins/
-│   ├── roles/              # Role management
 │   ├── workflows/          # Plan lifecycle & execution
 │   └── chronicler/         # Context persistence
 ├── docs/

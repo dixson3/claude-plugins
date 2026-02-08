@@ -18,7 +18,6 @@ marketplace/
 │       │   └── plugin.json # Plugin manifest
 │       ├── skills/         # Auto-invoked skills (*/SKILL.md)
 │       ├── agents/         # Specialized agents (*.md)
-│       ├── roles/          # Role definitions (*.md)
 │       ├── rules/          # Behavioral rules (*.md)
 │       ├── scripts/        # Shell scripts (*.sh)
 │       ├── hooks/          # Pre/post tool-use hooks (*.sh)
@@ -62,7 +61,7 @@ name: do_thing                   # WRONG — will collide with other plugins
 ---
 ```
 
-Cross-plugin skill references in content also use this format: `/workflows:init_beads`, `/roles:apply`, `/chronicler:capture`.
+Cross-plugin skill references in content also use this format: `/workflows:init_beads`, `/chronicler:capture`.
 
 ### Agents
 
@@ -158,6 +157,5 @@ Pre/post tool-use hooks declared in `plugin.json` under the `hooks` key. Hook co
 
 ## Current Plugins
 
-- **roles** (v1.1.0) - Selective role loading for agents
-- **workflows** (v1.3.0) - Plan lifecycle, beads decomposition, task pump dispatch, and execution orchestration
-- **chronicler** (v1.1.0) - Context persistence using beads and diary generation
+- **workflows** (v1.4.0) - Plan lifecycle, beads decomposition, task pump dispatch, and execution orchestration
+- **chronicler** (v1.2.0) - Context persistence using beads and diary generation
