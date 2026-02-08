@@ -40,6 +40,12 @@ bd create --title "<brief summary>" \
 Always include:
 - `ys:chronicle` - Marks this as a chronicle bead
 
+**Plan-context auto-detection:** Before creating the bead, check if a plan is currently executing:
+```bash
+bd list -l exec:executing --type=epic --status=open --limit=1 --json 2>/dev/null
+```
+If a plan is executing, extract its `plan:<idx>` label and auto-tag the chronicle bead with it. This links the chronicle to the specific plan execution so the diary agent can process plan chronicles as a group.
+
 Optional topic labels:
 - `ys:topic:feature` - New feature work
 - `ys:topic:bugfix` - Bug fixing

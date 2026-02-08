@@ -1,7 +1,10 @@
 ---
 name: chronicler:diary
 description: Generate diary entries from open chronicles and close them
-arguments: []
+arguments:
+  - name: plan_idx
+    description: "Optional plan index to filter chronicles (e.g., 07). Only processes chronicles tagged with plan:<idx>."
+    required: false
 ---
 
 # Chronicler Diary Skill
@@ -20,15 +23,26 @@ Use the `chronicler_diary` agent to:
 
 When invoked with `/chronicler:diary`:
 
-1. **Query beads**: List all open beads with `ys:chronicle` label
-2. **Launch agent**: Use the `chronicler_diary` agent to process
-3. **Generate files**: Create diary entries in `docs/diary/`
-4. **Close beads**: Mark processed beads as closed
+1. **Query beads**: List all open beads with `ys:chronicle` label (optionally filtered by `plan:<idx>`)
+2. **Check chronicle gate**: If `plan_idx` specified, check for open `ys:chronicle-gate` bead. If gate is still open, warn: "Plan still executing — diary will capture partial arc. Proceed anyway?" If no gate or gate closed, proceed.
+3. **Launch agent**: Use the `chronicler_diary` agent to process
+4. **Generate files**: Create diary entries in `docs/diary/`
+5. **Close beads**: Mark processed beads as closed
 
 ### Agent Invocation
 
+If `plan_idx` is specified:
+```bash
+bd list --label=ys:chronicle --label=plan:<idx> --status=open
+```
+
+If no `plan_idx`:
+```bash
+bd list --label=ys:chronicle --status=open
+```
+
 The diary agent:
-- Reads all open chronicle beads
+- Reads all matching open chronicle beads
 - Groups by theme (may combine related topics)
 - Generates markdown diary entries
 - Returns JSON with filenames and content

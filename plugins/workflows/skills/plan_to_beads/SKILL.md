@@ -123,7 +123,7 @@ For each created task:
 
 This assigns `agent:<name>` labels where appropriate.
 
-### Step 9: Create Gate
+### Step 9: Create Execution Gate
 
 Create a human gate on the root epic to control execution state:
 
@@ -136,6 +136,20 @@ bd create --type=gate \
 ```
 
 The gate starts open (not resolved) — plan is Ready but not Executing.
+
+### Step 9b: Create Chronicle Gate
+
+Create a chronicle gate so diary generation waits for plan completion:
+
+```bash
+bd create --type=gate \
+  --title="Generate diary from plan-<idx> chronicles" \
+  --parent=<root-epic-id> \
+  -l ys:chronicle-gate,plan:<idx> \
+  --silent
+```
+
+This gate stays open until all plan tasks close. When `plan-exec.sh status` detects completion, it closes this gate, signaling that `/chronicler:diary plan:<idx>` can now generate the full-arc diary.
 
 ### Step 10: Defer All Tasks
 

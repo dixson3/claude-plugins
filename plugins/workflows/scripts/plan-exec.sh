@@ -158,6 +158,14 @@ case "$COMMAND" in
         TOTAL_OPEN=$((OPEN_COUNT + IN_PROGRESS_COUNT + DEFERRED_COUNT))
 
         if [[ "$TOTAL_OPEN" -eq 0 ]]; then
+            # Close chronicle gates — diary can now generate
+            CHRONICLE_GATE_IDS=$(bd list -l "ys:chronicle-gate,$PLAN_LABEL" --status=open --type=gate --limit=0 --json 2>/dev/null \
+                | jq -r '.[].id' 2>/dev/null) || true
+            if [[ -n "$CHRONICLE_GATE_IDS" ]]; then
+                while IFS= read -r gate_id; do
+                    bd close "$gate_id" --reason="Plan execution completed, diary ready" 2>/dev/null || true
+                done <<< "$CHRONICLE_GATE_IDS"
+            fi
             echo "completed"
         elif [[ -n "$GATE_ID" ]]; then
             # Check if this was ever started

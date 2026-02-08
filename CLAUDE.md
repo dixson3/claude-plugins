@@ -159,5 +159,5 @@ Pre/post tool-use hooks declared in `plugin.json` under the `hooks` key. Hook co
 ## Current Plugins
 
 - **roles** (v1.1.0) - Selective role loading for agents
-- **workflows** (v1.2.0) - Plan lifecycle, beads decomposition, and execution orchestration
+- **workflows** (v1.3.0) - Plan lifecycle, beads decomposition, task pump dispatch, and execution orchestration
 - **chronicler** (v1.1.0) - Context persistence using beads and diary generation

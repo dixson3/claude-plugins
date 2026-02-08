@@ -1,0 +1,56 @@
+name: "Unit: pump dispatch tracking"
+setup:
+  - "mkdir -p .claude"
+
+steps:
+  # Case 1: No double-dispatch — dispatched bead stays dispatched on re-check
+  - name: "no_double_dispatch"
+    run: |
+      rm -f .claude/.task-pump.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" is-dispatched marketplace-abc
+    assertions:
+      - type: output_contains
+        value: "dispatched"
+      - type: exit_code
+        value: "0"
+
+  # Case 2: Multiple beads tracked independently
+  - name: "multiple_beads_independent"
+    run: |
+      rm -f .claude/.task-pump.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-def
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-done marketplace-abc
+      # abc should be done, def should still be dispatched
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" is-dispatched marketplace-def
+    assertions:
+      - type: output_contains
+        value: "dispatched"
+
+  # Case 3: Done bead no longer in pending
+  - name: "done_not_in_pending"
+    run: |
+      rm -f .claude/.task-pump.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-def
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-done marketplace-abc
+      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" pending)
+      echo "$RESULT" | grep -c "marketplace-def"
+    assertions:
+      - type: output_contains
+        value: "1"
+
+  # Case 4: Clear between pump cycles prevents stale state
+  - name: "clear_between_cycles"
+    run: |
+      rm -f .claude/.task-pump.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" clear
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh" is-dispatched marketplace-abc 2>/dev/null || true
+    assertions:
+      - type: output_contains
+        value: "not-dispatched"
+
+teardown:
+  - "rm -f .claude/.task-pump.json"

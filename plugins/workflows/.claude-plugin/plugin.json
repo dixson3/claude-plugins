@@ -1,7 +1,7 @@
 {
   "name": "workflows",
-  "version": "1.2.0",
-  "description": "Plan lifecycle, beads decomposition, and execution orchestration",
+  "version": "1.3.0",
+  "description": "Plan lifecycle, beads decomposition, task pump dispatch, and execution orchestration",
   "author": {
     "name": "James Dixson",
     "email": "dixson3@gmail.com"

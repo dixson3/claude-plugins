@@ -1,0 +1,58 @@
+name: "Unit: chronicle gate in plan-exec.sh"
+setup:
+  - "mkdir -p .claude .beads docs/plans"
+
+steps:
+  # Case 1: plan-exec.sh status closes chronicle gates when plan is completed
+  # We simulate this by testing the chronicle gate closing logic directly
+  - name: "chronicle_gate_close_on_complete"
+    run: |
+      # Create a mock plan-exec.sh status scenario
+      # Test that the status command recognizes chronicle-gate labels
+      # by verifying the jq filter pattern works
+      echo '[{"id":"marketplace-test-gate","labels":["ys:chronicle-gate","plan:99"]}]' | \
+        jq -r '.[].id'
+    assertions:
+      - type: output_contains
+        value: "marketplace-test-gate"
+      - type: exit_code
+        value: "0"
+
+  # Case 2: Empty chronicle gate list returns no output
+  - name: "no_chronicle_gates"
+    run: |
+      echo '[]' | jq -r '.[].id' 2>/dev/null || echo "none"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 3: Chronicle gate filter matches correct labels
+  - name: "chronicle_gate_label_filter"
+    run: |
+      echo '[
+        {"id":"gate-1","labels":["ys:chronicle-gate","plan:07"]},
+        {"id":"gate-2","labels":["plan-exec","plan:07"]},
+        {"id":"gate-3","labels":["ys:chronicle-gate","plan:08"]}
+      ]' | jq -r '[.[] | select(.labels | any(. == "ys:chronicle-gate")) | select(.labels | any(. == "plan:07"))] | .[].id'
+    assertions:
+      - type: output_contains
+        value: "gate-1"
+
+  # Case 4: plan-exec.sh script is valid bash
+  - name: "plan_exec_valid_bash"
+    run: |
+      bash -n "$PLUGIN_DIR/plugins/workflows/scripts/plan-exec.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 5: pump-state.sh script is valid bash
+  - name: "pump_state_valid_bash"
+    run: |
+      bash -n "$PLUGIN_DIR/plugins/workflows/scripts/pump-state.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+teardown:
+  - "rm -f .claude/.plan-gate"

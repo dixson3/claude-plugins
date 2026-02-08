@@ -5,6 +5,34 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-02-07
+
+### Added
+
+- `workflows` plugin: Task pump dispatch system
+  - `/workflows:task_pump` skill — reads `bd ready`, groups by `agent:<name>`, dispatches parallel Task tool calls with `subagent_type`
+  - `pump-state.sh` script — tracks dispatched/done beads to prevent double-dispatch
+  - `beads-drive-tasks.md` rule — enforces beads as source of truth for plan work
+- `workflows` plugin: Chronicle gating to plan execution
+  - `plan_to_beads` creates `ys:chronicle-gate` bead that stays open until plan completes
+  - `plan-exec.sh` auto-closes chronicle gates when all plan tasks are done
+  - Diary generation sees the full arc of plan execution before producing entries
+- `chronicler` plugin: Plan-context auto-detection
+  - `/chronicler:capture` auto-tags chronicles with `plan:<idx>` when a plan is executing
+  - `/chronicler:diary` accepts optional `plan_idx` argument to filter plan-specific chronicles
+  - Chronicle gate warning when attempting diary generation on an in-progress plan
+- Test scenarios: `unit-pump-state.yaml`, `unit-pump-dispatch.yaml`, `unit-chronicle-gate.yaml`
+
+### Changed
+
+- Refactored `/workflows:execute_plan` to use task pump for cleaner batch dispatch
+  - Pump reads beads, groups by agent, dispatches parallel Task calls
+  - Pump state prevents double-dispatch across loop iterations
+  - Architecture section documents beads → pump → Task tool flow
+- Updated workflows plugin to v1.3.0
+- Updated marketplace to v1.5.0
+- Added `.claude/.task-pump.json` and `.claude/.plan-gate` to `.gitignore`
+
 ## [1.4.0] - 2026-02-07
 
 ### Added
