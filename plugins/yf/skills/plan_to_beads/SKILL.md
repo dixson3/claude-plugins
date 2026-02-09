@@ -196,5 +196,5 @@ If `dry_run` is specified, show what would be created without actually creating:
 ## Error Handling
 
 - If plan file not found, report and exit
-- If beads-cli not available, report and suggest `/yf:init_beads`
+- If beads-cli not available, report the error
 - If duplicate plan detected (idempotency check), report existing beads

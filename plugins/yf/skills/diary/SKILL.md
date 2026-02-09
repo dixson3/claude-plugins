@@ -127,7 +127,7 @@ Nothing to add to diary.
 
 ## Diary Directory
 
-Diary entries are written to `docs/diary/`. Create this directory with `/yf:init` or manually:
+Diary entries are written to `docs/diary/`. This directory is created automatically by preflight, or manually:
 
 ```bash
 mkdir -p docs/diary

@@ -66,7 +66,7 @@ Memory leak investigation:
 
 ## Auto-Recall
 
-When `/yf:init` is run, it can configure a session start hook to auto-run recall:
+When `/yf:setup` is run, it can configure a session start hook to auto-run recall:
 
 ```json
 {
