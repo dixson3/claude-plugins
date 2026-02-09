@@ -9,7 +9,6 @@
 
 # Plugin config & preflight lock state (NOT committed)
 .claude/yf.json
-.claude/yf.local.json
 
 # Plugin-managed rules (symlinked by preflight)
 .claude/rules/yf-*.md
