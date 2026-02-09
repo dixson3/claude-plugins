@@ -165,11 +165,10 @@ if [ "$CANDIDATES" -eq 0 ]; then
   exit 0
 fi
 
-# --- Detect plan context ---
+# --- Detect plan context (only executing plans) ---
 PLAN_LABEL=""
 PLAN_IDX=""
-# Look for an executing plan by finding open epics with plan: label
-PLAN_EPIC=$( (set +e; bd list --type=epic --status=open --format=json 2>/dev/null | jq -r '.[0].id // empty' 2>/dev/null) || true)
+PLAN_EPIC=$( (set +e; bd list --type=epic --status=open -l exec:executing --format=json 2>/dev/null | jq -r '.[0].id // empty' 2>/dev/null) || true)
 if [ -n "$PLAN_EPIC" ]; then
   PLAN_LABEL=$( (set +e; bd label list "$PLAN_EPIC" --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' 2>/dev/null | head -1) || true)
   if [ -n "$PLAN_LABEL" ]; then

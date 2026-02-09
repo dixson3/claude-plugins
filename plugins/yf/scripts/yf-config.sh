@@ -37,8 +37,9 @@ yf_read_field() {
   yf_merged_config | jq -r "$1" 2>/dev/null
 }
 
-# yf_is_enabled — returns 0 if enabled, 1 if disabled
-yf_is_enabled() {
+# _yf_check_flag JQ_EXPR — generic boolean flag checker (fail-open)
+_yf_check_flag() {
+  local expr="$1"
   if ! command -v jq >/dev/null 2>&1; then
     return 0  # fail-open
   fi
@@ -46,32 +47,15 @@ yf_is_enabled() {
     return 0  # no config = enabled by default
   fi
   local val
-  val=$(yf_merged_config | jq -r 'if .enabled == null then true else .enabled end' 2>/dev/null)
+  val=$(yf_merged_config | jq -r "if $expr == null then true else $expr end" 2>/dev/null)
   [ "$val" != "false" ]
 }
+
+# yf_is_enabled — returns 0 if enabled, 1 if disabled
+yf_is_enabled() { _yf_check_flag '.enabled'; }
 
 # yf_is_chronicler_on — returns 0 if chronicler enabled, 1 if disabled
-yf_is_chronicler_on() {
-  if ! command -v jq >/dev/null 2>&1; then
-    return 0  # fail-open
-  fi
-  if ! yf_config_exists; then
-    return 0  # no config = enabled by default
-  fi
-  local val
-  val=$(yf_merged_config | jq -r 'if .config.chronicler_enabled == null then true else .config.chronicler_enabled end' 2>/dev/null)
-  [ "$val" != "false" ]
-}
+yf_is_chronicler_on() { _yf_check_flag '.config.chronicler_enabled'; }
 
 # yf_is_archivist_on — returns 0 if archivist enabled, 1 if disabled
-yf_is_archivist_on() {
-  if ! command -v jq >/dev/null 2>&1; then
-    return 0  # fail-open
-  fi
-  if ! yf_config_exists; then
-    return 0  # no config = enabled by default
-  fi
-  local val
-  val=$(yf_merged_config | jq -r 'if .config.archivist_enabled == null then true else .config.archivist_enabled end' 2>/dev/null)
-  [ "$val" != "false" ]
-}
+yf_is_archivist_on() { _yf_check_flag '.config.archivist_enabled'; }

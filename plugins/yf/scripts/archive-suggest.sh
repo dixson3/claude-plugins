@@ -121,7 +121,7 @@ echo ""
 
 # Check existing beads
 if command -v bd >/dev/null 2>&1; then
-  OPEN_BEADS=$(( $(bd list --label=ys:archive --status=open --format=json 2>/dev/null | jq 'length' 2>/dev/null) )) || OPEN_BEADS=0
+  OPEN_BEADS=$( (set +e; bd list --label=ys:archive --status=open --format=json 2>/dev/null | jq 'length' 2>/dev/null) || echo "0")
   echo "Open archive beads: $OPEN_BEADS"
   echo ""
 fi

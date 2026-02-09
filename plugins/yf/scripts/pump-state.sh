@@ -7,8 +7,8 @@
 # Usage:
 #   pump-state.sh is-dispatched <bead-id>   # Check if bead already dispatched
 #   pump-state.sh mark-dispatched <bead-id> # Record dispatch
-#   pump-state.sh mark-done <bead-id>       # Record completion
-#   pump-state.sh pending                   # List dispatched but not done
+#   pump-state.sh mark-done <bead-id>       # Remove from dispatched
+#   pump-state.sh pending                   # List dispatched beads
 #   pump-state.sh clear                     # Reset all state
 #
 # Exit codes:
@@ -27,7 +27,7 @@ mkdir -p "$(dirname "$STATE_FILE")"
 
 # Initialize empty state if file doesn't exist
 if [[ ! -f "$STATE_FILE" ]]; then
-    echo '{"dispatched":{},"done":{}}' > "$STATE_FILE"
+    echo '{"dispatched":{}}' > "$STATE_FILE"
 fi
 
 case "$COMMAND" in
@@ -54,8 +54,7 @@ case "$COMMAND" in
     mark-done)
         [[ -n "$BEAD_ID" ]] || { echo "Usage: pump-state.sh mark-done <bead-id>" >&2; exit 1; }
         TEMP=$(mktemp)
-        jq --arg id "$BEAD_ID" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            '.done[$id] = $ts | del(.dispatched[$id])' "$STATE_FILE" > "$TEMP" && mv "$TEMP" "$STATE_FILE"
+        jq --arg id "$BEAD_ID" 'del(.dispatched[$id])' "$STATE_FILE" > "$TEMP" && mv "$TEMP" "$STATE_FILE"
         echo "marked-done"
         ;;
 
@@ -64,7 +63,7 @@ case "$COMMAND" in
         ;;
 
     clear)
-        echo '{"dispatched":{},"done":{}}' > "$STATE_FILE"
+        echo '{"dispatched":{}}' > "$STATE_FILE"
         echo "cleared"
         ;;
 

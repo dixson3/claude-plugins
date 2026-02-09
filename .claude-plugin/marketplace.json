@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Yoshiko Studios Claude Marketplace - A collection of Claude plugins",
-    "version": "2.7.0",
+    "version": "2.7.1",
     "license": "MIT",
     "organization": "Yoshiko Studios LLC",
     "github": "dixson3"
@@ -16,7 +16,7 @@
       "name": "yf",
       "source": "./plugins/yf",
       "description": "Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, diary generation, and research/decision archiving",
-      "version": "2.7.0"
+      "version": "2.7.1"
     }
   ]
 }

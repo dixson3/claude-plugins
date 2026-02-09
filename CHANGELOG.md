@@ -5,6 +5,24 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.1] - 2026-02-08
+
+### Fixed
+
+- **Plan detection accuracy**: `chronicle-check.sh` and `archive-suggest.sh` now filter for `exec:executing` label when detecting the active plan, instead of assuming the first open epic is the current plan
+- **Silent error swallowing**: `pre-push-diary.sh` now surfaces `chronicle-check.sh` stderr (`2>&1`) instead of discarding it (`2>/dev/null`), making failures visible while remaining non-blocking
+- **Fragile arithmetic**: `archive-suggest.sh` open-bead count uses subshell with `set +e` instead of fragile `$(( $(...) ))` arithmetic that could fail on empty input
+
+### Changed
+
+- **`yf-config.sh` consolidation**: Three identical flag-check functions (`yf_is_enabled`, `yf_is_chronicler_on`, `yf_is_archivist_on`) now delegate to a single `_yf_check_flag` helper (78 → 62 lines)
+- **`pre-push-diary.sh` deduplication**: Identical chronicle/archive warning blocks replaced with a parameterized `warn_open_beads` function (71 → 60 lines)
+- **`plugin-preflight.sh` filter consolidation**: Duplicate `is_chronicle_rule`/`is_archivist_rule` functions merged into a single `is_feature_rule` helper with thin wrappers
+- **`plan-exec.sh` cleanup**: Removed dead `COUNT` variable in `start` command (replaced with inline `wc -l`); extracted chronicle gate auto-close logic from `status` into a dedicated `close_chronicle_gates` function
+- **`pump-state.sh` simplification**: Removed write-only `done` dict — `mark-done` now simply removes from `dispatched` instead of moving to a second tracking object (76 → 75 lines)
+- **`code-gate.sh` early exit**: Beads safety-net subshell now skips entirely when `docs/plans/` doesn't exist or has no plan files, avoiding unnecessary `bd` queries on every Edit/Write
+- Plugin version bumped: 2.7.0 → 2.7.1
+
 ## [2.7.0] - 2026-02-08
 
 ### Added

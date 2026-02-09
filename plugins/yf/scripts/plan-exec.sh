@@ -53,6 +53,19 @@ get_plan_tasks() {
     bd list -l "$plan_label" --status="$status_filter" --type=task --limit=0 --json 2>/dev/null | jq -r '.[].id'
 }
 
+# Close chronicle gates when plan completes (diary can now generate)
+close_chronicle_gates() {
+    local plan_label="$1"
+    local gate_ids
+    gate_ids=$(bd list -l "ys:chronicle-gate,$plan_label" --status=open --type=gate --limit=0 --json 2>/dev/null \
+        | jq -r '.[].id' 2>/dev/null) || true
+    if [[ -n "$gate_ids" ]]; then
+        while IFS= read -r gate_id; do
+            bd close "$gate_id" --reason="Plan execution completed, diary ready" 2>/dev/null || true
+        done <<< "$gate_ids"
+    fi
+}
+
 case "$COMMAND" in
     start)
         ROOT_EPIC="$TARGET"
@@ -84,12 +97,10 @@ case "$COMMAND" in
         # Undefer all pending tasks
         TASK_IDS=$(get_plan_tasks "$PLAN_LABEL" "deferred")
         if [[ -n "$TASK_IDS" ]]; then
-            COUNT=0
             while IFS= read -r task_id; do
                 bd update "$task_id" --defer="" 2>/dev/null
-                COUNT=$((COUNT + 1))
             done <<< "$TASK_IDS"
-            echo "Undeferred $COUNT tasks."
+            echo "Undeferred $(echo "$TASK_IDS" | wc -l | tr -d ' ') tasks."
         else
             echo "No deferred tasks to undefer."
         fi
@@ -158,14 +169,7 @@ case "$COMMAND" in
         TOTAL_OPEN=$((OPEN_COUNT + IN_PROGRESS_COUNT + DEFERRED_COUNT))
 
         if [[ "$TOTAL_OPEN" -eq 0 ]]; then
-            # Close chronicle gates — diary can now generate
-            CHRONICLE_GATE_IDS=$(bd list -l "ys:chronicle-gate,$PLAN_LABEL" --status=open --type=gate --limit=0 --json 2>/dev/null \
-                | jq -r '.[].id' 2>/dev/null) || true
-            if [[ -n "$CHRONICLE_GATE_IDS" ]]; then
-                while IFS= read -r gate_id; do
-                    bd close "$gate_id" --reason="Plan execution completed, diary ready" 2>/dev/null || true
-                done <<< "$CHRONICLE_GATE_IDS"
-            fi
+            close_chronicle_gates "$PLAN_LABEL"
             echo "completed"
         elif [[ -n "$GATE_ID" ]]; then
             # Check if this was ever started

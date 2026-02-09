@@ -17,54 +17,43 @@ if ! command -v bd &> /dev/null; then
     exit 0
 fi
 
+# ── Advisory warning for open beads (parameterized) ───────────────────
+warn_open_beads() {
+    local label="$1" header="$2" process_cmd="$3" disable_cmd="$4"
+    local beads count
+    beads=$(bd list --label="$label" --status=open --format=json 2>/dev/null || echo "[]")
+    count=$(echo "$beads" | jq 'length' 2>/dev/null || echo "0")
+    [ "$count" -gt 0 ] || return 0
+    echo ""
+    echo "=========================================="
+    echo "  $header"
+    echo "=========================================="
+    echo ""
+    echo "You have $count open bead(s):"
+    echo ""
+    echo "$beads" | jq -r '.[] | "  - \(.id): \(.title)"' 2>/dev/null || echo "  (unable to list)"
+    echo ""
+    echo "Consider running $process_cmd to process them"
+    echo "before pushing, or $disable_cmd to close them"
+    echo "without output."
+    echo ""
+    echo "=========================================="
+    echo ""
+}
+
 # ── Auto-create draft chronicles for significant work ──────────────
-bash "$SCRIPT_DIR/scripts/chronicle-check.sh" pre-push 2>/dev/null || true
+bash "$SCRIPT_DIR/scripts/chronicle-check.sh" pre-push 2>&1 || true
 
 # ── Advisory: report open chronicles (including any new drafts) ────
-OPEN_CHRONICLES=$(bd list --label=ys:chronicle --status=open --format=json 2>/dev/null || echo "[]")
-
-COUNT=$(echo "$OPEN_CHRONICLES" | jq 'length' 2>/dev/null || echo "0")
-
-if [ "$COUNT" -gt 0 ]; then
-    echo ""
-    echo "=========================================="
-    echo "  CHRONICLER: Open chronicles detected"
-    echo "=========================================="
-    echo ""
-    echo "You have $COUNT open chronicle bead(s):"
-    echo ""
-    echo "$OPEN_CHRONICLES" | jq -r '.[] | "  - \(.id): \(.title)"' 2>/dev/null || echo "  (unable to list)"
-    echo ""
-    echo "Consider running /yf:diary to generate diary entries"
-    echo "before pushing, or /yf:disable to close them without"
-    echo "diary generation."
-    echo ""
-    echo "=========================================="
-    echo ""
-fi
+warn_open_beads "ys:chronicle" \
+    "CHRONICLER: Open chronicles detected" \
+    "/yf:diary" "/yf:disable"
 
 # ── Archivist check: warn about open archive beads ─────────────────
 if yf_is_archivist_on; then
-    OPEN_ARCHIVES=$(bd list --label=ys:archive --status=open --format=json 2>/dev/null || echo "[]")
-    ARCHIVE_COUNT=$(echo "$OPEN_ARCHIVES" | jq 'length' 2>/dev/null || echo "0")
-
-    if [ "$ARCHIVE_COUNT" -gt 0 ]; then
-        echo ""
-        echo "=========================================="
-        echo "  ARCHIVIST: Open archives detected"
-        echo "=========================================="
-        echo ""
-        echo "You have $ARCHIVE_COUNT open archive bead(s):"
-        echo ""
-        echo "$OPEN_ARCHIVES" | jq -r '.[] | "  - \(.id): \(.title)"' 2>/dev/null || echo "  (unable to list)"
-        echo ""
-        echo "Consider running /yf:archive_process to generate"
-        echo "documentation, or /yf:archive_disable to close"
-        echo "them without documentation."
-        echo ""
-        echo "=========================================="
-        echo ""
-    fi
+    warn_open_beads "ys:archive" \
+        "ARCHIVIST: Open archives detected" \
+        "/yf:archive_process" "/yf:archive_disable"
 fi
 
 exit 0

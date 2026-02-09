@@ -24,12 +24,11 @@ if [[ ! -f "$GATE_FILE" ]]; then
   # ── Beads safety net: warn if active plan has no beads ──────────────
   # Fail-open: entire check runs in a subshell so errors never block edits
   INTAKE_MARKER="${CLAUDE_PROJECT_DIR:-.}/.claude/.plan-intake-ok"
-  if [[ ! -f "$INTAKE_MARKER" ]]; then
+  PLANS_DIR="${CLAUDE_PROJECT_DIR:-.}/docs/plans"
+  if [[ ! -f "$INTAKE_MARKER" ]] && [[ -d "$PLANS_DIR" ]] && ls "$PLANS_DIR"/plan-*.md >/dev/null 2>&1; then
     (
       set +e
       command -v bd >/dev/null 2>&1 || exit 0
-      PLANS_DIR="${CLAUDE_PROJECT_DIR:-.}/docs/plans"
-      [[ -d "$PLANS_DIR" ]] || exit 0
       LATEST_PLAN=$(ls -t "$PLANS_DIR"/plan-*.md 2>/dev/null | head -1)
       [[ -n "$LATEST_PLAN" ]] || exit 0
       grep -q 'Status: Completed' "$LATEST_PLAN" 2>/dev/null && exit 0

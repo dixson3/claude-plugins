@@ -100,31 +100,22 @@ if [ "$YF_ENABLED" = "false" ]; then
   exit 0
 fi
 
-# --- Chronicle rules to conditionally skip ---
+# --- Feature-specific rules to conditionally skip ---
 CHRONICLE_RULES="yf-watch-for-chronicle-worthiness.md yf-plan-transition-chronicle.md"
-
-is_chronicle_rule() {
-  local target="$1"
-  local base
-  base=$(basename "$target")
-  case " $CHRONICLE_RULES " in
-    *" $base "*) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-# --- Archivist rules to conditionally skip ---
 ARCHIVIST_RULES="yf-watch-for-archive-worthiness.md yf-plan-transition-archive.md"
 
-is_archivist_rule() {
-  local target="$1"
+is_feature_rule() {
+  local ruleset="$1" target="$2"
   local base
   base=$(basename "$target")
-  case " $ARCHIVIST_RULES " in
+  case " $ruleset " in
     *" $base "*) return 0 ;;
     *) return 1 ;;
   esac
 }
+
+is_chronicle_rule() { is_feature_rule "$CHRONICLE_RULES" "$1"; }
+is_archivist_rule() { is_feature_rule "$ARCHIVIST_RULES" "$1"; }
 
 # --- Compute symlink target for a rule ---
 # Uses relative path when plugin is inside the project tree, absolute otherwise
