@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin
+# Yoshiko Flow (yf) Plugin — v2.4.0
 
 Unified plan lifecycle management, execution orchestration, context persistence, and diary generation for Claude projects.
 
@@ -23,7 +23,7 @@ Draft ───► Ready ───► Executing ◄──► Paused ───►
 
 | State | Trigger Phrase | What Happens |
 |---|---|---|
-| **Draft** | ExitPlanMode (auto) | Plan saved to `docs/plans/`. No beads. |
+| **Draft** | ExitPlanMode (auto) | Plan saved to `docs/plans/`. Auto-chain drives through to Executing. |
 | **Ready** | "the plan is ready" | Beads created. Gate open. Tasks deferred. |
 | **Executing** | "execute the plan" | Gate resolved. Tasks undeferred. Dispatch active. |
 | **Paused** | "pause the plan" | New gate. Pending tasks deferred. In-flight finish. |
@@ -47,6 +47,7 @@ Draft ───► Ready ───► Executing ◄──► Paused ───►
 | `/yf:task_pump [plan_idx]` | Pull ready beads and dispatch to agents in parallel |
 | `/yf:breakdown_task <task_id>` | Decompose a non-trivial task into child beads |
 | `/yf:select_agent <task_id>` | Match a task to the best available agent |
+| `/yf:plan_intake` | Intake checklist for plans entering outside the auto-chain |
 | `/yf:dismiss_gate` | Remove the plan gate (abandon plan lifecycle) |
 
 ### Context Persistence & Diary
@@ -57,6 +58,34 @@ Draft ───► Ready ───► Executing ◄──► Paused ───►
 | `/yf:recall` | Recall and summarize open chronicle beads |
 | `/yf:diary [plan_idx]` | Generate diary entries from open chronicles |
 | `/yf:disable` | Close all open chronicles without diary generation |
+
+### Configuration
+
+| Skill | Description |
+|-------|-------------|
+| `/yf:setup` | Configure Yoshiko Flow for a project (first-run and reconfiguration) |
+
+## Configuration
+
+All config lives in `.claude/yf.json` (gitignored). This single file holds both user settings and preflight lock state.
+
+```json
+{
+  "enabled": true,
+  "config": {
+    "artifact_dir": "docs",
+    "chronicler_enabled": true
+  },
+  "preflight": { "..." }
+}
+```
+
+- **`enabled`** — Master switch. When `false`, preflight removes all rule symlinks.
+- **`config.artifact_dir`** — Base directory for plans and diary (default: `docs`).
+- **`config.chronicler_enabled`** — When `false`, chronicle rules are not installed.
+- **`preflight`** — Lock state managed by `plugin-preflight.sh` (do not edit manually).
+
+Run `/yf:setup` to create or reconfigure this file interactively.
 
 ## Agents
 
