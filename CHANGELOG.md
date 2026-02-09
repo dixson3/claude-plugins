@@ -5,6 +5,28 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-02-08
+
+### Changed
+
+- **Beads local-only**: `.beads/` is now gitignored and not committed to git
+  - Removed `sync-branch` and `daemon.auto-sync` from `.beads/config.yaml`
+  - Deleted `beads-sync` branch (local and remote) and associated worktree
+  - Removed all beads git hooks (pre-commit, post-merge, post-checkout, pre-push, prepare-commit-msg)
+- **`yf-beads.md` rule rewrite**: Removed mandatory `bd sync` and `git push` language
+  - Added "Beads Are Local" section explaining local-only model
+  - Session close no longer auto-pushes; push only when user requests
+  - Removed "Work is NOT complete until git push succeeds" enforcement
+- **Preflight setup**: `bd init` → `bd init --skip-hooks` (git hooks serve no purpose in local-only mode)
+- Plugin version bumped: 2.4.0 → 2.5.0
+
+### Removed
+
+- Git tracking of `.beads/` directory (14 files untracked via `git rm --cached`)
+- `beads-sync` branch and worktree
+- Beads git hooks (`.beads/hooks/*`)
+- `bd sync` references from rules and quick reference
+
 ## [2.4.0] - 2026-02-08
 
 ### Changed

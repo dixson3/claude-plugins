@@ -1,3 +1,6 @@
+# Beads issue tracker (local-only, not committed)
+.beads/
+
 # Claude Code - local/personal files
 .claude/settings.local.json
 .claude/CLAUDE.local.md

@@ -15,7 +15,7 @@
     ],
     "directories": ["docs/plans", "docs/diary"],
     "setup": [
-      { "name": "beads", "check": "test -d .beads", "run": "bd init" }
+      { "name": "beads", "check": "test -d .beads", "run": "bd init --skip-hooks" }
     ]
   }
 }

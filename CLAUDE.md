@@ -188,4 +188,4 @@ Rules in `.claude/rules/yf-*.md` are gitignored symlinks pointing to `plugins/yf
 
 ## Current Plugins
 
-- **yf** (v2.4.0) - Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation
+- **yf** (v2.5.0) - Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation

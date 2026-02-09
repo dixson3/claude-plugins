@@ -1,6 +1,8 @@
-# Yoshiko Flow (yf) Plugin — v2.4.0
+# Yoshiko Flow (yf) Plugin — v2.5.0
 
 Unified plan lifecycle management, execution orchestration, context persistence, and diary generation for Claude projects.
+
+> **Note:** Beads (`.beads/`) is local-only — not committed to git. There is no sync branch or mandatory push for issue state.
 
 ## Overview
 
