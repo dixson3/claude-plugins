@@ -1,6 +1,6 @@
-# Yoshiko Flow (yf) Plugin — v2.5.0
+# Yoshiko Flow (yf) Plugin — v2.6.0
 
-Unified plan lifecycle management, execution orchestration, context persistence, and diary generation for Claude projects.
+Unified plan lifecycle management, execution orchestration, context persistence, diary generation, and research/decision archiving for Claude projects.
 
 > **Note:** Beads (`.beads/`) is local-only — not committed to git. There is no sync branch or mandatory push for issue state.
 
@@ -15,6 +15,8 @@ The yf plugin is a consolidated system that bridges plan documentation and track
 - **Agent selection** — Matches tasks to the best available agent
 - **Context persistence** — Captures context as chronicle beads across sessions
 - **Diary generation** — Consolidates chronicles into markdown diary entries
+- **Research archiving** — Captures research findings with sources as permanent documentation
+- **Decision records** — Documents design decisions with alternatives and rationale
 - **Enforcement** — Gates, defer/undefer, and hooks prevent out-of-state operations
 
 ## Plan Lifecycle
@@ -61,6 +63,15 @@ Draft ───► Ready ───► Executing ◄──► Paused ───►
 | `/yf:diary [plan_idx]` | Generate diary entries from open chronicles |
 | `/yf:disable` | Close all open chronicles without diary generation |
 
+### Research & Decision Archiving
+
+| Skill | Description |
+|-------|-------------|
+| `/yf:archive type:<type> [area:<area>]` | Capture research findings or design decisions as archive beads |
+| `/yf:archive_process [plan_idx]` | Process archive beads into permanent documentation |
+| `/yf:archive_disable` | Close all open archive beads without generating documentation |
+| `/yf:archive_suggest [--draft] [--since]` | Scan git history for archive candidates |
+
 ### Configuration
 
 | Skill | Description |
@@ -76,7 +87,8 @@ All config lives in `.claude/yf.json` (gitignored). This single file holds both 
   "enabled": true,
   "config": {
     "artifact_dir": "docs",
-    "chronicler_enabled": true
+    "chronicler_enabled": true,
+    "archivist_enabled": true
   },
   "preflight": { "..." }
 }
@@ -85,6 +97,7 @@ All config lives in `.claude/yf.json` (gitignored). This single file holds both 
 - **`enabled`** — Master switch. When `false`, preflight removes all rule symlinks.
 - **`config.artifact_dir`** — Base directory for plans and diary (default: `docs`).
 - **`config.chronicler_enabled`** — When `false`, chronicle rules are not installed.
+- **`config.archivist_enabled`** — When `false`, archivist rules are not installed.
 - **`preflight`** — Lock state managed by `plugin-preflight.sh` (do not edit manually).
 
 Run `/yf:setup` to create or reconfigure this file interactively.
@@ -95,8 +108,9 @@ Run `/yf:setup` to create or reconfigure this file interactively.
 |-------|-------------|
 | `yf_recall` | Context recovery agent — synthesizes open chronicles into a summary |
 | `yf_diary` | Diary generation agent — consolidates chronicles into markdown entries |
+| `yf_archivist` | Archive processing agent — converts archive beads into research/decision documentation |
 
-## Rules (9)
+## Rules (11)
 
 All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignored, pointing to `plugins/yf/rules/`):
 
@@ -111,6 +125,8 @@ All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignore
 | `yf-plan-intake.md` | Catches manual/pasted plans for lifecycle processing |
 | `yf-watch-for-chronicle-worthiness.md` | Monitors for chronicle-worthy events |
 | `yf-plan-transition-chronicle.md` | Captures planning context during transitions |
+| `yf-watch-for-archive-worthiness.md` | Monitors for archive-worthy research and decisions |
+| `yf-plan-transition-archive.md` | Archives research and decisions during plan transitions |
 
 ## Scripts
 
@@ -120,6 +136,7 @@ All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignore
 | `yf-config.sh` | Sourceable shell library for config access |
 | `plan-exec.sh` | Deterministic state transitions for plan execution |
 | `pump-state.sh` | Tracks dispatched/done beads to prevent double-dispatch |
+| `archive-suggest.sh` | Scans git commits for research/decision archive candidates |
 
 ## Hooks (5)
 

@@ -56,6 +56,8 @@ FILE_PATH=$(echo "$TOOL_INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/n
 # ── Exempt file patterns (allow even with gate active) ────────────────
 case "$FILE_PATH" in
     */docs/plans/*)          exit 0 ;; # Plan lifecycle artifacts
+    */docs/research/*)       exit 0 ;; # Archivist research docs
+    */docs/decisions/*)      exit 0 ;; # Archivist decision docs
     */.claude/*)             exit 0 ;; # Config, rules, settings
     */CHANGELOG.md)          exit 0 ;; # Documentation during transitions
     */MEMORY.md)             exit 0 ;; # Session context always editable

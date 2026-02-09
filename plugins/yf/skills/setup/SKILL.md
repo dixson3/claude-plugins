@@ -22,6 +22,7 @@ Extract current values (defaults shown):
 - `enabled` → `true`
 - `config.artifact_dir` → `"docs"`
 - `config.chronicler_enabled` → `true`
+- `config.archivist_enabled` → `true`
 
 If reconfiguring, show a summary:
 ```
@@ -29,6 +30,7 @@ Current configuration:
   Enabled: true
   Artifact directory: docs
   Chronicler: enabled
+  Archivist: enabled
 ```
 
 ### 2. Ask questions
@@ -47,6 +49,10 @@ Use AskUserQuestion with these questions (pre-populate descriptions with current
 - Options: "Yes (Recommended)", "No"
 - Header: "Chronicler"
 
+**Question 4**: "Should the archivist (research & decision documentation) be enabled?"
+- Options: "Yes (Recommended)", "No"
+- Header: "Archivist"
+
 ### 3. Write config
 
 All config goes to `.claude/yf.json` (gitignored, local-only):
@@ -60,18 +66,20 @@ if [ -f "$YF_CONFIG" ]; then
   jq --argjson enabled ENABLED_BOOL \
      --arg artifact_dir "ARTIFACT_DIR" \
      --argjson chronicler CHRONICLER_BOOL \
-     '. + {enabled: $enabled, config: {artifact_dir: $artifact_dir, chronicler_enabled: $chronicler}}' \
+     --argjson archivist ARCHIVIST_BOOL \
+     '. + {enabled: $enabled, config: {artifact_dir: $artifact_dir, chronicler_enabled: $chronicler, archivist_enabled: $archivist}}' \
      "$YF_CONFIG" > "$YF_CONFIG.tmp" && mv "$YF_CONFIG.tmp" "$YF_CONFIG"
 else
   jq -n --argjson enabled ENABLED_BOOL \
         --arg artifact_dir "ARTIFACT_DIR" \
         --argjson chronicler CHRONICLER_BOOL \
-        '{enabled: $enabled, config: {artifact_dir: $artifact_dir, chronicler_enabled: $chronicler}}' \
+        --argjson archivist ARCHIVIST_BOOL \
+        '{enabled: $enabled, config: {artifact_dir: $artifact_dir, chronicler_enabled: $chronicler, archivist_enabled: $archivist}}' \
         > "$YF_CONFIG"
 fi
 ```
 
-Replace `ENABLED_BOOL`, `ARTIFACT_DIR`, `CHRONICLER_BOOL` with actual values from the user's answers.
+Replace `ENABLED_BOOL`, `ARTIFACT_DIR`, `CHRONICLER_BOOL`, `ARCHIVIST_BOOL` with actual values from the user's answers.
 
 ### 4. Run preflight
 
@@ -93,8 +101,9 @@ Initial setup complete.
   Enabled: true
   Artifact directory: docs
   Chronicler: enabled
+  Archivist: enabled
   Config: local (.claude/yf.json)
-  Rules installed: 9
+  Rules installed: 11
 ```
 
 **Reconfiguration with changes:**
@@ -102,8 +111,9 @@ Initial setup complete.
 Configuration updated.
   Enabled: true → false
   Chronicler: enabled → disabled
+  Archivist: enabled → disabled
   Config: local (.claude/yf.json)
-  Rules removed: 9
+  Rules removed: 11
 ```
 
 **No changes:**
@@ -122,3 +132,5 @@ No changes — configuration unchanged.
 | Artifact dir: (custom) | `config.artifact_dir` | user-provided path |
 | Chronicler: Yes | `config.chronicler_enabled` | `true` |
 | Chronicler: No | `config.chronicler_enabled` | `false` |
+| Archivist: Yes | `config.archivist_enabled` | `true` |
+| Archivist: No | `config.archivist_enabled` | `false` |

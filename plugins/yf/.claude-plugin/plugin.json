@@ -1,7 +1,7 @@
 {
   "name": "yf",
-  "version": "2.5.0",
-  "description": "Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation",
+  "version": "2.6.0",
+  "description": "Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, diary generation, and research/decision archiving",
   "author": {
     "name": "James Dixson",
     "email": "dixson3@gmail.com"

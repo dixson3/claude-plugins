@@ -5,6 +5,37 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-02-08
+
+### Added
+
+- **Archivist capability**: Captures research findings and design decisions as permanent, indexed documentation
+  - `/yf:archive type:<type> [area:<area>]` — Create archive beads for research findings or design decisions with structured templates
+  - `/yf:archive_process [plan_idx]` — Process archive beads into `docs/research/` and `docs/decisions/` SUMMARY.md files with indexes
+  - `/yf:archive_disable` — Close open archive beads without generating documentation
+  - `/yf:archive_suggest [--draft] [--since]` — Scan git history for archive candidates (research/decision keywords)
+  - `yf_archivist` agent — Converts archive beads into structured documentation with index management
+  - `yf-watch-for-archive-worthiness.md` rule — Monitors for research and decision events worth archiving
+  - `yf-plan-transition-archive.md` rule — Archives research/decisions during plan auto-chain transitions
+  - `archive-suggest.sh` script — Commit scanner for research/decision activity keywords
+- **Config-aware archivist**: `config.archivist_enabled` flag (default: true) controls archivist rule installation
+  - `yf_is_archivist_on()` function in `yf-config.sh`
+  - Preflight conditionally installs/removes archivist rules based on config
+  - `/yf:setup` asks archivist configuration question (Q4)
+- **Archive output structure**: `docs/research/<topic>/SUMMARY.md` and `docs/decisions/DEC-NNN-<slug>/SUMMARY.md` with `_index.md` files
+- **Beads label scheme**: `ys:archive`, `ys:archive:research`, `ys:archive:decision`, `ys:archive:draft`, `ys:area:<slug>`
+- **Lifecycle integration**:
+  - `pre-push-diary.sh` warns about open archive beads (advisory, non-blocking)
+  - `execute_plan` completion step processes archive beads into documentation
+  - `code-gate.sh` exempts `docs/research/` and `docs/decisions/` paths
+- Test scenarios: `unit-archivist-config.yaml`, `unit-preflight-archivist.yaml`, `unit-archive-suggest.yaml`, `unit-pre-push-archive.yaml`
+
+### Changed
+
+- Plugin version bumped: 2.5.0 → 2.6.0
+- Plugin description updated to include research/decision archiving
+- `preflight.json`: Added archivist rules and `docs/research`, `docs/decisions` directories
+
 ## [2.5.0] - 2026-02-08
 
 ### Changed

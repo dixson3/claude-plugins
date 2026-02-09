@@ -59,12 +59,14 @@ fi
 YF_ENABLED=true
 ARTIFACT_DIR="docs"
 CHRONICLER_ENABLED=true
+ARCHIVIST_ENABLED=true
 
 if yf_config_exists; then
   MERGED=$(yf_merged_config)
   YF_ENABLED=$(echo "$MERGED" | jq -r 'if .enabled == null then true else .enabled end' 2>/dev/null)
   ARTIFACT_DIR=$(echo "$MERGED" | jq -r '.config.artifact_dir // "docs"' 2>/dev/null)
   CHRONICLER_ENABLED=$(echo "$MERGED" | jq -r 'if .config.chronicler_enabled == null then true else .config.chronicler_enabled end' 2>/dev/null)
+  ARCHIVIST_ENABLED=$(echo "$MERGED" | jq -r 'if .config.archivist_enabled == null then true else .config.archivist_enabled end' 2>/dev/null)
 fi
 
 # --- Disabled: remove all yf symlinks/files ---
@@ -106,6 +108,19 @@ is_chronicle_rule() {
   local base
   base=$(basename "$target")
   case " $CHRONICLE_RULES " in
+    *" $base "*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# --- Archivist rules to conditionally skip ---
+ARCHIVIST_RULES="yf-watch-for-archive-worthiness.md yf-plan-transition-archive.md"
+
+is_archivist_rule() {
+  local target="$1"
+  local base
+  base=$(basename "$target")
+  case " $ARCHIVIST_RULES " in
     *" $base "*) return 0 ;;
     *) return 1 ;;
   esac
@@ -156,12 +171,20 @@ if $FAST_PATH && [ -f "$PPRE" ]; then
   LOCK_RULE_COUNT=$(echo "$LOCK" | jq -r ".plugins.\"$PLUGIN_NAME\".artifacts.rules | length" 2>/dev/null)
   [ -z "$LOCK_RULE_COUNT" ] && LOCK_RULE_COUNT=0
 
-  # Account for chronicle rules being skipped when chronicler disabled
+  # Account for chronicle/archivist rules being skipped when disabled
   EXPECTED_COUNT=$RULE_COUNT
   if [ "$CHRONICLER_ENABLED" = "false" ]; then
     j=0; while [ $j -lt "$RULE_COUNT" ]; do
       TARGET_REL=$(jq -r ".artifacts.rules[$j].target" "$PPRE" 2>/dev/null)
       if is_chronicle_rule "$TARGET_REL"; then
+        EXPECTED_COUNT=$((EXPECTED_COUNT - 1))
+      fi
+    j=$((j + 1)); done
+  fi
+  if [ "$ARCHIVIST_ENABLED" = "false" ]; then
+    j=0; while [ $j -lt "$RULE_COUNT" ]; do
+      TARGET_REL=$(jq -r ".artifacts.rules[$j].target" "$PPRE" 2>/dev/null)
+      if is_archivist_rule "$TARGET_REL"; then
         EXPECTED_COUNT=$((EXPECTED_COUNT - 1))
       fi
     j=$((j + 1)); done
@@ -177,6 +200,11 @@ if $FAST_PATH && [ -f "$PPRE" ]; then
 
     # Skip chronicle rules when chronicler disabled
     if [ "$CHRONICLER_ENABLED" = "false" ] && is_chronicle_rule "$TARGET_REL"; then
+      j=$((j + 1)); continue
+    fi
+
+    # Skip archivist rules when archivist disabled
+    if [ "$ARCHIVIST_ENABLED" = "false" ] && is_archivist_rule "$TARGET_REL"; then
       j=$((j + 1)); continue
     fi
 
@@ -282,6 +310,11 @@ j=0; while [ $j -lt "$RULE_COUNT" ]; do
     j=$((j + 1)); continue
   fi
 
+  # Skip archivist rules when archivist disabled
+  if [ "$ARCHIVIST_ENABLED" = "false" ] && is_archivist_rule "$TARGET_REL"; then
+    j=$((j + 1)); continue
+  fi
+
   MANIFEST_TARGETS="$MANIFEST_TARGETS
 $TARGET_REL"
 
@@ -346,6 +379,19 @@ if [ "$CHRONICLER_ENABLED" = "false" ]; then
       rm -f "$CHRON_ABS"
       SUMMARY_REMOVE=$((SUMMARY_REMOVE + 1))
       echo "preflight: $PLUGIN_NAME — removed (chronicler disabled) $CHRON_TARGET"
+    fi
+  done
+fi
+
+# --- Remove archivist rules if archivist disabled and they exist ---
+if [ "$ARCHIVIST_ENABLED" = "false" ]; then
+  for ARCH_RULE in $ARCHIVIST_RULES; do
+    ARCH_TARGET=".claude/rules/$ARCH_RULE"
+    ARCH_ABS="$PROJECT_DIR/$ARCH_TARGET"
+    if [ -e "$ARCH_ABS" ] || [ -L "$ARCH_ABS" ]; then
+      rm -f "$ARCH_ABS"
+      SUMMARY_REMOVE=$((SUMMARY_REMOVE + 1))
+      echo "preflight: $PLUGIN_NAME — removed (archivist disabled) $ARCH_TARGET"
     fi
   done
 fi

@@ -62,3 +62,16 @@ yf_is_chronicler_on() {
   val=$(yf_merged_config | jq -r 'if .config.chronicler_enabled == null then true else .config.chronicler_enabled end' 2>/dev/null)
   [ "$val" != "false" ]
 }
+
+# yf_is_archivist_on — returns 0 if archivist enabled, 1 if disabled
+yf_is_archivist_on() {
+  if ! command -v jq >/dev/null 2>&1; then
+    return 0  # fail-open
+  fi
+  if ! yf_config_exists; then
+    return 0  # no config = enabled by default
+  fi
+  local val
+  val=$(yf_merged_config | jq -r 'if .config.archivist_enabled == null then true else .config.archivist_enabled end' 2>/dev/null)
+  [ "$val" != "false" ]
+}

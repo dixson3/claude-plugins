@@ -121,9 +121,10 @@ When `plan-exec.sh status` returns `completed` (which also closes any chronicle 
 
 1. Capture completion context: Invoke `/yf:capture topic:completion` to preserve the execution summary as a chronicle bead before closing everything out.
 2. Generate diary: Invoke `/yf:diary plan:<idx>` to process all plan chronicles into diary entries. This is scoped to the plan so it only processes chronicles tagged with that plan label.
-3. Update plan file status to "Completed"
-4. Close root epic if not already closed
-5. Report completion summary (include diary file paths in the report)
+3. Process archives: Invoke `/yf:archive_process plan:<idx>` to process plan-scoped archive beads into permanent documentation (research summaries and decision records).
+4. Update plan file status to "Completed"
+5. Close root epic if not already closed
+6. Report completion summary (include diary file paths in the report)
 
 ```
 Plan Execution Complete

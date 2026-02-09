@@ -39,4 +39,28 @@ if [ "$COUNT" -gt 0 ]; then
     echo ""
 fi
 
+# ── Archivist check: warn about open archive beads ─────────────────
+if yf_is_archivist_on; then
+    OPEN_ARCHIVES=$(bd list --label=ys:archive --status=open --format=json 2>/dev/null || echo "[]")
+    ARCHIVE_COUNT=$(echo "$OPEN_ARCHIVES" | jq 'length' 2>/dev/null || echo "0")
+
+    if [ "$ARCHIVE_COUNT" -gt 0 ]; then
+        echo ""
+        echo "=========================================="
+        echo "  ARCHIVIST: Open archives detected"
+        echo "=========================================="
+        echo ""
+        echo "You have $ARCHIVE_COUNT open archive bead(s):"
+        echo ""
+        echo "$OPEN_ARCHIVES" | jq -r '.[] | "  - \(.id): \(.title)"' 2>/dev/null || echo "  (unable to list)"
+        echo ""
+        echo "Consider running /yf:archive_process to generate"
+        echo "documentation, or /yf:archive_disable to close"
+        echo "them without documentation."
+        echo ""
+        echo "=========================================="
+        echo ""
+    fi
+fi
+
 exit 0
