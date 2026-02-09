@@ -5,15 +5,12 @@
 set -e
 
 # ── Enabled guard: exit early if yf disabled ──────────────────────────
-YF_JSON="${CLAUDE_PROJECT_DIR:-.}/.claude/yf.json"
-if [ -f "$YF_JSON" ] && command -v jq >/dev/null 2>&1; then
-  [ "$(jq -r 'if .enabled == null then true else .enabled end' "$YF_JSON" 2>/dev/null)" = "false" ] && exit 0
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+. "$SCRIPT_DIR/scripts/yf-config.sh"
+yf_is_enabled || exit 0
 
 # ── Chronicler guard: exit early if chronicler disabled ───────────────
-if [ -f "$YF_JSON" ] && command -v jq >/dev/null 2>&1; then
-  [ "$(jq -r 'if .config.chronicler_enabled == null then true else .config.chronicler_enabled end' "$YF_JSON" 2>/dev/null)" = "false" ] && exit 0
-fi
+yf_is_chronicler_on || exit 0
 
 if ! command -v bd &> /dev/null; then
     echo "beads-cli not found, skipping chronicle check"

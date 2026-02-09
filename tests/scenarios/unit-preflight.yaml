@@ -7,7 +7,7 @@ steps:
   # Case 1: No lock file → installs all rules
   - name: "fresh_install_creates_rules"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/rules/yf-beads.md"
       rm -f "$WORK_DIR/.claude/rules/yf-beads-drive-tasks.md"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
@@ -17,29 +17,45 @@ steps:
       - type: output_contains
         value: "installed"
 
-  # Case 2: Lock file created after preflight
-  - name: "lock_file_created"
+  # Case 2: yf.json created with v2 structure after preflight
+  - name: "yf_json_created_v2"
     run: |
       if [ ! -f "$WORK_DIR/.claude/yf.json" ]; then
-        echo "FAIL: lock file not created"
+        echo "FAIL: yf.json not created"
         exit 1
       fi
-      jq -r '.version' "$WORK_DIR/.claude/yf.json"
+      VERSION=$(jq -r '.version' "$WORK_DIR/.claude/yf.json")
+      if [ "$VERSION" = "2" ]; then
+        echo "OK: version 2"
+      else
+        echo "FAIL: expected version 2, got $VERSION"
+        exit 1
+      fi
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
-        value: "1"
+        value: "OK"
 
-  # Case 3: Lock file contains yf plugin
-  - name: "lock_has_yf_plugin"
+  # Case 3: Preflight data in yf.local.json (not yf.json)
+  - name: "preflight_in_local"
     run: |
-      YF=$(jq -r '.preflight.plugins.yf.version' "$WORK_DIR/.claude/yf.json")
-      if [ -z "$YF" ] || [ "$YF" = "null" ]; then
-        echo "FAIL: yf not in lock"
+      if [ ! -f "$WORK_DIR/.claude/yf.local.json" ]; then
+        echo "FAIL: yf.local.json not created"
         exit 1
       fi
-      echo "OK: yf=$YF"
+      YF=$(jq -r '.preflight.plugins.yf.version' "$WORK_DIR/.claude/yf.local.json")
+      if [ -z "$YF" ] || [ "$YF" = "null" ]; then
+        echo "FAIL: yf not in local lock"
+        exit 1
+      fi
+      # Verify yf.json does NOT have preflight
+      HAS_PREFLIGHT=$(jq -e '.preflight' "$WORK_DIR/.claude/yf.json" >/dev/null 2>&1 && echo "yes" || echo "no")
+      if [ "$HAS_PREFLIGHT" = "yes" ]; then
+        echo "FAIL: yf.json should not have preflight"
+        exit 1
+      fi
+      echo "OK: preflight in local, yf=$YF"
     assertions:
       - type: exit_code
         value: "0"
@@ -70,7 +86,7 @@ steps:
   # Case 6: Single plugin processed correctly
   - name: "single_plugin_processed"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
@@ -89,7 +105,7 @@ steps:
   # Case 7: Directories created when missing
   - name: "creates_missing_directories"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -rf "$WORK_DIR/docs/plans" "$WORK_DIR/docs/diary"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
@@ -105,10 +121,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 8: Checksums recorded in lock
-  - name: "checksums_in_lock"
+  # Case 8: Checksums recorded in local lock
+  - name: "checksums_in_local_lock"
     run: |
-      CKSUM=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].checksum' "$WORK_DIR/.claude/yf.json")
+      CKSUM=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].checksum' "$WORK_DIR/.claude/yf.local.json")
       if echo "$CKSUM" | grep -q '^sha256:'; then
         echo "OK: checksum format correct: $CKSUM"
       else
@@ -132,4 +148,4 @@ steps:
         value: "warn"
 
 teardown:
-  - "rm -f .claude/yf.json"
+  - "rm -f .claude/yf.json .claude/yf.local.json"

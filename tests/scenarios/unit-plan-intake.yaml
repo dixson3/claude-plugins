@@ -19,7 +19,52 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Rule contains key detection triggers
+  # Case 2: plan_intake skill file exists
+  - name: "skill_file_exists"
+    run: |
+      if [ -f "$PLUGIN_DIR/plugins/yf/skills/plan_intake/SKILL.md" ]; then
+        echo "OK: skill file exists"
+      else
+        echo "FAIL: skill file not found"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Skill has user_invocable: true
+  - name: "skill_is_user_invocable"
+    run: |
+      if grep -q "user_invocable: true" "$PLUGIN_DIR/plugins/yf/skills/plan_intake/SKILL.md"; then
+        echo "OK: skill is user_invocable"
+      else
+        echo "FAIL: skill not user_invocable"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Rule references /yf:plan_intake skill
+  - name: "rule_references_skill"
+    run: |
+      if grep -q '/yf:plan_intake' "$PLUGIN_DIR/plugins/yf/rules/yf-plan-intake.md"; then
+        echo "OK: rule references skill"
+      else
+        echo "FAIL: rule does not reference skill"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Rule contains key detection triggers
   - name: "has_detection_section"
     run: |
       if grep -q "## Detection" "$PLUGIN_DIR/plugins/yf/rules/yf-plan-intake.md"; then

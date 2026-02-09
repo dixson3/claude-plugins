@@ -1,0 +1,173 @@
+name: "Unit: yf-config.sh — config merge semantics"
+
+setup:
+  - "mkdir -p .claude/rules docs/plans docs/diary"
+
+steps:
+  # Case 1: Both files missing → defaults to enabled
+  - name: "both_missing_defaults_enabled"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      if yf_is_enabled; then
+        echo "OK: defaults to enabled"
+      else
+        echo "FAIL: should default to enabled"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Only yf.json → reads shared config
+  - name: "only_yf_json_reads_shared"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.local.json"
+      mkdir -p "$WORK_DIR/.claude"
+      echo '{"version":2,"enabled":true,"config":{"artifact_dir":"docs","chronicler_enabled":true}}' > "$WORK_DIR/.claude/yf.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      MERGED=$(yf_merged_config)
+      ENABLED=$(echo "$MERGED" | jq -r '.enabled')
+      ART_DIR=$(echo "$MERGED" | jq -r '.config.artifact_dir')
+      if [ "$ENABLED" = "true" ] && [ "$ART_DIR" = "docs" ]; then
+        echo "OK: reads shared config"
+      else
+        echo "FAIL: enabled=$ENABLED artifact_dir=$ART_DIR"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Only yf.local.json → reads local config
+  - name: "only_local_reads_local"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      mkdir -p "$WORK_DIR/.claude"
+      echo '{"enabled":false,"config":{"artifact_dir":"output","chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.local.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      if yf_is_enabled; then
+        echo "FAIL: should be disabled from local"
+        exit 1
+      fi
+      echo "OK: reads local config"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Both files, local overrides enabled=false → local wins
+  - name: "local_overrides_enabled"
+    run: |
+      mkdir -p "$WORK_DIR/.claude"
+      echo '{"version":2,"enabled":true,"config":{"artifact_dir":"docs","chronicler_enabled":true}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"enabled":false}' > "$WORK_DIR/.claude/yf.local.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      if yf_is_enabled; then
+        echo "FAIL: local override should disable"
+        exit 1
+      fi
+      echo "OK: local override wins"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Both files, local overrides chronicler → local wins
+  - name: "local_overrides_chronicler"
+    run: |
+      mkdir -p "$WORK_DIR/.claude"
+      echo '{"version":2,"enabled":true,"config":{"artifact_dir":"docs","chronicler_enabled":true}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.local.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      if yf_is_chronicler_on; then
+        echo "FAIL: local override should disable chronicler"
+        exit 1
+      fi
+      echo "OK: local chronicler override wins"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: Malformed local → falls back to base
+  - name: "malformed_local_fallback"
+    run: |
+      mkdir -p "$WORK_DIR/.claude"
+      echo '{"version":2,"enabled":true,"config":{"artifact_dir":"docs","chronicler_enabled":true}}' > "$WORK_DIR/.claude/yf.json"
+      echo 'NOT VALID JSON!!!' > "$WORK_DIR/.claude/yf.local.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      # With malformed local, merge fails, but yf_is_enabled should still work (fail-open)
+      if yf_is_enabled; then
+        echo "OK: fail-open on malformed local"
+      else
+        echo "FAIL: should fail-open"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: yf_read_field works on merged config
+  - name: "read_field_merged"
+    run: |
+      mkdir -p "$WORK_DIR/.claude"
+      echo '{"version":2,"enabled":true,"config":{"artifact_dir":"docs","chronicler_enabled":true}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"config":{"artifact_dir":"output"}}' > "$WORK_DIR/.claude/yf.local.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      VAL=$(yf_read_field '.config.artifact_dir')
+      if [ "$VAL" = "output" ]; then
+        echo "OK: read_field returns merged value"
+      else
+        echo "FAIL: expected 'output', got '$VAL'"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: yf_config_exists returns correctly
+  - name: "config_exists_check"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      if yf_config_exists; then
+        echo "FAIL: should not exist when both missing"
+        exit 1
+      fi
+      echo '{"version":2}' > "$WORK_DIR/.claude/yf.json"
+      # Re-source to pick up new paths (already set via env)
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      if yf_config_exists; then
+        echo "OK: exists when yf.json present"
+      else
+        echo "FAIL: should exist when yf.json present"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .claude/yf.json .claude/yf.local.json"

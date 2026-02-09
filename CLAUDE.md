@@ -177,8 +177,12 @@ Plugins declare their artifacts (rules, directories, setup commands) in `.claude
 - **Remove**: Rules that were in the lock but are no longer in the manifest are deleted
 - **Conflict**: If a user modified an installed rule and the source also changed, the update is skipped with a warning
 
-State is tracked in `.claude/yf.json` under the `preflight` key (project-level, gitignored). Migration from the old `.claude/plugin-lock.json` format is automatic.
+Configuration uses a two-file model:
+- **`.claude/yf.json`** — Committable shared config (`version`, `enabled`, `config`). Checked into git so team members share settings.
+- **`.claude/yf.local.json`** — Gitignored local overrides + preflight lock state (`updated`, `preflight`). Local keys win on merge.
+
+Migration from `plugin-lock.json` (v0) and single-file `yf.json` (v1) formats is automatic.
 
 ## Current Plugins
 
-- **yf** (v2.0.0) - Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation
+- **yf** (v2.2.0) - Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation

@@ -5,9 +5,13 @@
 # and Claude Code plugin cache). Reads preflight.json directly — no
 # marketplace.json iteration or topological sort needed.
 #
-# Config-aware: reads enabled, config.artifact_dir, config.chronicler_enabled
-# from yf.json. Outputs YF_SETUP_NEEDED signal when no yf.json exists and
-# no old lock to migrate.
+# Two-file config model:
+#   .claude/yf.json       — committable shared config (version, enabled, config)
+#   .claude/yf.local.json — gitignored local overrides + preflight lock state
+#
+# Config-aware: reads merged config via yf-config.sh library.
+# Outputs YF_SETUP_NEEDED signal when no config files exist and no old lock
+# to migrate.
 #
 # Compatible with bash 3.2+ (macOS default).
 #
@@ -28,6 +32,7 @@ if [ ! -d "$PROJECT_DIR" ]; then
 fi
 
 LOCK_FILE="$PROJECT_DIR/.claude/yf.json"
+LOCAL_FILE="$PROJECT_DIR/.claude/yf.local.json"
 OLD_LOCK_FILE="$PROJECT_DIR/.claude/plugin-lock.json"
 
 PLUGIN_NAME="yf"
@@ -56,57 +61,93 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
-# --- Migration: plugin-lock.json → yf.json ---
+# --- Source the config library ---
+. "$SCRIPT_DIR/yf-config.sh"
+
+# --- Migration: plugin-lock.json → yf.json (v0 → v1) ---
 if [ ! -f "$LOCK_FILE" ] && [ -f "$OLD_LOCK_FILE" ]; then
   echo "preflight: migrating plugin-lock.json → yf.json"
   OLD_DATA=$(cat "$OLD_LOCK_FILE")
+  # Create v1 format (all-in-one) — v1→v2 migration below will split it
   MIGRATED=$(echo "$OLD_DATA" | jq '{version: 1, enabled: true, config: {artifact_dir: "docs", chronicler_enabled: true}, updated: .updated, preflight: {plugins: .plugins}}')
   mkdir -p "$(dirname "$LOCK_FILE")"
   echo "$MIGRATED" | jq '.' > "$LOCK_FILE"
   rm -f "$OLD_LOCK_FILE"
 fi
 
+# --- Migration: v1 → v2 (split yf.json into yf.json + yf.local.json) ---
+if [ -f "$LOCK_FILE" ]; then
+  LOCK_VERSION=$(jq -r '.version // 1' "$LOCK_FILE" 2>/dev/null)
+  if [ "$LOCK_VERSION" = "1" ] && jq -e '.preflight' "$LOCK_FILE" >/dev/null 2>&1; then
+    echo "preflight: migrating yf.json v1 → v2 (splitting config + local)"
+    # Extract local state (updated + preflight) → yf.local.json
+    jq '{updated: .updated, preflight: .preflight}' "$LOCK_FILE" > "$LOCAL_FILE"
+    # Keep shared config (version 2 + enabled + config) → yf.json
+    jq '{version: 2, enabled: .enabled, config: .config}' "$LOCK_FILE" > "$LOCK_FILE.tmp"
+    mv "$LOCK_FILE.tmp" "$LOCK_FILE"
+  fi
+fi
+
 # --- Setup needed signal ---
-if [ ! -f "$LOCK_FILE" ]; then
+if ! yf_config_exists; then
   echo "YF_SETUP_NEEDED"
-  echo "preflight: no yf.json found — run /yf:setup to configure"
+  echo "preflight: no config found — run /yf:setup to configure"
   # Continue with defaults to install artifacts on first run
 fi
 
-# --- Read config from yf.json ---
+# --- Read config from merged config ---
 YF_ENABLED=true
 ARTIFACT_DIR="docs"
 CHRONICLER_ENABLED=true
 
-if [ -f "$LOCK_FILE" ]; then
-  YF_ENABLED=$(jq -r 'if .enabled == null then true else .enabled end' "$LOCK_FILE" 2>/dev/null)
-  ARTIFACT_DIR=$(jq -r '.config.artifact_dir // "docs"' "$LOCK_FILE" 2>/dev/null)
-  CHRONICLER_ENABLED=$(jq -r 'if .config.chronicler_enabled == null then true else .config.chronicler_enabled end' "$LOCK_FILE" 2>/dev/null)
+if yf_config_exists; then
+  MERGED=$(yf_merged_config)
+  YF_ENABLED=$(echo "$MERGED" | jq -r 'if .enabled == null then true else .enabled end' 2>/dev/null)
+  ARTIFACT_DIR=$(echo "$MERGED" | jq -r '.config.artifact_dir // "docs"' 2>/dev/null)
+  CHRONICLER_ENABLED=$(echo "$MERGED" | jq -r 'if .config.chronicler_enabled == null then true else .config.chronicler_enabled end' 2>/dev/null)
 fi
 
 # --- Disabled: remove all yf rules and write minimal lock ---
 if [ "$YF_ENABLED" = "false" ]; then
-  # Read existing lock to find installed rules
-  if [ -f "$LOCK_FILE" ]; then
+  # Read existing lock to find installed rules (from local file)
+  LOCK_RULES=""
+  if [ -f "$LOCAL_FILE" ]; then
+    LOCK_RULES=$(jq -r '.preflight.plugins.yf.artifacts.rules[]?.target // empty' "$LOCAL_FILE" 2>/dev/null)
+  elif [ -f "$LOCK_FILE" ]; then
+    # Fallback: check main file in case migration hasn't happened yet
     LOCK_RULES=$(jq -r '.preflight.plugins.yf.artifacts.rules[]?.target // empty' "$LOCK_FILE" 2>/dev/null)
-    REMOVED=0
-    for TARGET in $LOCK_RULES; do
-      [ -z "$TARGET" ] && continue
-      TARGET_ABS="$PROJECT_DIR/$TARGET"
-      if [ -f "$TARGET_ABS" ]; then
-        rm "$TARGET_ABS"
-        REMOVED=$((REMOVED + 1))
-        echo "preflight: yf — removed (disabled) $TARGET"
-      fi
-    done
-    # Write minimal lock preserving config
-    jq '{version: .version, enabled: .enabled, config: .config, updated: (now | strftime("%Y-%m-%dT%H:%M:%SZ")), preflight: {plugins: {yf: {version: "'$(jq -r '.version' "$PJSON")'", artifacts: {rules: [], directories: [], setup: []}}}}}' "$LOCK_FILE" > "$LOCK_FILE.tmp"
-    mv "$LOCK_FILE.tmp" "$LOCK_FILE"
-    if [ "$REMOVED" -gt 0 ]; then
-      echo "preflight: disabled — removed $REMOVED rules"
-    else
-      echo "preflight: disabled — no rules to remove"
+  fi
+  REMOVED=0
+  for TARGET in $LOCK_RULES; do
+    [ -z "$TARGET" ] && continue
+    TARGET_ABS="$PROJECT_DIR/$TARGET"
+    if [ -f "$TARGET_ABS" ]; then
+      rm "$TARGET_ABS"
+      REMOVED=$((REMOVED + 1))
+      echo "preflight: yf — removed (disabled) $TARGET"
     fi
+  done
+  # Write minimal preflight state to local file (preserve any local overrides)
+  CUR_VER=$(jq -r '.version' "$PJSON" 2>/dev/null)
+  NEW_LOCAL_DISABLED=$(jq -n --arg ver "$CUR_VER" '{
+    updated: (now | strftime("%Y-%m-%dT%H:%M:%SZ")),
+    preflight: {plugins: {yf: {version: $ver, artifacts: {rules: [], directories: [], setup: []}}}}
+  }')
+  if [ -f "$LOCAL_FILE" ]; then
+    cat "$LOCAL_FILE" | jq --argjson new "$NEW_LOCAL_DISABLED" '. * $new' > "$LOCAL_FILE.tmp"
+  else
+    echo "$NEW_LOCAL_DISABLED" | jq '.' > "$LOCAL_FILE.tmp"
+  fi
+  mv "$LOCAL_FILE.tmp" "$LOCAL_FILE"
+  # Ensure yf.json exists with v2 structure
+  if [ ! -f "$LOCK_FILE" ]; then
+    mkdir -p "$(dirname "$LOCK_FILE")"
+    echo '{"version":2,"enabled":false,"config":{"artifact_dir":"docs","chronicler_enabled":true}}' | jq '.' > "$LOCK_FILE"
+  fi
+  if [ "$REMOVED" -gt 0 ]; then
+    echo "preflight: disabled — removed $REMOVED rules"
+  else
+    echo "preflight: disabled — no rules to remove"
   fi
   exit 0
 fi
@@ -124,9 +165,12 @@ is_chronicle_rule() {
   esac
 }
 
-# --- Read lock file (may not exist) ---
+# --- Read lock file for preflight section (from local file) ---
 LOCK="{}"
-if [ -f "$LOCK_FILE" ]; then
+if [ -f "$LOCAL_FILE" ]; then
+  LOCK=$(jq '.preflight // {}' "$LOCAL_FILE" 2>/dev/null || echo "{}")
+elif [ -f "$LOCK_FILE" ]; then
+  # Fallback: v1 format where preflight is still in yf.json
   LOCK=$(jq '.preflight // {}' "$LOCK_FILE" 2>/dev/null || echo "{}")
 fi
 
@@ -351,34 +395,55 @@ if [ -d "$PLUGIN_ROOT/hooks" ]; then
   find "$PLUGIN_ROOT/hooks" -name '*.sh' -exec chmod +x {} \; 2>/dev/null || true
 fi
 
-# --- Write lock file ---
+# --- Write lock: split into yf.json (config) + yf.local.json (preflight) ---
 mkdir -p "$(dirname "$LOCK_FILE")"
 
-# Preserve existing config fields or use defaults
+# Read existing config for defaults
 EXISTING_ENABLED="true"
 EXISTING_ARTIFACT_DIR="docs"
 EXISTING_CHRONICLER="true"
-if [ -f "$LOCK_FILE" ]; then
-  EXISTING_ENABLED=$(jq -r '.enabled // true' "$LOCK_FILE" 2>/dev/null)
-  EXISTING_ARTIFACT_DIR=$(jq -r '.config.artifact_dir // "docs"' "$LOCK_FILE" 2>/dev/null)
-  EXISTING_CHRONICLER=$(jq -r '.config.chronicler_enabled // true' "$LOCK_FILE" 2>/dev/null)
+if yf_config_exists; then
+  MERGED=$(yf_merged_config)
+  EXISTING_ENABLED=$(echo "$MERGED" | jq -r 'if .enabled == null then "true" else (.enabled | tostring) end' 2>/dev/null)
+  EXISTING_ARTIFACT_DIR=$(echo "$MERGED" | jq -r '.config.artifact_dir // "docs"' 2>/dev/null)
+  EXISTING_CHRONICLER=$(echo "$MERGED" | jq -r 'if .config.chronicler_enabled == null then "true" else (.config.chronicler_enabled | tostring) end' 2>/dev/null)
 fi
 
-NEW_LOCK=$(jq -n --argjson plugin "$PLUGIN_LOCK" \
-  --arg enabled "$EXISTING_ENABLED" \
-  --arg artifact_dir "$EXISTING_ARTIFACT_DIR" \
-  --arg chronicler "$EXISTING_CHRONICLER" \
-  '{
-    version: 1,
-    enabled: ($enabled | if . == "true" then true elif . == "false" then false else true end),
-    config: {
-      artifact_dir: $artifact_dir,
-      chronicler_enabled: ($chronicler | if . == "true" then true elif . == "false" then false else true end)
-    },
-    updated: (now | strftime("%Y-%m-%dT%H:%M:%SZ")),
-    preflight: {plugins: {yf: $plugin}}
-  }')
-echo "$NEW_LOCK" | jq '.' > "$LOCK_FILE"
+# Write yf.json (committable shared config) — only if it doesn't exist or is v1
+if [ ! -f "$LOCK_FILE" ]; then
+  jq -n --arg enabled "$EXISTING_ENABLED" \
+        --arg artifact_dir "$EXISTING_ARTIFACT_DIR" \
+        --arg chronicler "$EXISTING_CHRONICLER" \
+    '{
+      version: 2,
+      enabled: ($enabled | if . == "true" then true elif . == "false" then false else true end),
+      config: {
+        artifact_dir: $artifact_dir,
+        chronicler_enabled: ($chronicler | if . == "true" then true elif . == "false" then false else true end)
+      }
+    }' > "$LOCK_FILE"
+else
+  # If still v1 (shouldn't happen after migration, but defensive), upgrade
+  CURRENT_V=$(jq -r '.version // 1' "$LOCK_FILE" 2>/dev/null)
+  if [ "$CURRENT_V" = "1" ]; then
+    jq '{version: 2, enabled: .enabled, config: .config}' "$LOCK_FILE" > "$LOCK_FILE.tmp"
+    mv "$LOCK_FILE.tmp" "$LOCK_FILE"
+  fi
+fi
+
+# Write yf.local.json (preflight lock state) — preserve any existing local overrides
+NEW_LOCAL=$(jq -n --argjson plugin "$PLUGIN_LOCK" '{
+  updated: (now | strftime("%Y-%m-%dT%H:%M:%SZ")),
+  preflight: {plugins: {yf: $plugin}}
+}')
+if [ -f "$LOCAL_FILE" ]; then
+  # Preserve existing local overrides (enabled, config, etc.) but update preflight + timestamp
+  EXISTING_LOCAL=$(cat "$LOCAL_FILE")
+  echo "$EXISTING_LOCAL" | jq --argjson new "$NEW_LOCAL" '. * $new' > "$LOCAL_FILE.tmp"
+  mv "$LOCAL_FILE.tmp" "$LOCAL_FILE"
+else
+  echo "$NEW_LOCAL" | jq '.' > "$LOCAL_FILE"
+fi
 
 # --- Summary ---
 TOTAL=$((SUMMARY_INSTALL + SUMMARY_UPDATE + SUMMARY_REMOVE + SUMMARY_SKIP + SUMMARY_DIR + SUMMARY_SETUP))

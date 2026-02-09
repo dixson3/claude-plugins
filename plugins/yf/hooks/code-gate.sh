@@ -14,14 +14,37 @@
 set -euo pipefail
 
 # ── Enabled guard: exit early if yf disabled ──────────────────────────
-YF_JSON="${CLAUDE_PROJECT_DIR:-.}/.claude/yf.json"
-if [ -f "$YF_JSON" ] && command -v jq >/dev/null 2>&1; then
-  [ "$(jq -r 'if .enabled == null then true else .enabled end' "$YF_JSON" 2>/dev/null)" = "false" ] && exit 0
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+. "$SCRIPT_DIR/scripts/yf-config.sh"
+yf_is_enabled || exit 0
 
 # ── Fast path: no gate file means no enforcement ──────────────────────
 GATE_FILE="${CLAUDE_PROJECT_DIR:-.}/.claude/.plan-gate"
-[[ -f "$GATE_FILE" ]] || exit 0
+if [[ ! -f "$GATE_FILE" ]]; then
+  # ── Beads safety net: warn if active plan has no beads ──────────────
+  # Fail-open: entire check runs in a subshell so errors never block edits
+  INTAKE_MARKER="${CLAUDE_PROJECT_DIR:-.}/.claude/.plan-intake-ok"
+  if [[ ! -f "$INTAKE_MARKER" ]]; then
+    (
+      set +e
+      command -v bd >/dev/null 2>&1 || exit 0
+      PLANS_DIR="${CLAUDE_PROJECT_DIR:-.}/docs/plans"
+      [[ -d "$PLANS_DIR" ]] || exit 0
+      LATEST_PLAN=$(ls -t "$PLANS_DIR"/plan-*.md 2>/dev/null | head -1)
+      [[ -n "$LATEST_PLAN" ]] || exit 0
+      grep -q 'Status: Completed' "$LATEST_PLAN" 2>/dev/null && exit 0
+      PLAN_IDX=$(basename "$LATEST_PLAN" | sed -n 's/^plan-\([0-9]*\).*/\1/p')
+      [[ -n "$PLAN_IDX" ]] || exit 0
+      EPIC_COUNT=$(bd list -l "plan:$PLAN_IDX" --type=epic --limit=1 --json 2>/dev/null \
+        | jq 'length' 2>/dev/null) || EPIC_COUNT="0"
+      if [[ "$EPIC_COUNT" = "0" ]]; then
+        echo "WARNING: Plan $PLAN_IDX exists but has no beads. Run /yf:plan_intake to set up the lifecycle."
+      fi
+    ) || true
+    touch "$INTAKE_MARKER"
+  fi
+  exit 0
+fi
 
 # ── Read tool input from stdin ────────────────────────────────────────
 TOOL_INPUT=$(cat)

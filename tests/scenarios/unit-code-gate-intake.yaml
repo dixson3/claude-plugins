@@ -1,0 +1,133 @@
+name: "Unit: code-gate.sh beads safety net"
+
+setup:
+  - "mkdir -p .claude docs/plans"
+  - "rm -f .claude/.plan-gate .claude/.plan-intake-ok"
+
+steps:
+  # Case 1: No plan files → no warning, exits 0
+  - name: "no_plans_no_warning"
+    run: |
+      rm -f .claude/.plan-intake-ok
+      rm -f docs/plans/plan-*.md
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "WARNING"; then
+        echo "FAIL: unexpected warning"
+        exit 1
+      fi
+      echo "OK: no warning"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Plan file with beads → no warning
+  - name: "plan_with_beads_no_warning"
+    run: |
+      rm -f .claude/.plan-intake-ok
+      printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
+      mkdir -p "$WORK_DIR/mock_bin"
+      printf '#!/bin/bash\necho '\''[{"id":"beads-001"}]'\''' > "$WORK_DIR/mock_bin/bd"
+      chmod +x "$WORK_DIR/mock_bin/bd"
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "WARNING"; then
+        echo "FAIL: unexpected warning"
+        exit 1
+      fi
+      echo "OK: no warning"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Plan file without beads → warning containing /yf:plan_intake
+  - name: "plan_without_beads_warns"
+    run: |
+      rm -f .claude/.plan-intake-ok
+      printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
+      mkdir -p "$WORK_DIR/mock_bin"
+      printf '#!/bin/bash\necho '\''[]'\''' > "$WORK_DIR/mock_bin/bd"
+      chmod +x "$WORK_DIR/mock_bin/bd"
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "yf:plan_intake"; then
+        echo "OK: warning mentions yf:plan_intake"
+      else
+        echo "FAIL: warning missing yf:plan_intake"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "WARNING"
+      - type: output_contains
+        value: "yf:plan_intake"
+
+  # Case 4: Completed plan → no warning
+  - name: "completed_plan_no_warning"
+    run: |
+      rm -f .claude/.plan-intake-ok
+      printf '# Plan 99\n**Status: Completed**' > docs/plans/plan-99.md
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "WARNING"; then
+        echo "FAIL: unexpected warning for completed plan"
+        exit 1
+      fi
+      echo "OK: no warning for completed plan"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Marker file suppresses repeat warning
+  - name: "marker_suppresses_warning"
+    run: |
+      printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
+      touch .claude/.plan-intake-ok
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "WARNING"; then
+        echo "FAIL: marker did not suppress warning"
+        exit 1
+      fi
+      echo "OK: marker suppressed warning"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: Gate active takes priority over intake check (gate blocks, no intake warning)
+  - name: "gate_takes_priority"
+    run: |
+      rm -f .claude/.plan-intake-ok
+      printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
+      echo "99" > .claude/.plan-gate
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1 || true)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "BLOCKED"; then
+        echo "OK: gate blocks as expected"
+      else
+        echo "FAIL: gate did not block"
+        exit 1
+      fi
+    assertions:
+      - type: output_contains
+        value: "BLOCKED"
+
+teardown:
+  - "rm -f .claude/.plan-gate .claude/.plan-intake-ok docs/plans/plan-99.md"
+  - "rm -rf mock_bin"

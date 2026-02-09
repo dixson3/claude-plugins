@@ -7,7 +7,7 @@ steps:
   # Case 1: Old lock file migrates to new format
   - name: "migrate_old_lock"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/plugin-lock.json"
       # Create old-format lock file
       cat > "$WORK_DIR/.claude/plugin-lock.json" <<'LOCK'
@@ -33,13 +33,18 @@ steps:
       - type: output_contains
         value: "migrating"
 
-  # Case 2: yf.json exists after migration
-  - name: "yf_json_exists"
+  # Case 2: yf.json exists with v2 structure after migration
+  - name: "yf_json_exists_v2"
     run: |
-      if [ -f "$WORK_DIR/.claude/yf.json" ]; then
-        echo "OK: yf.json exists"
-      else
+      if [ ! -f "$WORK_DIR/.claude/yf.json" ]; then
         echo "FAIL: yf.json not found"
+        exit 1
+      fi
+      VERSION=$(jq -r '.version' "$WORK_DIR/.claude/yf.json")
+      if [ "$VERSION" = "2" ]; then
+        echo "OK: yf.json exists with version 2"
+      else
+        echo "FAIL: expected v2, got $VERSION"
         exit 1
       fi
     assertions:
@@ -62,14 +67,18 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: New format has preflight nesting
-  - name: "preflight_nesting"
+  # Case 4: Preflight data in yf.local.json after migration
+  - name: "preflight_in_local"
     run: |
-      if jq -e '.preflight.plugins' "$WORK_DIR/.claude/yf.json" >/dev/null 2>&1; then
-        echo "OK: preflight nesting present"
+      if [ ! -f "$WORK_DIR/.claude/yf.local.json" ]; then
+        echo "FAIL: yf.local.json not created"
+        exit 1
+      fi
+      if jq -e '.preflight.plugins' "$WORK_DIR/.claude/yf.local.json" >/dev/null 2>&1; then
+        echo "OK: preflight in local file"
       else
-        echo "FAIL: preflight nesting missing"
-        jq '.' "$WORK_DIR/.claude/yf.json"
+        echo "FAIL: preflight missing from local"
+        jq '.' "$WORK_DIR/.claude/yf.local.json"
         exit 1
       fi
     assertions:
@@ -99,23 +108,25 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: Fresh install creates yf.json with preflight structure
+  # Case 6: Fresh install creates v2 yf.json + yf.local.json
   - name: "fresh_install_structure"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/plugin-lock.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
-      # Check structure
+      # Check yf.json structure
       VERSION=$(jq -r '.version' "$WORK_DIR/.claude/yf.json")
-      HAS_PREFLIGHT=$(jq -e '.preflight' "$WORK_DIR/.claude/yf.json" >/dev/null 2>&1 && echo "yes" || echo "no")
-      HAS_YF=$(jq -e '.preflight.plugins.yf' "$WORK_DIR/.claude/yf.json" >/dev/null 2>&1 && echo "yes" || echo "no")
-      echo "version=$VERSION preflight=$HAS_PREFLIGHT yf=$HAS_YF"
-      if [ "$VERSION" = "1" ] && [ "$HAS_PREFLIGHT" = "yes" ] && [ "$HAS_YF" = "yes" ]; then
-        echo "OK: correct structure"
+      HAS_PREFLIGHT_MAIN=$(jq -e '.preflight' "$WORK_DIR/.claude/yf.json" >/dev/null 2>&1 && echo "yes" || echo "no")
+      # Check yf.local.json structure
+      HAS_PREFLIGHT_LOCAL=$(jq -e '.preflight.plugins.yf' "$WORK_DIR/.claude/yf.local.json" >/dev/null 2>&1 && echo "yes" || echo "no")
+      echo "version=$VERSION preflight_main=$HAS_PREFLIGHT_MAIN preflight_local=$HAS_PREFLIGHT_LOCAL"
+      if [ "$VERSION" = "2" ] && [ "$HAS_PREFLIGHT_MAIN" = "no" ] && [ "$HAS_PREFLIGHT_LOCAL" = "yes" ]; then
+        echo "OK: correct two-file structure"
       else
         echo "FAIL: wrong structure"
-        jq '.' "$WORK_DIR/.claude/yf.json"
+        echo "yf.json:" && jq '.' "$WORK_DIR/.claude/yf.json"
+        echo "yf.local.json:" && jq '.' "$WORK_DIR/.claude/yf.local.json"
         exit 1
       fi
     assertions:
@@ -125,4 +136,4 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .claude/yf.json .claude/plugin-lock.json"
+  - "rm -f .claude/yf.json .claude/yf.local.json .claude/plugin-lock.json"

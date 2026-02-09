@@ -5,9 +5,9 @@
 # Workflows plugin - ephemeral session state
 .claude/.task-pump.json
 .claude/.plan-gate
+.claude/.plan-intake-ok
 
-# Plugin preflight - per-project config file
-.claude/yf.json
+# Plugin preflight - local overrides & lock state (NOT committed)
 .claude/yf.local.json
 
 # Test harness binary

@@ -5,6 +5,45 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-02-08
+
+### Added
+
+- **`yf:plan_intake` skill**: Encapsulates the 5-step plan intake checklist (save plan, create beads, start execution, capture context, dispatch) as a concrete, invocable skill
+- **Code-gate beads safety net**: `code-gate.sh` now warns (not blocks) on first non-exempt Edit/Write if an active plan has no beads — prompts agent to run `/yf:plan_intake`
+  - One-shot warning via `.claude/.plan-intake-ok` marker (ephemeral session state)
+  - Fail-open: any error in the check → proceed silently
+  - Requires `bd` CLI; skips gracefully if not available
+- Test scenario: `unit-code-gate-intake.yaml` (6 cases for beads safety net)
+
+### Changed
+
+- `yf-plan-intake.md` rule: Simplified — now references `/yf:plan_intake` skill instead of listing 5 manual steps
+- `unit-plan-intake.yaml`: Added cases verifying skill file exists and rule references the skill
+- Plugin version bumped: 2.2.0 → 2.3.0
+
+## [2.2.0] - 2026-02-08
+
+### Added
+
+- **Two-file config model**: Split `.claude/yf.json` into committable shared config + gitignored local overrides
+  - `.claude/yf.json` — version 2 shared config (committed to git): `{version, enabled, config}`
+  - `.claude/yf.local.json` — local overrides + preflight lock state (gitignored): `{updated, preflight}`
+  - Local keys always win on merge (`jq -s '.[0] * .[1]'`)
+- **`yf-config.sh` shared library**: Sourceable shell library (bash 3.2 compatible) for config access
+  - `yf_merged_config`, `yf_is_enabled`, `yf_is_chronicler_on`, `yf_read_field`, `yf_config_exists`
+- **v1→v2 migration**: Automatic split of single-file v1 format into two-file v2 format
+- **Setup wizard Q4**: "Should this config be committed to git (shared with team)?"
+- Test scenarios: `unit-yf-config-merge.yaml` (8 cases), `unit-yf-v2-migration.yaml` (7 cases)
+
+### Changed
+
+- All 4 behavioral hooks now source `yf-config.sh` instead of inline jq guards
+- `plugin-preflight.sh` reads/writes two-file model; preflight lock state goes to `yf.local.json`
+- `.gitignore` no longer ignores `.claude/yf.json` (now committable); keeps `.claude/yf.local.json` ignored
+- Plugin version bumped: 2.1.0 → 2.2.0
+- All existing preflight test scenarios updated for two-file model
+
 ## [2.0.0] - 2026-02-08
 
 ### Added

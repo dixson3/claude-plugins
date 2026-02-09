@@ -7,7 +7,7 @@ steps:
   # Case 1: Setup — install rules first
   - name: "setup_install_rules"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       COUNT=$(ls "$WORK_DIR/.claude/rules/"yf-*.md 2>/dev/null | wc -l | tr -d ' ')
@@ -18,12 +18,24 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Disable yf → rules removed
-  - name: "disable_removes_rules"
+  # Case 2: Disable yf via local override → rules removed
+  - name: "disable_via_local_removes_rules"
     run: |
-      # Set enabled=false in yf.json
-      jq '.enabled = false' "$WORK_DIR/.claude/yf.json" > "$WORK_DIR/.claude/yf.json.tmp"
-      mv "$WORK_DIR/.claude/yf.json.tmp" "$WORK_DIR/.claude/yf.json"
+      # Set enabled=false via local override
+      echo '{"enabled":false}' > "$WORK_DIR/.claude/yf.local.json"
+      # Merge local lock data so disabled-mode can find installed rules
+      if [ -f "$WORK_DIR/.claude/yf.local.json" ]; then
+        EXISTING=$(cat "$WORK_DIR/.claude/yf.local.json")
+        # We need preflight data — read from whatever local file has it
+        # The previous preflight run created yf.local.json with preflight data
+        # but we just overwrote it. Read it from scratch.
+      fi
+      # Re-run preflight to create proper local with preflight data, then disable
+      rm -f "$WORK_DIR/.claude/yf.local.json"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
+      # Now add local override for disabled
+      jq '. + {enabled: false}' "$WORK_DIR/.claude/yf.local.json" > "$WORK_DIR/.claude/yf.local.json.tmp"
+      mv "$WORK_DIR/.claude/yf.local.json.tmp" "$WORK_DIR/.claude/yf.local.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       COUNT=$(ls "$WORK_DIR/.claude/rules/"yf-*.md 2>/dev/null | wc -l | tr -d ' ')
@@ -41,15 +53,45 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: code-gate exits 0 when disabled
+  # Case 3: Disable yf via yf.json (shared config) → rules removed
+  - name: "disable_via_shared_removes_rules"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.local.json"
+      rm -f "$WORK_DIR/.claude/rules/"*.md
+      # First install
+      jq '.enabled = true' "$WORK_DIR/.claude/yf.json" > "$WORK_DIR/.claude/yf.json.tmp"
+      mv "$WORK_DIR/.claude/yf.json.tmp" "$WORK_DIR/.claude/yf.json"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
+      # Now disable via shared config
+      jq '.enabled = false' "$WORK_DIR/.claude/yf.json" > "$WORK_DIR/.claude/yf.json.tmp"
+      mv "$WORK_DIR/.claude/yf.json.tmp" "$WORK_DIR/.claude/yf.json"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      COUNT=$(ls "$WORK_DIR/.claude/rules/"yf-*.md 2>/dev/null | wc -l | tr -d ' ')
+      if [ "$COUNT" -eq 0 ]; then
+        echo "OK: all rules removed via shared disable"
+      else
+        echo "FAIL: $COUNT rules still exist"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "disabled"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: code-gate exits 0 when disabled via local override
   - name: "code_gate_exits_when_disabled"
     run: |
       # Create a plan gate to ensure the hook would normally block
       mkdir -p "$WORK_DIR/.claude"
       echo '{"plan_idx":"99"}' > "$WORK_DIR/.claude/.plan-gate"
-      # Ensure yf.json has enabled=false
-      jq '.enabled = false' "$WORK_DIR/.claude/yf.json" > "$WORK_DIR/.claude/yf.json.tmp"
+      # Set enabled=false via local override (yf.json says true)
+      jq '.enabled = true' "$WORK_DIR/.claude/yf.json" > "$WORK_DIR/.claude/yf.json.tmp"
       mv "$WORK_DIR/.claude/yf.json.tmp" "$WORK_DIR/.claude/yf.json"
+      echo '{"enabled":false}' > "$WORK_DIR/.claude/yf.local.json"
       echo '{"tool_input":{"file_path":"/some/code/file.py"}}' | \
         CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh"
       echo "OK: code-gate exited 0"
@@ -59,7 +101,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: exit-plan-gate exits 0 when disabled
+  # Case 5: exit-plan-gate exits 0 when disabled
   - name: "exit_plan_gate_exits_when_disabled"
     run: |
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
@@ -70,7 +112,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: plan-exec-guard exits 0 when disabled
+  # Case 6: plan-exec-guard exits 0 when disabled
   - name: "plan_exec_guard_exits_when_disabled"
     run: |
       echo "bd update marketplace-abc --status in_progress" | \
@@ -82,7 +124,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: pre-push-diary exits 0 when disabled
+  # Case 7: pre-push-diary exits 0 when disabled
   - name: "pre_push_diary_exits_when_disabled"
     run: |
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-diary.sh"
@@ -93,11 +135,12 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: Re-enable → rules reinstalled
+  # Case 8: Re-enable → rules reinstalled
   - name: "reenable_reinstalls_rules"
     run: |
       jq '.enabled = true' "$WORK_DIR/.claude/yf.json" > "$WORK_DIR/.claude/yf.json.tmp"
       mv "$WORK_DIR/.claude/yf.json.tmp" "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/yf.local.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       COUNT=$(ls "$WORK_DIR/.claude/rules/"yf-*.md 2>/dev/null | wc -l | tr -d ' ')
@@ -116,5 +159,5 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .claude/yf.json"
+  - "rm -f .claude/yf.json .claude/yf.local.json"
   - "rm -f .claude/.plan-gate"

@@ -12,10 +12,15 @@ Idempotent setup skill. Works for both first-run and reconfiguration.
 
 ### 1. Read existing config
 
-Check if `.claude/yf.json` exists. If it does, load current values:
+Check if `.claude/yf.json` or `.claude/yf.local.json` exist. Load merged config:
 
 ```bash
+# Source the config library for merged reads
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+. "$SCRIPT_DIR/scripts/yf-config.sh" 2>/dev/null || true
+# Or read directly:
 cat .claude/yf.json 2>/dev/null || echo "{}"
+cat .claude/yf.local.json 2>/dev/null || echo "{}"
 ```
 
 Extract current values (defaults shown):
@@ -47,26 +52,57 @@ Use AskUserQuestion with these questions (pre-populate descriptions with current
 - Options: "Yes (Recommended)", "No"
 - Header: "Chronicler"
 
-### 3. Merge config into yf.json
+**Question 4**: "Should this config be committed to git (shared with team)?"
+- Options: "Yes (Recommended)" — write config to yf.json, "No (local only)" — write config to yf.local.json
+- Header: "Share config"
 
-Use `jq` to merge answers into yf.json without wiping the `preflight` section:
+### 3. Write config
 
+Use `jq` to write config to the appropriate file based on Question 4:
+
+**If sharing (committed to git):**
 ```bash
-# If yf.json exists, merge; otherwise create fresh
 YF_JSON="${CLAUDE_PROJECT_DIR:-.}/.claude/yf.json"
-if [ -f "$YF_JSON" ]; then
+YF_LOCAL="${CLAUDE_PROJECT_DIR:-.}/.claude/yf.local.json"
+mkdir -p "$(dirname "$YF_JSON")"
+
+# Write shared config to yf.json
+jq -n --argjson enabled ENABLED_BOOL \
+   --arg artifact_dir "ARTIFACT_DIR" \
+   --argjson chronicler CHRONICLER_BOOL \
+   '{version: 2, enabled: $enabled, config: {artifact_dir: $artifact_dir, chronicler_enabled: $chronicler}}' \
+   > "$YF_JSON"
+
+# Remove config overrides from local file (if any), keep preflight
+if [ -f "$YF_LOCAL" ]; then
+  jq 'del(.enabled, .config)' "$YF_LOCAL" > "$YF_LOCAL.tmp" && mv "$YF_LOCAL.tmp" "$YF_LOCAL"
+fi
+```
+
+**If local only:**
+```bash
+YF_JSON="${CLAUDE_PROJECT_DIR:-.}/.claude/yf.json"
+YF_LOCAL="${CLAUDE_PROJECT_DIR:-.}/.claude/yf.local.json"
+mkdir -p "$(dirname "$YF_JSON")"
+
+# Ensure yf.json exists with minimal v2 structure
+if [ ! -f "$YF_JSON" ]; then
+  echo '{"version": 2}' | jq '.' > "$YF_JSON"
+fi
+
+# Write config to local file, preserving preflight
+if [ -f "$YF_LOCAL" ]; then
   jq --argjson enabled ENABLED_BOOL \
      --arg artifact_dir "ARTIFACT_DIR" \
      --argjson chronicler CHRONICLER_BOOL \
-     '. + {enabled: $enabled, config: {artifact_dir: $artifact_dir, chronicler_enabled: $chronicler}, updated: (now | strftime("%Y-%m-%dT%H:%M:%SZ"))}' \
-     "$YF_JSON" > "$YF_JSON.tmp" && mv "$YF_JSON.tmp" "$YF_JSON"
+     '. + {enabled: $enabled, config: {artifact_dir: $artifact_dir, chronicler_enabled: $chronicler}}' \
+     "$YF_LOCAL" > "$YF_LOCAL.tmp" && mv "$YF_LOCAL.tmp" "$YF_LOCAL"
 else
-  mkdir -p "$(dirname "$YF_JSON")"
   jq -n --argjson enabled ENABLED_BOOL \
         --arg artifact_dir "ARTIFACT_DIR" \
         --argjson chronicler CHRONICLER_BOOL \
-        '{version: 1, enabled: $enabled, config: {artifact_dir: $artifact_dir, chronicler_enabled: $chronicler}, updated: (now | strftime("%Y-%m-%dT%H:%M:%SZ")), preflight: {plugins: {}}}' \
-        > "$YF_JSON"
+        '{enabled: $enabled, config: {artifact_dir: $artifact_dir, chronicler_enabled: $chronicler}}' \
+        > "$YF_LOCAL"
 fi
 ```
 
@@ -92,6 +128,7 @@ Initial setup complete.
   Enabled: true
   Artifact directory: docs
   Chronicler: enabled
+  Config: committed to git (shared)
   Rules installed: 9
 ```
 
@@ -100,6 +137,7 @@ Initial setup complete.
 Configuration updated.
   Enabled: true → false
   Chronicler: enabled → disabled
+  Config: local only
   Rules removed: 9
 ```
 
@@ -119,3 +157,5 @@ No changes — configuration unchanged.
 | Artifact dir: (custom) | `config.artifact_dir` | user-provided path |
 | Chronicler: Yes | `config.chronicler_enabled` | `true` |
 | Chronicler: No | `config.chronicler_enabled` | `false` |
+| Share config: Yes | write to `yf.json` | committed |
+| Share config: No | write to `yf.local.json` | local only |

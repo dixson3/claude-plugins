@@ -8,7 +8,7 @@ steps:
   - name: "conflict_skips_user_modified"
     run: |
       # Clean install
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       # User modifies a rule
@@ -41,7 +41,7 @@ steps:
   - name: "source_change_updates_rule"
     run: |
       # Clean install
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       # Modify only the source (simulate plugin update)
@@ -72,7 +72,7 @@ steps:
   - name: "identical_is_noop"
     run: |
       # Clean install
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       # Run again — everything matches
@@ -85,4 +85,4 @@ steps:
         value: "up to date"
 
 teardown:
-  - "rm -f .claude/yf.json"
+  - "rm -f .claude/yf.json .claude/yf.local.json"
