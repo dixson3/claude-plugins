@@ -1,82 +1,143 @@
 # Yoshiko Flow (yf) Plugin — v2.8.0
 
-Unified plan lifecycle management, execution orchestration, context persistence, diary generation, and research/decision archiving for Claude projects.
+Yoshiko Flow enhances Claude Code with structured plan lifecycle management, persistent context capture, and research/decision archiving — freezing the context that makes software maintainable.
 
-> **Note:** Beads (`.beads/`) is local-only — not committed to git. There is no sync branch or mandatory push for issue state.
+> **Note:** Beads (`.beads/`) is local-only — not committed to git.
 
-## Overview
+## Why Yoshiko Flow
 
-The yf plugin is a consolidated system that bridges plan documentation and tracked work. It provides:
+The natural state of software is _maintenance_. How hard or easy that maintenance is depends on how well teams share knowledge and transfer information — to each other now, and to people in the future they'll never meet. Projects have design docs, PRDs, issue trackers, and code comments — all methods of "freezing context" to constrain work and investigations to the most appropriate areas.
 
-- **Plan lifecycle state machine** — Draft, Ready, Executing, Paused, Completed
-- **Plan-to-beads conversion** — Structured epic/task hierarchy from plan docs
-- **Execution orchestration** — Dispatches tasks to agents respecting dependencies
-- **Task decomposition** — Breaks non-trivial tasks into atomic work items
-- **Agent selection** — Matches tasks to the best available agent
-- **Context persistence** — Captures context as chronicle beads across sessions
-- **Diary generation** — Consolidates chronicles into markdown diary entries
-- **Research archiving** — Captures research findings with sources as permanent documentation
-- **Decision records** — Documents design decisions with alternatives and rationale
-- **Enforcement** — Gates, defer/undefer, and hooks prevent out-of-state operations
+Traditionally, producing this content is a chore requiring real organizational discipline to maintain consistency. The real challenge in making agentic coding scalable is moving it toward a workflow that supports multiple collaborators, all with potentially different agentic interaction preferences.
+
+Yoshiko Flow does three things to enhance an engineering workflow:
+
+1. **Plan Lifecycle** — Breaks plans into a dependency graph of tracked tasks, with automatic decomposition, scheduling, and dispatch
+2. **Chronicler** — Captures observations and context as work progresses, then composes diary entries that record the evolutionary path of how changes came into being
+3. **Archivist** — Preserves research findings and design decisions as permanent documentation that helps justify features and design in PRDs and ERDs
+
+## Getting Started
+
+1. **Install beads-cli** — Beads is a git-backed issue tracker that provides the task DAG underlying yf's plan tracking. See [beads-cli](https://github.com/dixson3/beads-cli) for installation.
+
+2. **Load the marketplace:**
+   ```bash
+   claude --plugin-dir /path/to/yoshiko-studios-marketplace
+   ```
+
+3. **Run setup:**
+   ```
+   /yf:setup
+   ```
+
+4. **Start planning** — Enter plan mode, write a plan, exit. The auto-chain handles the rest: saving the plan, creating beads, resolving the gate, and dispatching work.
 
 ## Plan Lifecycle
+
+### Why
+
+Plans written in Claude sessions evaporate on context compaction. Without structure, there's no way to track what was done, what remains, or what depends on what. Breaking plans into beads with dependencies gives control structures beyond native Claude TaskLists — additional reasoning is applied to each task, including discovering and creating new tasks. The breakdown and scheduling is automatic and implicit: hooks and skills trigger the decomposition and work through to completion.
+
+### How It Works
 
 ```
 Draft ───► Ready ───► Executing ◄──► Paused ───► Completed
 ```
 
-| State | Trigger Phrase | What Happens |
+| State | Trigger | What Happens |
 |---|---|---|
 | **Draft** | ExitPlanMode (auto) | Plan saved to `docs/plans/`. Auto-chain drives through to Executing. |
-| **Ready** | "the plan is ready" | Beads created. Gate open. Tasks deferred. |
+| **Ready** | "the plan is ready" | Beads hierarchy created. Gate open. Tasks deferred. |
 | **Executing** | "execute the plan" | Gate resolved. Tasks undeferred. Dispatch active. |
-| **Paused** | "pause the plan" | New gate. Pending tasks deferred. In-flight finish. |
+| **Paused** | "pause the plan" | New gate. Pending tasks deferred. In-flight work finishes. |
 | **Completed** | Automatic | All tasks closed. Plan status updated. Diary generated. |
 
-### Enforcement Layers
+The auto-chain on ExitPlanMode drives the full lifecycle without manual intervention: format the plan, create the beads hierarchy, resolve the gate, and begin dispatch.
 
-1. **Beads-native**: Gates control execution state. Deferred tasks hidden from `bd ready`.
-2. **Scripts**: `plan-exec.sh` handles atomic state transitions.
-3. **Hooks**: `plan-exec-guard.sh` blocks claim/close on non-executing plans.
+### Enforcement
 
-## Skills
+Three layers prevent out-of-state operations:
 
-### Plan Lifecycle & Orchestration
+1. **Beads-native** — Gates control execution state. Deferred tasks are hidden from `bd ready`.
+2. **Scripts** — `plan-exec.sh` handles atomic state transitions.
+3. **Hooks** — `plan-exec-guard.sh` blocks task operations on non-executing plans. `code-gate.sh` blocks implementation edits until the plan reaches Executing.
+
+### Artifacts
+
+- **Plan files**: `docs/plans/plan-NN.md`
+- **Plan gate**: `.claude/.plan-gate` (temporary, blocks edits until Executing)
+- **Beads hierarchy**: Epics, tasks, and dependencies in `.beads/`
+
+### Skills (8)
 
 | Skill | Description |
 |-------|-------------|
-| `/yf:engage_plan` | Plan lifecycle state machine — manages all state transitions |
-| `/yf:plan_to_beads [plan_file]` | Convert a plan document into a beads hierarchy |
-| `/yf:execute_plan [plan_idx]` | Orchestrate plan execution via task pump dispatch |
-| `/yf:task_pump [plan_idx]` | Pull ready beads and dispatch to agents in parallel |
-| `/yf:breakdown_task <task_id>` | Decompose a non-trivial task into child beads |
-| `/yf:select_agent <task_id>` | Match a task to the best available agent |
+| `/yf:plan_engage` | State machine for all lifecycle transitions |
+| `/yf:plan_create_beads` | Convert plan documents into a beads hierarchy |
 | `/yf:plan_intake` | Intake checklist for plans entering outside the auto-chain |
-| `/yf:dismiss_gate` | Remove the plan gate (abandon plan lifecycle) |
+| `/yf:plan_execute` | Orchestrated task dispatch with dependency ordering |
+| `/yf:plan_pump` | Pull ready beads into parallel agent dispatch |
+| `/yf:plan_breakdown` | Recursive decomposition of non-trivial tasks |
+| `/yf:plan_select_agent` | Auto-discover agents and match to tasks |
+| `/yf:plan_dismiss_gate` | Escape hatch to abandon the plan gate |
 
-### Context Persistence & Diary
+## Chronicler (Context Persistence)
 
-| Skill | Description |
-|-------|-------------|
-| `/yf:chronicle_capture [topic:<topic>]` | Capture current context as a chronicle bead |
-| `/yf:chronicle_recall` | Recall and summarize open chronicle beads |
-| `/yf:chronicle_diary [plan_idx]` | Generate diary entries from open chronicles |
-| `/yf:chronicle_disable` | Close all open chronicles without diary generation |
+### Why
 
-### Research & Decision Archiving
+Claude sessions lose context on compaction, clear, or new session start. The insights, rationale, and working state accumulated during a session disappear. The chronicler captures this context: rules and hooks evaluate the conversation and changes, recording observations as chronicle beads. At plan completion or on demand, the chronicler composes diary entries — capturing the evolutionary path of how changes came into being. Since chronicles are captured in the context of a plan, they correlate to a bigger picture.
 
-| Skill | Description |
-|-------|-------------|
-| `/yf:archive_capture type:<type> [area:<area>]` | Capture research findings or design decisions as archive beads |
-| `/yf:archive_process [plan_idx]` | Process archive beads into permanent documentation |
-| `/yf:archive_disable` | Close all open archive beads without generating documentation |
-| `/yf:archive_suggest [--draft] [--since]` | Scan git history for archive candidates |
+### How It Works
 
-### Configuration
+- **Manual**: `/yf:chronicle_capture` to snapshot current context
+- **Automatic**: Pre-push hook creates draft chronicles from significant git activity
+- **Automatic**: Plan transitions capture planning context
+- **Recovery**: `/yf:chronicle_recall` restores context in new sessions
+- **Consolidation**: `/yf:chronicle_diary` generates permanent markdown diary entries
 
-| Skill | Description |
-|-------|-------------|
-| `/yf:setup` | Configure Yoshiko Flow for a project (first-run and reconfiguration) |
+### Artifacts
+
+- **Diary entries**: `docs/diary/YY-MM-DD.HH-MM.<topic>.md`
+
+### Skills & Agents
+
+| Skill / Agent | Description |
+|---------------|-------------|
+| `/yf:chronicle_capture` | Capture current context as a chronicle bead |
+| `/yf:chronicle_recall` | Restore context from open chronicles |
+| `/yf:chronicle_diary` | Generate diary entries from chronicles |
+| `/yf:chronicle_disable` | Close chronicles without diary generation |
+| Agent: `yf_chronicle_recall` | Context recovery agent |
+| Agent: `yf_chronicle_diary` | Diary generation agent |
+
+## Archivist (Research & Decision Records)
+
+### Why
+
+Research findings and decision rationale discussed in sessions are lost once the conversation ends. The archivist automatically captures research into topics and key decisions based on that research. These decision and research records help justify features and design in PRDs and ERDs.
+
+### How It Works
+
+- **Capture**: `/yf:archive_capture` for research findings or design decisions
+- **Advisory**: Rules suggest archiving during work (not auto-capture)
+- **Transitions**: Plan transitions check for archive-worthy content
+- **Processing**: `/yf:archive_process` converts archive beads to indexed `SUMMARY.md` files
+- **Discovery**: `/yf:archive_suggest` scans git history for candidates
+
+### Artifacts
+
+- **Research**: `docs/research/<topic>/SUMMARY.md` + `_index.md`
+- **Decisions**: `docs/decisions/DEC-NNN-<slug>/SUMMARY.md` + `_index.md`
+
+### Skills & Agents
+
+| Skill / Agent | Description |
+|---------------|-------------|
+| `/yf:archive_capture` | Capture research or decisions as archive beads |
+| `/yf:archive_process` | Process archive beads into permanent documentation |
+| `/yf:archive_disable` | Close archive beads without generating docs |
+| `/yf:archive_suggest` | Scan git history for archive candidates |
+| Agent: `yf_archive_process` | Archive processing agent |
 
 ## Configuration
 
@@ -102,15 +163,9 @@ All config lives in `.claude/yf.json` (gitignored). This single file holds both 
 
 Run `/yf:setup` to create or reconfigure this file interactively.
 
-## Agents
+## Internals
 
-| Agent | Description |
-|-------|-------------|
-| `yf_chronicle_recall` | Context recovery agent — synthesizes open chronicles into a summary |
-| `yf_chronicle_diary` | Diary generation agent — consolidates chronicles into markdown entries |
-| `yf_archive_process` | Archive processing agent — converts archive beads into research/decision documentation |
-
-## Rules (11)
+### Rules (11)
 
 All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignored, pointing to `plugins/yf/rules/`):
 
@@ -128,7 +183,7 @@ All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignore
 | `yf-watch-for-archive-worthiness.md` | Monitors for archive-worthy research and decisions |
 | `yf-plan-transition-archive.md` | Archives research and decisions during plan transitions |
 
-## Scripts
+### Scripts (6)
 
 | Script | Description |
 |--------|-------------|
@@ -139,7 +194,7 @@ All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignore
 | `archive-suggest.sh` | Scans git commits for research/decision archive candidates |
 | `chronicle-check.sh` | Auto-creates draft chronicle beads from significant git activity |
 
-## Hooks (5)
+### Hooks (5)
 
 | Hook | Trigger | Description |
 |------|---------|-------------|
@@ -151,7 +206,7 @@ All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignore
 
 ## Dependencies
 
-- **beads-cli** >= 0.44.0 — Git-backed issue tracker
+- [**beads-cli**](https://github.com/dixson3/beads-cli) >= 0.44.0 — Git-backed issue tracker providing the task DAG for plan tracking
 - **jq** — JSON processing (used by scripts)
 
 ## License

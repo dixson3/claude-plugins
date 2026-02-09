@@ -14,32 +14,59 @@ claude --plugin-dir /path/to/yoshiko-studios-marketplace
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation | 2.8.0 |
+| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, context persistence, and research/decision archiving | 2.8.0 |
 
 ## Plugin Overview
 
 ### yf (Yoshiko Flow)
 
-Unified plan lifecycle management, execution orchestration, context persistence, and diary generation.
+Yoshiko Flow enhances Claude Code with structured workflows that freeze the context making software maintainable — breaking plans into tracked task graphs, capturing the evolutionary path of changes as diary entries, and preserving research and decisions as permanent documentation.
 
-**Plan Lifecycle & Orchestration:**
-- `/yf:plan_engage` — State machine: Draft → Ready → Executing → Paused → Completed
-- `/yf:plan_create_beads` — Convert plan docs to beads hierarchy (epics, tasks, dependencies)
-- `/yf:plan_intake` — Intake checklist for plans entering outside the auto-chain
-- `/yf:plan_execute` — Orchestrated task dispatch with parallel agent routing
-- `/yf:plan_pump` — Pull ready beads into parallel agent dispatch
-- `/yf:plan_breakdown` — Recursive decomposition of non-trivial tasks
-- `/yf:plan_select_agent` — Auto-discover agents and match to tasks
-- `/yf:plan_dismiss_gate` — Escape hatch to abandon plan gate
+**Plan Lifecycle** — Breaks plans into a dependency graph of tracked tasks with automatic decomposition, scheduling, and dispatch.
 
-**Context Persistence & Diary:**
-- `/yf:chronicle_capture` — Capture context as a chronicle bead
-- `/yf:chronicle_recall` — Restore context from open chronicles
-- `/yf:chronicle_diary` — Generate diary entries from chronicles
-- `/yf:chronicle_disable` — Close chronicles without diary generation
+| Skill | Description |
+|-------|-------------|
+| `/yf:plan_engage` | State machine for all lifecycle transitions |
+| `/yf:plan_create_beads` | Convert plan docs to beads hierarchy |
+| `/yf:plan_intake` | Intake checklist for plans entering outside the auto-chain |
+| `/yf:plan_execute` | Orchestrated task dispatch with dependency ordering |
+| `/yf:plan_pump` | Pull ready beads into parallel agent dispatch |
+| `/yf:plan_breakdown` | Recursive decomposition of non-trivial tasks |
+| `/yf:plan_select_agent` | Auto-discover agents and match to tasks |
+| `/yf:plan_dismiss_gate` | Escape hatch to abandon plan gate |
 
-**Configuration:**
-- `/yf:setup` — Configure Yoshiko Flow for a project (first-run and reconfiguration)
+**Chronicler (Context Persistence)** — Captures observations and context as work progresses, then composes diary entries recording how changes came into being.
+
+| Skill | Description |
+|-------|-------------|
+| `/yf:chronicle_capture` | Capture context as a chronicle bead |
+| `/yf:chronicle_recall` | Restore context from open chronicles |
+| `/yf:chronicle_diary` | Generate diary entries from chronicles |
+| `/yf:chronicle_disable` | Close chronicles without diary generation |
+
+**Archivist (Research & Decision Records)** — Preserves research findings and design decisions as permanent documentation for PRDs and ERDs.
+
+| Skill | Description |
+|-------|-------------|
+| `/yf:archive_capture` | Capture research or decisions as archive beads |
+| `/yf:archive_process` | Process archive beads into permanent docs |
+| `/yf:archive_disable` | Close archive beads without generating docs |
+| `/yf:archive_suggest` | Scan git history for archive candidates |
+
+**Configuration**
+
+| Skill | Description |
+|-------|-------------|
+| `/yf:setup` | Configure Yoshiko Flow for a project |
+
+## Quick Start
+
+```bash
+# Load the marketplace (from repo root)
+claude --plugin-dir .
+```
+
+The preflight system automatically installs rules, creates directories, and initializes beads on first session start. Run `/yf:setup` to configure capabilities.
 
 ## Plugin Structure
 
@@ -64,15 +91,6 @@ plugin-name/
 └── README.md             # Plugin documentation
 ```
 
-## Quick Start
-
-```bash
-# Load the marketplace (from repo root)
-claude --plugin-dir .
-```
-
-The preflight system automatically installs rules, creates directories, and initializes beads on first session start.
-
 ## Creating a New Plugin
 
 1. Create a new directory under `plugins/`
@@ -81,7 +99,7 @@ The preflight system automatically installs rules, creates directories, and init
 4. Register your plugin in `.claude-plugin/marketplace.json`
 5. Add documentation in a README.md
 
-See the [yf](plugins/yf/) plugin for a full-featured example.
+See the [yf](plugins/yf/) plugin for a full-featured example, and [DEVELOPERS.md](plugins/yf/DEVELOPERS.md) for the developer guide.
 
 ## Repository Structure
 
