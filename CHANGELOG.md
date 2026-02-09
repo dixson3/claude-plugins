@@ -14,10 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Eliminates checksum/conflict detection (symlinks can't diverge)
   - Fast path uses `readlink` comparison instead of SHA256 checksums
   - Relative symlinks when plugin is in project tree, absolute when outside
-- **Local-only config model**: All config consolidated into `.claude/yf.local.json` (gitignored)
-  - `.claude/yf.json` (committed shared config) no longer created or used
-  - v2→v3 migration: existing `yf.json` content merged into `yf.local.json`, then deleted
-  - Setup skill (`/yf:setup`) simplified — removed "share config?" question
+- **Single-file config model**: All config consolidated into `.claude/yf.json` (gitignored)
+  - Replaced prior two-file model (`yf.json` + `yf.local.json`) with a single gitignored `yf.json`
+  - Holds both user config (`enabled`, `config.artifact_dir`, `config.chronicler_enabled`) and preflight lock state
+  - Setup skill (`/yf:setup`) simplified — removed "share config?" question, all writes go to `yf.json`
 - **Zero git footprint**: Rule symlinks and config are gitignored — enabling the plugin leaves no committed artifacts outside `plugins/`
 - **Lock format**: `mode: "symlink"` field, `link` field replaces `checksum` per rule entry
 - `plugin-preflight.sh` reduced from ~455 to ~180 lines
@@ -28,12 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Checksum calculation and comparison logic (`sha256_file()`)
 - Conflict detection ("modified by user, skipping update")
 - File copy operations (replaced by `ln -sf`)
-- `yf.json` write logic (no committed config)
-- `unit-preflight-conflict.yaml` test scenario (irrelevant with symlinks)
+- Two-file config model (`yf.json` + `yf.local.json`) — replaced by single `yf.json`
+- All legacy migration logic (plugin-lock.json v0, yf.json v1, yf.local.json v2)
+- `unit-preflight-conflict.yaml`, `unit-yf-config-merge.yaml`, `unit-yf-migration.yaml`, `unit-yf-v2-migration.yaml` test scenarios
 
 ### Added
 
 - `unit-preflight-symlinks.yaml` — 6 test cases for symlink-specific behavior (creation, broken symlink repair, copy→symlink migration, target validation, content resolution, fast-path detection)
+- `unit-yf-config.yaml` — 7 test cases for single-file config reading
 - Copy-to-symlink migration: regular files (from older versions) automatically replaced by symlinks on preflight run
 
 ## [2.3.0] - 2026-02-08
