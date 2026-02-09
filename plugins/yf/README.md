@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.7.0
+# Yoshiko Flow (yf) Plugin — v2.8.0
 
 Unified plan lifecycle management, execution orchestration, context persistence, diary generation, and research/decision archiving for Claude projects.
 
@@ -58,16 +58,16 @@ Draft ───► Ready ───► Executing ◄──► Paused ───►
 
 | Skill | Description |
 |-------|-------------|
-| `/yf:capture [topic:<topic>]` | Capture current context as a chronicle bead |
-| `/yf:recall` | Recall and summarize open chronicle beads |
-| `/yf:diary [plan_idx]` | Generate diary entries from open chronicles |
-| `/yf:disable` | Close all open chronicles without diary generation |
+| `/yf:chronicle_capture [topic:<topic>]` | Capture current context as a chronicle bead |
+| `/yf:chronicle_recall` | Recall and summarize open chronicle beads |
+| `/yf:chronicle_diary [plan_idx]` | Generate diary entries from open chronicles |
+| `/yf:chronicle_disable` | Close all open chronicles without diary generation |
 
 ### Research & Decision Archiving
 
 | Skill | Description |
 |-------|-------------|
-| `/yf:archive type:<type> [area:<area>]` | Capture research findings or design decisions as archive beads |
+| `/yf:archive_capture type:<type> [area:<area>]` | Capture research findings or design decisions as archive beads |
 | `/yf:archive_process [plan_idx]` | Process archive beads into permanent documentation |
 | `/yf:archive_disable` | Close all open archive beads without generating documentation |
 | `/yf:archive_suggest [--draft] [--since]` | Scan git history for archive candidates |
@@ -106,9 +106,9 @@ Run `/yf:setup` to create or reconfigure this file interactively.
 
 | Agent | Description |
 |-------|-------------|
-| `yf_recall` | Context recovery agent — synthesizes open chronicles into a summary |
-| `yf_diary` | Diary generation agent — consolidates chronicles into markdown entries |
-| `yf_archivist` | Archive processing agent — converts archive beads into research/decision documentation |
+| `yf_chronicle_recall` | Context recovery agent — synthesizes open chronicles into a summary |
+| `yf_chronicle_diary` | Diary generation agent — consolidates chronicles into markdown entries |
+| `yf_archive_process` | Archive processing agent — converts archive beads into research/decision documentation |
 
 ## Rules (11)
 

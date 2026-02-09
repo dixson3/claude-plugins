@@ -9,7 +9,7 @@ Before writing code for a plan, beads must exist. Plans that haven't been conver
 When you're about to implement something from a plan in `docs/plans/`:
 
 1. **Check for existing beads**: `bd list -l plan:<idx>` for the relevant plan
-2. **If no beads exist**: Stop and invoke `/yf:plan_to_beads` first
+2. **If no beads exist**: Stop and invoke `/yf:plan_create_beads` first
 3. **If beads exist**: Proceed with implementation, using `bd update --status=in_progress` to claim tasks
 
 ## Why
@@ -23,5 +23,5 @@ When you're about to implement something from a plan in `docs/plans/`:
 
 If you notice yourself implementing a plan without corresponding beads, pause and run:
 ```
-/yf:plan_to_beads docs/plans/plan-<idx>.md
+/yf:plan_create_beads docs/plans/plan-<idx>.md
 ```

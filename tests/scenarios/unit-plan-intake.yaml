@@ -79,13 +79,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: Rule references plan_to_beads
-  - name: "references_plan_to_beads"
+  # Case 3: Rule references plan_create_beads
+  - name: "references_plan_create_beads"
     run: |
-      if grep -q "plan_to_beads" "$PLUGIN_DIR/plugins/yf/rules/yf-plan-intake.md"; then
-        echo "OK: references plan_to_beads"
+      if grep -q "plan_create_beads" "$PLUGIN_DIR/plugins/yf/rules/yf-plan-intake.md"; then
+        echo "OK: references plan_create_beads"
       else
-        echo "FAIL: missing plan_to_beads reference"
+        echo "FAIL: missing plan_create_beads reference"
         exit 1
       fi
     assertions:
@@ -94,13 +94,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Rule references execute_plan
-  - name: "references_execute_plan"
+  # Case 4: Rule references plan_execute
+  - name: "references_plan_execute"
     run: |
-      if grep -q "execute_plan" "$PLUGIN_DIR/plugins/yf/rules/yf-plan-intake.md"; then
-        echo "OK: references execute_plan"
+      if grep -q "plan_execute" "$PLUGIN_DIR/plugins/yf/rules/yf-plan-intake.md"; then
+        echo "OK: references plan_execute"
       else
-        echo "FAIL: missing execute_plan reference"
+        echo "FAIL: missing plan_execute reference"
         exit 1
       fi
     assertions:
@@ -112,10 +112,10 @@ steps:
   # Case 5: Rule references yf capture
   - name: "references_chronicle_capture"
     run: |
-      if grep -q "yf:capture" "$PLUGIN_DIR/plugins/yf/rules/yf-plan-intake.md"; then
-        echo "OK: references yf:capture"
+      if grep -q "yf:chronicle_capture" "$PLUGIN_DIR/plugins/yf/rules/yf-plan-intake.md"; then
+        echo "OK: references yf:chronicle_capture"
       else
-        echo "FAIL: missing yf:capture reference"
+        echo "FAIL: missing yf:chronicle_capture reference"
         exit 1
       fi
     assertions:
@@ -179,7 +179,7 @@ steps:
   # Case 9: yf-beads.md contains chronicle capture step
   - name: "beads_has_chronicle_step"
     run: |
-      if grep -q "yf:capture topic:session-close" "$PLUGIN_DIR/plugins/yf/rules/yf-beads.md"; then
+      if grep -q "yf:chronicle_capture topic:session-close" "$PLUGIN_DIR/plugins/yf/rules/yf-beads.md"; then
         echo "OK: BEADS.md has chronicle capture step"
       else
         echo "FAIL: BEADS.md missing chronicle capture"
@@ -191,13 +191,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 10: execute_plan has chronicle capture on completion
-  - name: "execute_plan_has_chronicle_capture"
+  # Case 10: plan_execute has chronicle capture on completion
+  - name: "plan_execute_has_chronicle_capture"
     run: |
-      if grep -q "yf:capture topic:completion" "$PLUGIN_DIR/plugins/yf/skills/execute_plan/SKILL.md"; then
-        echo "OK: execute_plan has chronicle capture"
+      if grep -q "yf:chronicle_capture topic:completion" "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md"; then
+        echo "OK: plan_execute has chronicle capture"
       else
-        echo "FAIL: execute_plan missing chronicle capture"
+        echo "FAIL: plan_execute missing chronicle capture"
         exit 1
       fi
     assertions:
@@ -206,13 +206,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 11: execute_plan has diary generation on completion
-  - name: "execute_plan_has_diary_generation"
+  # Case 11: plan_execute has diary generation on completion
+  - name: "plan_execute_has_diary_generation"
     run: |
-      if grep -q "yf:diary" "$PLUGIN_DIR/plugins/yf/skills/execute_plan/SKILL.md"; then
-        echo "OK: execute_plan has diary generation"
+      if grep -q "yf:chronicle_diary" "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md"; then
+        echo "OK: plan_execute has diary generation"
       else
-        echo "FAIL: execute_plan missing diary generation"
+        echo "FAIL: plan_execute missing diary generation"
         exit 1
       fi
     assertions:
@@ -224,7 +224,7 @@ steps:
   # Case 12: BEADS.md has diary generation step
   - name: "beads_has_diary_step"
     run: |
-      if grep -q "yf:diary" "$PLUGIN_DIR/plugins/yf/rules/yf-beads.md"; then
+      if grep -q "yf:chronicle_diary" "$PLUGIN_DIR/plugins/yf/rules/yf-beads.md"; then
         echo "OK: BEADS.md has diary generation step"
       else
         echo "FAIL: BEADS.md missing diary generation"

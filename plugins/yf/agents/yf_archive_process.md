@@ -1,5 +1,5 @@
 ---
-name: yf_archivist
+name: yf_archive_process
 description: Archive processing agent that converts archive beads into permanent documentation
 ---
 

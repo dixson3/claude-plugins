@@ -1,5 +1,5 @@
 ---
-name: yf:diary
+name: yf:chronicle_diary
 description: Generate diary entries from open chronicles and close them
 arguments:
   - name: plan_idx
@@ -13,7 +13,7 @@ Generate consolidated diary entries from open chronicle beads.
 
 ## Instructions
 
-Use the `yf_diary` agent to:
+Use the `yf_chronicle_diary` agent to:
 1. Query all open chronicle beads
 2. Group beads by theme/topic
 3. Generate diary markdown files
@@ -21,11 +21,11 @@ Use the `yf_diary` agent to:
 
 ## Behavior
 
-When invoked with `/yf:diary`:
+When invoked with `/yf:chronicle_diary`:
 
 1. **Query beads**: List all open beads with `ys:chronicle` label (optionally filtered by `plan:<idx>`)
 2. **Check chronicle gate**: If `plan_idx` specified, check for open `ys:chronicle-gate` bead. If gate is still open, warn: "Plan still executing — diary will capture partial arc. Proceed anyway?" If no gate or gate closed, proceed.
-3. **Launch agent**: Use the `yf_diary` agent to process
+3. **Launch agent**: Use the `yf_chronicle_diary` agent to process
 4. **Generate files**: Create diary entries in `docs/diary/`
 5. **Close beads**: Mark processed beads as closed
 
@@ -110,7 +110,7 @@ Diary generation complete!
 The diary skill is designed to run before git push:
 
 1. Pre-push hook detects open chronicles
-2. Signals to run `/yf:diary`
+2. Signals to run `/yf:chronicle_diary`
 3. Diary entries are staged with the push
 4. Chronicles are closed
 

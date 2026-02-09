@@ -1,5 +1,5 @@
 ---
-name: yf:select_agent
+name: yf:plan_select_agent
 description: Match a task to the best available agent based on capabilities and assign an agent label
 arguments:
   - name: task_id
@@ -46,8 +46,8 @@ For each discovered agent, extract:
 
 | Agent | Plugin | Specialization |
 |---|---|---|
-| `yf_recall` | yf | Context recovery from beads |
-| `yf_diary` | yf | Diary generation from chronicles |
+| `yf_chronicle_recall` | yf | Context recovery from beads |
+| `yf_chronicle_diary` | yf | Diary generation from chronicles |
 
 ### Step 3: Read Task Context
 
@@ -66,8 +66,8 @@ Compare task content against each agent's capabilities:
 3. **Specificity**: Prefer the most specialized agent over general-purpose ones
 
 **Matching rules:**
-- If the task involves diary generation, chronicles -> `yf_diary`
-- If the task involves context recall, recovery -> `yf_recall`
+- If the task involves diary generation, chronicles -> `yf_chronicle_diary`
+- If the task involves context recall, recovery -> `yf_chronicle_recall`
 - If no agent specializes in this area -> no label (primary agent handles it)
 - If multiple agents match -> prefer the most specific match
 

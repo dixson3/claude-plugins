@@ -200,10 +200,10 @@ else
   echo "Recommendations:"
   echo ""
   if [ "$RESEARCH_COUNT" -gt 0 ]; then
-    echo "1. Run /yf:archive type:research to document the research findings"
+    echo "1. Run /yf:archive_capture type:research to document the research findings"
   fi
   if [ "$DECISION_COUNT" -gt 0 ]; then
-    echo "2. Run /yf:archive type:decision to document the decisions"
+    echo "2. Run /yf:archive_capture type:decision to document the decisions"
   fi
   echo ""
   echo "Or run with --draft to auto-create draft beads:"

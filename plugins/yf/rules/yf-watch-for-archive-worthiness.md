@@ -59,21 +59,21 @@ Flag these events as archive-worthy decisions:
 When you notice an archive-worthy event:
 
 1. Briefly note it in your response: "This seems archive-worthy."
-2. For research: Suggest: "Consider running `/yf:archive type:research` to document this research."
-3. For decisions: Suggest: "Consider running `/yf:archive type:decision` to document this decision."
+2. For research: Suggest: "Consider running `/yf:archive_capture type:research` to document this research."
+3. For decisions: Suggest: "Consider running `/yf:archive_capture type:decision` to document this decision."
 
 **Do NOT auto-capture.** Only flag and suggest. The user decides when to archive.
 
 ### Example Suggestions
 
 After researching libraries:
-> "This research seems archive-worthy — you've evaluated multiple GraphQL clients. Consider running `/yf:archive type:research area:tooling` to document the findings."
+> "This research seems archive-worthy — you've evaluated multiple GraphQL clients. Consider running `/yf:archive_capture type:research area:tooling` to document the findings."
 
 After a design decision:
-> "This architecture decision seems archive-worthy. Consider running `/yf:archive type:decision area:architecture` to document the choice and alternatives considered."
+> "This architecture decision seems archive-worthy. Consider running `/yf:archive_capture type:decision area:architecture` to document the choice and alternatives considered."
 
 After investigating an API:
-> "This API investigation seems archive-worthy. Consider running `/yf:archive type:research area:api` to preserve the findings."
+> "This API investigation seems archive-worthy. Consider running `/yf:archive_capture type:research area:api` to preserve the findings."
 
 ### Non-Triggers
 

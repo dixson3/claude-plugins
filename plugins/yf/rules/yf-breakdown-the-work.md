@@ -10,7 +10,7 @@ Every time you claim a task (`bd update <id> --status=in_progress`), before writ
 
 1. **Read the task**: `bd show <task-id>`
 2. **Assess scope**: Is this atomic (single file, single concern) or non-trivial (multiple files, multiple concerns)?
-3. **If non-trivial**: Invoke `/yf:breakdown_task <task-id>` before coding
+3. **If non-trivial**: Invoke `/yf:plan_breakdown <task-id>` before coding
 4. **If atomic**: Proceed directly with implementation
 
 ## What Counts as Non-Trivial

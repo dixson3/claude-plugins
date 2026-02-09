@@ -267,7 +267,7 @@ if [ "$MODE" = "pre-push" ]; then
     echo "  ${CANDIDATE_REASONS}"
     echo ""
     echo "A draft chronicle bead has been created."
-    echo "Run /yf:diary to process it into a diary entry."
+    echo "Run /yf:chronicle_diary to process it into a diary entry."
     echo ""
     echo "=========================================="
     echo ""

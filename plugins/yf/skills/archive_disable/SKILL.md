@@ -68,7 +68,7 @@ Nothing to disable.
 ## Re-enabling
 
 After disable, the archivist remains installed. You can:
-- Continue archiving with `/yf:archive`
+- Continue archiving with `/yf:archive_capture`
 - Process new archives with `/yf:archive_process`
 - Recall won't show disabled archives (they're closed)
 

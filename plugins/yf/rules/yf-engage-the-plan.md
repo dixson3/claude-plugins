@@ -2,7 +2,7 @@
 
 **Applies:** Always (different triggers for different states)
 
-When the user says plan lifecycle phrases, invoke the appropriate action via `/yf:engage_plan`.
+When the user says plan lifecycle phrases, invoke the appropriate action via `/yf:plan_engage`.
 
 ## Note
 
@@ -31,4 +31,4 @@ The Draft transition is now handled automatically by ExitPlanMode. When the user
 
 ## Action
 
-Invoke: `/yf:engage_plan` with the detected action context.
+Invoke: `/yf:plan_engage` with the detected action context.

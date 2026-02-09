@@ -1,5 +1,5 @@
 ---
-name: yf:disable
+name: yf:chronicle_disable
 description: Close all open chronicle beads without generating diary entries
 arguments: []
 ---
@@ -17,7 +17,7 @@ When you need to abandon open chronicles without generating diary entries:
 
 ## Behavior
 
-When invoked with `/yf:disable`:
+When invoked with `/yf:chronicle_disable`:
 
 1. **Query beads**: List all open beads with `ys:chronicle` label
 2. **Close each**: Close with reason "WONT-DIARY: chronicler disabled"
@@ -50,7 +50,7 @@ Closing beads...
 
 ## Use Cases
 
-Use `/yf:disable` when:
+Use `/yf:chronicle_disable` when:
 - You want to abandon captured context
 - The captures are no longer relevant
 - You're resetting the project state
@@ -70,13 +70,13 @@ Nothing to disable.
 ## Re-enabling
 
 After disable, chronicler remains installed. You can:
-- Continue capturing with `/yf:capture`
-- Generate diaries with `/yf:diary`
+- Continue capturing with `/yf:chronicle_capture`
+- Generate diaries with `/yf:chronicle_diary`
 - Recall won't show disabled chronicles (they're closed)
 
 ## Difference from Diary
 
-| Action | `/yf:diary` | `/yf:disable` |
+| Action | `/yf:chronicle_diary` | `/yf:chronicle_disable` |
 |--------|---------------------|----------------------|
 | Closes beads | Yes | Yes |
 | Generates files | Yes | No |

@@ -1,5 +1,5 @@
 ---
-name: yf:capture
+name: yf:chronicle_capture
 description: Capture current context as a chronicle bead
 arguments:
   - name: topic
@@ -21,7 +21,7 @@ Create a bead that captures the current working context, including:
 
 ## Behavior
 
-When invoked with `/yf:capture [topic:<topic>]`:
+When invoked with `/yf:chronicle_capture [topic:<topic>]`:
 
 1. **Analyze context**: Review the current conversation and work state
 2. **Summarize**: Create a concise summary of the context
@@ -82,13 +82,13 @@ Brief description of what was happening.
 
 ```bash
 # Capture with auto-detected topic
-/yf:capture
+/yf:chronicle_capture
 
 # Capture with specific topic
-/yf:capture topic:feature
+/yf:chronicle_capture topic:feature
 
 # Capture before context switch
-/yf:capture topic:planning
+/yf:chronicle_capture topic:planning
 ```
 
 ## Expected Output
@@ -102,7 +102,7 @@ Labels: ys:chronicle, ys:topic:feature
 
 Created chronicle bead: abc123
 
-Context captured successfully. Use /yf:recall to restore later.
+Context captured successfully. Use /yf:chronicle_recall to restore later.
 ```
 
 ## When to Capture

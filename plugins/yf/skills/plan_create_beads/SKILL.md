@@ -1,5 +1,5 @@
 ---
-name: yf:plan_to_beads
+name: yf:plan_create_beads
 description: Convert a plan document into a beads hierarchy with epics, tasks, gates, and dependencies
 arguments:
   - name: plan_file
@@ -149,7 +149,7 @@ bd create --type=gate \
   --silent
 ```
 
-This gate stays open until all plan tasks close. When `plan-exec.sh status` detects completion, it closes this gate, signaling that `/yf:diary plan:<idx>` can now generate the full-arc diary.
+This gate stays open until all plan tasks close. When `plan-exec.sh status` detects completion, it closes this gate, signaling that `/yf:chronicle_diary plan:<idx>` can now generate the full-arc diary.
 
 ### Step 10: Defer All Tasks
 

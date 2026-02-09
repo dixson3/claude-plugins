@@ -1,5 +1,5 @@
 ---
-name: yf_diary
+name: yf_chronicle_diary
 description: Diary generation agent that consolidates chronicles into markdown entries
 ---
 

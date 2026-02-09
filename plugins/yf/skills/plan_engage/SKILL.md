@@ -1,5 +1,5 @@
 ---
-name: yf:engage_plan
+name: yf:plan_engage
 description: Plan lifecycle state machine - manages Draft, Ready, Executing, Paused, and Completed states
 arguments:
   - name: action

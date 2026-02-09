@@ -6,7 +6,7 @@ When you see "Plan saved to docs/plans/" in the conversation (from the ExitPlanM
 
 ## Behavior
 
-Before proceeding with beads creation (the plan_to_beads step of the auto-chain), invoke `/yf:capture topic:planning` to capture the planning context as a chronicle bead. This bead will automatically be tagged with the plan label if a plan is active.
+Before proceeding with beads creation (the plan_to_beads step of the auto-chain), invoke `/yf:chronicle_capture topic:planning` to capture the planning context as a chronicle bead. This bead will automatically be tagged with the plan label if a plan is active.
 
 ## Why
 

@@ -29,7 +29,7 @@ When ExitPlanMode completes and you see "Auto-chaining plan lifecycle..." in the
 
 2. **Update MEMORY.md**: Add the plan reference under "Current Plans" in the project MEMORY.md.
 
-3. **Create beads**: Invoke `/yf:plan_to_beads` with the plan file. This creates the epic/task hierarchy, gates, labels, dependencies, and defers all tasks.
+3. **Create beads**: Invoke `/yf:plan_create_beads` with the plan file. This creates the epic/task hierarchy, gates, labels, dependencies, and defers all tasks.
 
 4. **Start execution**: Run the plan execution start:
    ```bash
@@ -39,17 +39,17 @@ When ExitPlanMode completes and you see "Auto-chaining plan lifecycle..." in the
    ```
    This resolves the gate, undefers tasks, and removes `.claude/.plan-gate`.
 
-5. **Begin dispatch**: Invoke `/yf:execute_plan` to start the task pump and dispatch work.
+5. **Begin dispatch**: Invoke `/yf:plan_execute` to start the task pump and dispatch work.
 
 ## Abort
 
 If any step fails, stop the chain and report the error. The user can:
 - Retry the failed step manually
-- Run `/yf:dismiss_gate` to abandon the plan lifecycle
+- Run `/yf:plan_dismiss_gate` to abandon the plan lifecycle
 
 ## Important
 
 - Do NOT wait for user confirmation between steps — this is an automatic chain
 - The plan gate blocks Edit/Write on implementation files, but all auto-chain operations use Bash (`bd` commands) and exempt paths (`docs/plans/`), so the gate does not interfere
 - If the user said "engage the plan" explicitly (gate already existed before ExitPlanMode), the hook exits silently with no "Auto-chaining" output — this rule does NOT fire in that case
-- Legacy manual triggers ("the plan is ready", "execute the plan") still work via `/yf:engage_plan`
+- Legacy manual triggers ("the plan is ready", "execute the plan") still work via `/yf:plan_engage`

@@ -47,7 +47,7 @@ bash "$SCRIPT_DIR/scripts/chronicle-check.sh" pre-push 2>&1 || true
 # ── Advisory: report open chronicles (including any new drafts) ────
 warn_open_beads "ys:chronicle" \
     "CHRONICLER: Open chronicles detected" \
-    "/yf:diary" "/yf:disable"
+    "/yf:chronicle_diary" "/yf:chronicle_disable"
 
 # ── Archivist check: warn about open archive beads ─────────────────
 if yf_is_archivist_on; then

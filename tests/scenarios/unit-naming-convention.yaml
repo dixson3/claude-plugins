@@ -1,0 +1,188 @@
+name: "Unit: skill and agent naming conventions"
+
+steps:
+  # Case 1: Every skill directory has a SKILL.md with name: yf:<dirname>
+  - name: "skill_names_match_directories"
+    run: |
+      ERRORS=""
+      for dir in "$PLUGIN_DIR"/plugins/yf/skills/*/; do
+        [ -d "$dir" ] || continue
+        DIRNAME=$(basename "$dir")
+        SKILL_FILE="$dir/SKILL.md"
+        if [ ! -f "$SKILL_FILE" ]; then
+          ERRORS="$ERRORS\n  $DIRNAME: missing SKILL.md"
+          continue
+        fi
+        # Extract the name: field from frontmatter
+        NAME_FIELD=$(grep '^name:' "$SKILL_FILE" | head -1 | sed 's/^name: *//')
+        EXPECTED="yf:${DIRNAME}"
+        if [ "$NAME_FIELD" != "$EXPECTED" ]; then
+          ERRORS="$ERRORS\n  $DIRNAME: expected '$EXPECTED', got '$NAME_FIELD'"
+        fi
+      done
+      if [ -n "$ERRORS" ]; then
+        printf "FAIL: skill name mismatches:%b\n" "$ERRORS"
+        exit 1
+      fi
+      echo "OK: all skill name: fields match yf:<dirname>"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Every agent file has a name: field matching yf_<filename_without_ext>
+  - name: "agent_names_match_filenames"
+    run: |
+      ERRORS=""
+      for agent in "$PLUGIN_DIR"/plugins/yf/agents/*.md; do
+        [ -f "$agent" ] || continue
+        BASENAME=$(basename "$agent" .md)
+        NAME_FIELD=$(grep '^name:' "$agent" | head -1 | sed 's/^name: *//')
+        EXPECTED="$BASENAME"
+        if [ "$NAME_FIELD" != "$EXPECTED" ]; then
+          ERRORS="$ERRORS\n  $BASENAME: expected '$EXPECTED', got '$NAME_FIELD'"
+        fi
+      done
+      if [ -n "$ERRORS" ]; then
+        printf "FAIL: agent name mismatches:%b\n" "$ERRORS"
+        exit 1
+      fi
+      echo "OK: all agent name: fields match yf_<filename>"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: All skill names use yf: prefix (no bare names)
+  - name: "all_skills_have_yf_prefix"
+    run: |
+      BARE=""
+      for dir in "$PLUGIN_DIR"/plugins/yf/skills/*/; do
+        [ -d "$dir" ] || continue
+        DIRNAME=$(basename "$dir")
+        SKILL_FILE="$dir/SKILL.md"
+        [ -f "$SKILL_FILE" ] || continue
+        NAME_FIELD=$(grep '^name:' "$SKILL_FILE" | head -1 | sed 's/^name: *//')
+        case "$NAME_FIELD" in
+          yf:*) ;; # correctly prefixed
+          *) BARE="$BARE $NAME_FIELD" ;;
+        esac
+      done
+      if [ -n "$BARE" ]; then
+        echo "FAIL: bare (unprefixed) skill names found:$BARE"
+        exit 1
+      fi
+      echo "OK: all skill names use yf: prefix"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: All agent names use yf_ prefix (no bare names)
+  - name: "all_agents_have_yf_prefix"
+    run: |
+      BARE=""
+      for agent in "$PLUGIN_DIR"/plugins/yf/agents/*.md; do
+        [ -f "$agent" ] || continue
+        NAME_FIELD=$(grep '^name:' "$agent" | head -1 | sed 's/^name: *//')
+        case "$NAME_FIELD" in
+          yf_*) ;; # correctly prefixed
+          *) BARE="$BARE $NAME_FIELD" ;;
+        esac
+      done
+      if [ -n "$BARE" ]; then
+        echo "FAIL: bare (unprefixed) agent names found:$BARE"
+        exit 1
+      fi
+      echo "OK: all agent names use yf_ prefix"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: No old skill directory names remain
+  - name: "no_old_skill_directories"
+    run: |
+      OLD_DIRS=""
+      for old in capture recall diary disable archive engage_plan plan_to_beads execute_plan task_pump breakdown_task select_agent dismiss_gate; do
+        if [ -d "$PLUGIN_DIR/plugins/yf/skills/$old" ]; then
+          OLD_DIRS="$OLD_DIRS $old"
+        fi
+      done
+      if [ -n "$OLD_DIRS" ]; then
+        echo "FAIL: old skill directories still exist:$OLD_DIRS"
+        exit 1
+      fi
+      echo "OK: no old skill directory names remain"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: No old agent file names remain
+  - name: "no_old_agent_filenames"
+    run: |
+      OLD_AGENTS=""
+      for old in yf_recall yf_diary yf_archivist; do
+        if [ -f "$PLUGIN_DIR/plugins/yf/agents/${old}.md" ]; then
+          OLD_AGENTS="$OLD_AGENTS $old"
+        fi
+      done
+      if [ -n "$OLD_AGENTS" ]; then
+        echo "FAIL: old agent files still exist:$OLD_AGENTS"
+        exit 1
+      fi
+      echo "OK: no old agent file names remain"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: Expected new skill directories exist
+  - name: "new_skill_directories_exist"
+    run: |
+      MISSING=""
+      for skill in chronicle_capture chronicle_recall chronicle_diary chronicle_disable \
+                   archive_capture archive_process archive_disable archive_suggest \
+                   plan_engage plan_create_beads plan_execute plan_pump plan_breakdown \
+                   plan_select_agent plan_dismiss_gate plan_intake setup; do
+        if [ ! -d "$PLUGIN_DIR/plugins/yf/skills/$skill" ]; then
+          MISSING="$MISSING $skill"
+        fi
+      done
+      if [ -n "$MISSING" ]; then
+        echo "FAIL: missing expected skill directories:$MISSING"
+        exit 1
+      fi
+      echo "OK: all expected skill directories exist"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: Expected new agent files exist
+  - name: "new_agent_files_exist"
+    run: |
+      MISSING=""
+      for agent in yf_chronicle_recall yf_chronicle_diary yf_archive_process; do
+        if [ ! -f "$PLUGIN_DIR/plugins/yf/agents/${agent}.md" ]; then
+          MISSING="$MISSING $agent"
+        fi
+      done
+      if [ -n "$MISSING" ]; then
+        echo "FAIL: missing expected agent files:$MISSING"
+        exit 1
+      fi
+      echo "OK: all expected agent files exist"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

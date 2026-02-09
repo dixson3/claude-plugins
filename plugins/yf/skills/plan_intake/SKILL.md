@@ -54,7 +54,7 @@ Check if beads have been created for this plan:
 bd list -l plan:<idx> --type=epic
 ```
 
-- **If no beads exist**: Invoke `/yf:plan_to_beads docs/plans/plan-<idx>.md` to create the structured hierarchy (epic, tasks, gates, dependencies).
+- **If no beads exist**: Invoke `/yf:plan_create_beads docs/plans/plan-<idx>.md` to create the structured hierarchy (epic, tasks, gates, dependencies).
 - **If beads already exist**: Skip this step.
 
 ### Step 3: Ensure Plan is Executing
@@ -76,12 +76,12 @@ test -f .claude/.plan-gate && echo "gate exists" || echo "no gate"
 ### Step 4: Capture Planning Context
 
 If this is the start of implementation and there was planning discussion in the conversation (design rationale, alternatives considered, architectural decisions):
-- Invoke `/yf:capture topic:planning` to preserve the planning context as a chronicle bead.
+- Invoke `/yf:chronicle_capture topic:planning` to preserve the planning context as a chronicle bead.
 - Skip if the planning discussion was trivial (less than a few exchanges).
 
 ### Step 5: Dispatch via Task Pump
 
-Invoke `/yf:execute_plan` to begin structured dispatch via the task pump.
+Invoke `/yf:plan_execute` to begin structured dispatch via the task pump.
 
 ## On Success
 

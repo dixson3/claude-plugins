@@ -59,7 +59,7 @@ The `name` field in SKILL.md frontmatter uses `plugin:skill_name` format:
 
 ```yaml
 ---
-name: yf:capture          # CORRECT — namespaced
+name: yf:chronicle_capture          # CORRECT — namespaced
 description: Capture context
 ---
 ```
@@ -70,7 +70,7 @@ name: capture              # WRONG — will collide with other plugins
 ---
 ```
 
-Cross-plugin skill references in content also use this format: `/yf:execute_plan`, `/yf:capture`.
+Cross-plugin skill references in content also use this format: `/yf:plan_execute`, `/yf:chronicle_capture`.
 
 ### Agents
 
@@ -78,7 +78,7 @@ Agent `name` fields use a `plugin_` prefix (underscore, not colon):
 
 ```yaml
 ---
-name: yf_recall              # CORRECT — prefixed with plugin name
+name: yf_chronicle_recall              # CORRECT — prefixed with plugin name
 description: Context recovery agent
 ---
 ```
@@ -86,6 +86,32 @@ description: Context recovery agent
 ### Rules
 
 Rule files installed to `.claude/rules/` use `yf-` prefix (e.g., `yf-beads.md`, `yf-engage-the-plan.md`). Rules are project-scoped, not plugin-scoped, so the prefix prevents collisions.
+
+### Capability-Prefixed Naming
+
+Within a plugin, skills and agents are grouped by **capability**. The capability
+name is the first segment after the plugin prefix:
+
+    yf:<capability>_<action>      # skill
+    yf_<capability>_<role>        # agent
+    ys:<capability>[:subtype]     # bead label
+    yf-<capability>-<desc>.md     # rule
+
+Current capabilities:
+
+| Capability | Prefix | Skills | Agents |
+|---|---|---|---|
+| Plan lifecycle | `plan` | plan_engage, plan_create_beads, plan_execute, plan_pump, plan_breakdown, plan_select_agent, plan_dismiss_gate, plan_intake | — |
+| Chronicler | `chronicle` | chronicle_capture, chronicle_recall, chronicle_diary, chronicle_disable | yf_chronicle_recall, yf_chronicle_diary |
+| Archivist | `archive` | archive_capture, archive_process, archive_disable, archive_suggest | yf_archive_process |
+| Core | (none) | setup | — |
+
+When adding a new capability:
+1. Choose a singular noun prefix (e.g., `review`, `lint`)
+2. Name skills as `yf:<prefix>_<action>`
+3. Name agents as `yf_<prefix>_<role>`
+4. Use `ys:<prefix>` for bead labels
+5. Use `yf-<prefix>-` for rule filenames
 
 ## Creating a New Plugin
 
@@ -143,7 +169,7 @@ Rule files installed to `.claude/rules/` use `yf-` prefix (e.g., `yf-beads.md`, 
    - Behavior guidelines and instructions in body
 
 4. **Add agents** (optional): `agents/<plugin_agentname>.md`
-   - Frontmatter `name` MUST be prefixed with plugin name (e.g., `yf_recall`)
+   - Frontmatter `name` MUST be prefixed with plugin name (e.g., `yf_chronicle_recall`)
    - Include `description` and optional `on-start` in frontmatter
    - Role, personality, and interaction guidelines in body
 
@@ -188,4 +214,4 @@ Rules in `.claude/rules/yf-*.md` are gitignored symlinks pointing to `plugins/yf
 
 ## Current Plugins
 
-- **yf** (v2.5.0) - Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation
+- **yf** (v2.8.0) - Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation

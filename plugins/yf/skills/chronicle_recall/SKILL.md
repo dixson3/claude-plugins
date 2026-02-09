@@ -1,5 +1,5 @@
 ---
-name: yf:recall
+name: yf:chronicle_recall
 description: Recall and summarize open chronicle beads to restore context
 arguments: []
 ---
@@ -10,7 +10,7 @@ Restore context from open chronicle beads at the start of a session.
 
 ## Instructions
 
-Use the `yf_recall` agent to:
+Use the `yf_chronicle_recall` agent to:
 1. Query all open chronicle beads
 2. Group them by topic and timeline
 3. Synthesize a context summary
@@ -18,10 +18,10 @@ Use the `yf_recall` agent to:
 
 ## Behavior
 
-When invoked with `/yf:recall`:
+When invoked with `/yf:chronicle_recall`:
 
 1. **Query beads**: List all open beads with `ys:chronicle` label
-2. **Launch agent**: Use the `yf_recall` agent to process the beads
+2. **Launch agent**: Use the `yf_chronicle_recall` agent to process the beads
 3. **Output summary**: Present the synthesized context
 
 ### Agent Invocation
@@ -61,7 +61,7 @@ Memory leak investigation:
 - Waiting for metrics from production
 
 ---
-3 chronicles recalled. Use /yf:capture to save new context.
+3 chronicles recalled. Use /yf:chronicle_capture to save new context.
 ```
 
 ## Auto-Recall
@@ -73,7 +73,7 @@ When `/yf:setup` is run, it can configure a session start hook to auto-run recal
   "hooks": {
     "SessionStart": [
       {
-        "command": "claude --skill yf:recall"
+        "command": "claude --skill yf:chronicle_recall"
       }
     ]
   }
@@ -99,5 +99,5 @@ This could mean:
 - You haven't captured any context yet
 - All previous chronicles have been converted to diary entries
 
-Use /yf:capture to start capturing context.
+Use /yf:chronicle_capture to start capturing context.
 ```

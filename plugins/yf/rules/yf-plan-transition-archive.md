@@ -11,9 +11,9 @@ Before proceeding with beads creation (the plan_to_beads step of the auto-chain)
 1. **Check for research**: Did the planning discussion involve web searches, external documentation, or tool evaluations?
 2. **Check for decisions**: Did the planning discussion involve architecture choices, technology selections, or scope changes with alternatives considered?
 
-If research was conducted, invoke `/yf:archive type:research` to create an archive bead capturing the research findings (sources, conclusions, recommendations).
+If research was conducted, invoke `/yf:archive_capture type:research` to create an archive bead capturing the research findings (sources, conclusions, recommendations).
 
-If significant decisions were made (with alternatives considered), invoke `/yf:archive type:decision` to create an archive bead capturing the decision (context, alternatives, reasoning).
+If significant decisions were made (with alternatives considered), invoke `/yf:archive_capture type:decision` to create an archive bead capturing the decision (context, alternatives, reasoning).
 
 These beads will automatically be tagged with the plan label if a plan is active.
 

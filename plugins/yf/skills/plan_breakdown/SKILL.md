@@ -1,5 +1,5 @@
 ---
-name: yf:breakdown_task
+name: yf:plan_breakdown
 description: Decompose a non-trivial task into child beads with proper dependencies and agent assignments
 arguments:
   - name: task_id
@@ -104,11 +104,11 @@ Breakdown: <task_id> — "<task title>"
   Assessment: Non-trivial (multiple files, sequential phases)
   Created: 4 child tasks
   Dependencies: 3 sequential deps wired
-  Agent assignments: 1 task assigned to yf_diary
+  Agent assignments: 1 task assigned to yf_chronicle_diary
 
   Children:
     1. <child-1> — "<title>" [ready]
     2. <child-2> — "<title>" [blocked by child-1]
     3. <child-3> — "<title>" [blocked by child-2]
-    4. <child-4> — "<title>" [ready, agent:yf_diary]
+    4. <child-4> — "<title>" [ready, agent:yf_chronicle_diary]
 ```

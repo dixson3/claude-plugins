@@ -21,8 +21,8 @@ across sessions. There is no `bd sync` step and no sync branch.
 **When ending a work session**, complete the following steps:
 
 1. **File issues for remaining work** - Create beads for anything that needs follow-up
-2. **Capture context** (if significant work was done) - Invoke `/yf:capture topic:session-close` to preserve session context as a chronicle bead. Skip if the session was trivial (only minor changes or routine operations).
-3. **Generate diary** (if open chronicles exist) - Invoke `/yf:diary` to process all open chronicles into diary entries. Stage the generated files for commit.
+2. **Capture context** (if significant work was done) - Invoke `/yf:chronicle_capture topic:session-close` to preserve session context as a chronicle bead. Skip if the session was trivial (only minor changes or routine operations).
+3. **Generate diary** (if open chronicles exist) - Invoke `/yf:chronicle_diary` to process all open chronicles into diary entries. Stage the generated files for commit.
 4. **Run quality gates** (if code changed) - Tests, linters, builds
 5. **Update issue status** - Close finished work, update in-progress items
 6. **Commit code changes** - Stage and commit implementation files

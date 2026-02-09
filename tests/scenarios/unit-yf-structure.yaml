@@ -51,7 +51,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Agents have yf_ prefix not chronicler_
+  # Case 4: Agents have yf_ prefix with correct names
   - name: "agents_have_yf_prefix"
     run: |
       FOUND_OLD=""
@@ -61,21 +61,33 @@ steps:
         if echo "$BASENAME" | grep -q '^chronicler_'; then
           FOUND_OLD="$FOUND_OLD $BASENAME"
         fi
+        # Also check for old unprefixed agent names
+        case "$BASENAME" in
+          yf_recall|yf_diary|yf_archivist)
+            FOUND_OLD="$FOUND_OLD $BASENAME"
+            ;;
+        esac
       done
       if [ -n "$FOUND_OLD" ]; then
-        echo "FAIL: agents still use chronicler_ prefix:$FOUND_OLD"
+        echo "FAIL: agents still use old names:$FOUND_OLD"
         exit 1
       fi
-      # Verify yf_ agents exist
+      # Verify expected yf_ agents exist
+      MISSING=""
+      for expected in yf_chronicle_recall yf_chronicle_diary yf_archive_process; do
+        if [ ! -f "$PLUGIN_DIR/plugins/yf/agents/${expected}.md" ]; then
+          MISSING="$MISSING $expected"
+        fi
+      done
+      if [ -n "$MISSING" ]; then
+        echo "FAIL: missing expected agents:$MISSING"
+        exit 1
+      fi
       YF_COUNT=0
       for agent in "$PLUGIN_DIR"/plugins/yf/agents/yf_*.md; do
         [ -f "$agent" ] && YF_COUNT=$((YF_COUNT + 1))
       done
-      if [ "$YF_COUNT" -lt 1 ]; then
-        echo "FAIL: no yf_ prefixed agents found"
-        exit 1
-      fi
-      echo "OK: $YF_COUNT agents with yf_ prefix, no chronicler_ agents"
+      echo "OK: $YF_COUNT agents with yf_ prefix, expected agents present"
     assertions:
       - type: exit_code
         value: "0"

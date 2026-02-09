@@ -30,7 +30,7 @@ When invoked with `/yf:archive_suggest [--draft] [--since "<timespec>"]`:
 1. **Run the script**: Execute `archive-suggest.sh` with provided arguments
 2. **Report findings**: Show research and decision candidates found
 3. **If `--draft`**: Script auto-creates draft beads for detected candidates
-4. **If no `--draft`**: Suggest manual `/yf:archive` invocations for each candidate
+4. **If no `--draft`**: Suggest manual `/yf:archive_capture` invocations for each candidate
 
 ### Arguments
 
@@ -61,8 +61,8 @@ Research candidates: 2
 Decision candidates: 1
 
 Recommendations:
-1. Run /yf:archive type:research to document the research findings
-2. Run /yf:archive type:decision to document the decisions
+1. Run /yf:archive_capture type:research to document the research findings
+2. Run /yf:archive_capture type:decision to document the decisions
 ```
 
 ## Use Cases

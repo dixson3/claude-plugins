@@ -14,7 +14,7 @@ claude --plugin-dir /path/to/yoshiko-studios-marketplace
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation | 2.4.0 |
+| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation | 2.8.0 |
 
 ## Plugin Overview
 
@@ -23,20 +23,20 @@ claude --plugin-dir /path/to/yoshiko-studios-marketplace
 Unified plan lifecycle management, execution orchestration, context persistence, and diary generation.
 
 **Plan Lifecycle & Orchestration:**
-- `/yf:engage_plan` — State machine: Draft → Ready → Executing → Paused → Completed
-- `/yf:plan_to_beads` — Convert plan docs to beads hierarchy (epics, tasks, dependencies)
+- `/yf:plan_engage` — State machine: Draft → Ready → Executing → Paused → Completed
+- `/yf:plan_create_beads` — Convert plan docs to beads hierarchy (epics, tasks, dependencies)
 - `/yf:plan_intake` — Intake checklist for plans entering outside the auto-chain
-- `/yf:execute_plan` — Orchestrated task dispatch with parallel agent routing
-- `/yf:task_pump` — Pull ready beads into parallel agent dispatch
-- `/yf:breakdown_task` — Recursive decomposition of non-trivial tasks
-- `/yf:select_agent` — Auto-discover agents and match to tasks
-- `/yf:dismiss_gate` — Escape hatch to abandon plan gate
+- `/yf:plan_execute` — Orchestrated task dispatch with parallel agent routing
+- `/yf:plan_pump` — Pull ready beads into parallel agent dispatch
+- `/yf:plan_breakdown` — Recursive decomposition of non-trivial tasks
+- `/yf:plan_select_agent` — Auto-discover agents and match to tasks
+- `/yf:plan_dismiss_gate` — Escape hatch to abandon plan gate
 
 **Context Persistence & Diary:**
-- `/yf:capture` — Capture context as a chronicle bead
-- `/yf:recall` — Restore context from open chronicles
-- `/yf:diary` — Generate diary entries from chronicles
-- `/yf:disable` — Close chronicles without diary generation
+- `/yf:chronicle_capture` — Capture context as a chronicle bead
+- `/yf:chronicle_recall` — Restore context from open chronicles
+- `/yf:chronicle_diary` — Generate diary entries from chronicles
+- `/yf:chronicle_disable` — Close chronicles without diary generation
 
 **Configuration:**
 - `/yf:setup` — Configure Yoshiko Flow for a project (first-run and reconfiguration)

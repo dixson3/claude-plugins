@@ -1,5 +1,5 @@
 ---
-name: yf:task_pump
+name: yf:plan_pump
 description: Pull ready beads into parallel agent dispatch via Task tool
 arguments:
   - name: plan_idx
@@ -107,7 +107,7 @@ Task Pump: plan-07
 Ready beads: 4
 Already dispatched: 1
 Dispatching: 3
-  agent:yf_diary → 1 task
+  agent:yf_chronicle_diary → 1 task
   general-purpose → 2 tasks
 Parallel Task calls launched: 3
 ```

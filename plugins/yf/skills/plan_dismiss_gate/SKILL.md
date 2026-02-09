@@ -1,5 +1,5 @@
 ---
-name: yf:dismiss_gate
+name: yf:plan_dismiss_gate
 description: Remove the plan gate to allow free editing (abandons the plan lifecycle for this plan)
 arguments: []
 ---

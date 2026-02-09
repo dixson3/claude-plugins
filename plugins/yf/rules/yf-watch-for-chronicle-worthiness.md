@@ -41,20 +41,20 @@ Flag these events as chronicle-worthy:
 When you notice a chronicle-worthy event:
 
 1. Briefly note it in your response: "This seems chronicle-worthy."
-2. Suggest: "Consider running `/yf:capture` to save this context."
+2. Suggest: "Consider running `/yf:chronicle_capture` to save this context."
 
 **Do NOT auto-capture.** Only flag and suggest. The user decides when to capture.
 
 ### Example Suggestions
 
 After completing a feature:
-> "This seems chronicle-worthy - you've completed the authentication flow. Consider running `/yf:capture topic:feature` to save this context."
+> "This seems chronicle-worthy - you've completed the authentication flow. Consider running `/yf:chronicle_capture topic:feature` to save this context."
 
 Before a context switch:
-> "Before switching tasks, this seems chronicle-worthy. Consider running `/yf:capture` to preserve where you left off."
+> "Before switching tasks, this seems chronicle-worthy. Consider running `/yf:chronicle_capture` to preserve where you left off."
 
 After a key decision:
-> "This architecture decision seems chronicle-worthy. Consider running `/yf:capture topic:planning` to document the rationale."
+> "This architecture decision seems chronicle-worthy. Consider running `/yf:chronicle_capture topic:planning` to document the rationale."
 
 ### Non-Triggers
 

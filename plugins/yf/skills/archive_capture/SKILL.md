@@ -1,5 +1,5 @@
 ---
-name: yf:archive
+name: yf:archive_capture
 description: Capture research findings or design decisions as archive beads
 arguments:
   - name: type
@@ -20,7 +20,7 @@ Create a bead that captures either a research finding (sources, conclusions) or 
 
 ## Behavior
 
-When invoked with `/yf:archive type:<type> [area:<area>]`:
+When invoked with `/yf:archive_capture type:<type> [area:<area>]`:
 
 1. **Validate type**: Must be `research` or `decision`
 2. **Analyze context**: Review the current conversation for the relevant research or decision

@@ -17,10 +17,10 @@ If the auto-chain HAS fired, this rule does NOT apply — the auto-chain already
 When you detect a manual/pasted plan, invoke `/yf:plan_intake` before writing
 any implementation code. The skill handles the full checklist:
 1. Save plan file to docs/plans/
-2. Create beads hierarchy via /yf:plan_to_beads
+2. Create beads hierarchy via /yf:plan_create_beads
 3. Start execution via plan-exec.sh
-4. Capture planning context via /yf:capture
-5. Dispatch via /yf:execute_plan
+4. Capture planning context via /yf:chronicle_capture
+5. Dispatch via /yf:plan_execute
 
 Idempotent — safe to re-run if partially completed.
 

@@ -13,7 +13,7 @@ Generate permanent documentation from open archive beads.
 
 ## Instructions
 
-Use the `yf_archivist` agent to:
+Use the `yf_archive_process` agent to:
 1. Query all open archive beads
 2. Determine type (research or decision) from labels
 3. Generate SUMMARY.md files and update indexes
@@ -24,7 +24,7 @@ Use the `yf_archivist` agent to:
 When invoked with `/yf:archive_process [plan:<idx>]`:
 
 1. **Query beads**: List all open beads with `ys:archive` label (optionally filtered by `plan:<idx>`)
-2. **Launch agent**: Use the `yf_archivist` agent to process
+2. **Launch agent**: Use the `yf_archive_process` agent to process
 3. **Write files**: Create SUMMARY.md files and update index files from agent response
 4. **Close beads**: Mark processed beads as closed
 5. **Report results**: Show what was created

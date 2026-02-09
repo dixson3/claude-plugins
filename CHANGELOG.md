@@ -5,6 +5,21 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2026-02-08
+
+### Changed
+
+- **Capability-prefixed skill naming convention**: All 17 skills renamed to follow `yf:<capability>_<action>` pattern
+  - Chronicler: `yf:capture` → `yf:chronicle_capture`, `yf:recall` → `yf:chronicle_recall`, `yf:diary` → `yf:chronicle_diary`, `yf:disable` → `yf:chronicle_disable`
+  - Archivist: `yf:archive` → `yf:archive_capture` (archive_process, archive_disable, archive_suggest unchanged)
+  - Plan lifecycle: `yf:engage_plan` → `yf:plan_engage`, `yf:plan_to_beads` → `yf:plan_create_beads`, `yf:execute_plan` → `yf:plan_execute`, `yf:task_pump` → `yf:plan_pump`, `yf:breakdown_task` → `yf:plan_breakdown`, `yf:select_agent` → `yf:plan_select_agent`, `yf:dismiss_gate` → `yf:plan_dismiss_gate`
+  - Core: `yf:setup` and `yf:plan_intake` unchanged
+- **Capability-prefixed agent naming**: All 3 agents renamed
+  - `yf_recall` → `yf_chronicle_recall`, `yf_diary` → `yf_chronicle_diary`, `yf_archivist` → `yf_archive_process`
+- All cross-references updated in skills, agents, rules, hooks, scripts, and documentation
+- Convention documented in CLAUDE.md for future plugin development
+- Plugin version bumped: 2.7.1 → 2.8.0
+
 ## [2.7.1] - 2026-02-08
 
 ### Fixed

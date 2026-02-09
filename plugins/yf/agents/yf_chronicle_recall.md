@@ -1,5 +1,5 @@
 ---
-name: yf_recall
+name: yf_chronicle_recall
 description: Context recovery agent that synthesizes open chronicle beads into a summary
 ---
 
@@ -73,7 +73,7 @@ Create a summary that:
 - Question 1
 
 ---
-N chronicles recalled. Use /yf:capture to save new context.
+N chronicles recalled. Use /yf:chronicle_capture to save new context.
 ```
 
 ## Personality
@@ -93,5 +93,5 @@ Error: beads-cli not found. Run /yf:setup to configure Yoshiko Flow.
 If no open chronicles:
 ```
 No open chronicle beads found.
-Use /yf:capture to start capturing context.
+Use /yf:chronicle_capture to start capturing context.
 ```
