@@ -26,6 +26,10 @@ marketplace/
 ├── docs/
 │   ├── plans/              # Plan documentation
 │   └── diary/              # Generated diary entries
+├── tests/
+│   ├── harness/            # Go test harness source
+│   ├── scenarios/          # YAML test scenarios (unit-*.yaml)
+│   └── run-tests.sh        # Test runner script
 ├── CLAUDE.md               # This file
 ├── README.md               # Marketplace overview
 ├── LICENSE                 # MIT License
@@ -35,11 +39,11 @@ marketplace/
 ## Build / Test Commands
 
 ```bash
-# Test marketplace locally
-claude --plugin-dir /Users/james/workspace/spikes/marketplace
+# Test marketplace locally (from repo root)
+claude --plugin-dir .
 
 # Test a specific plugin
-claude --plugin-dir /Users/james/workspace/spikes/marketplace/plugins/yf
+claude --plugin-dir ./plugins/yf
 
 # Run unit tests
 bash tests/run-tests.sh --unit-only
@@ -160,7 +164,7 @@ Automatic behaviors Claude can invoke contextually. Defined in `skills/<name>/SK
 Specialized agents for specific tasks. Defined in `agents/<name>.md`. Auto-discovered by the plugin system (not listed in `plugin.json`).
 
 ### Rules
-Behavioral rules declared in `preflight.json` under `artifacts.rules`. Source files live in `rules/` within the plugin; they are synced to `.claude/rules/` in the project by the preflight system.
+Behavioral rules declared in `preflight.json` under `artifacts.rules`. Source files live in `rules/` within the plugin; they are symlinked into `.claude/rules/` in the project by the preflight system.
 
 ### Scripts
 Shell scripts for deterministic operations (e.g., state transitions). Referenced via `${CLAUDE_PLUGIN_ROOT}/scripts/` in hooks and skills.
