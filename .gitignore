@@ -8,6 +8,7 @@
 
 # Plugin preflight - per-project config file
 .claude/yf.json
+.claude/yf.local.json
 
 # Test harness binary
 tests/bin/
