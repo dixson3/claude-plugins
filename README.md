@@ -1,6 +1,6 @@
 # Yoshiko Studios Claude Marketplace
 
-A marketplace for Claude plugins, providing a collection of commands, skills, and agents to extend Claude's capabilities.
+A marketplace for Claude plugins, providing a collection of skills, agents, and rules to extend Claude's capabilities.
 
 ## Installation
 
@@ -14,7 +14,7 @@ claude --plugin-dir /path/to/yoshiko-studios-marketplace
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation | 2.0.0 |
+| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation | 2.4.0 |
 
 ## Plugin Overview
 
@@ -25,7 +25,9 @@ Unified plan lifecycle management, execution orchestration, context persistence,
 **Plan Lifecycle & Orchestration:**
 - `/yf:engage_plan` — State machine: Draft → Ready → Executing → Paused → Completed
 - `/yf:plan_to_beads` — Convert plan docs to beads hierarchy (epics, tasks, dependencies)
+- `/yf:plan_intake` — Intake checklist for plans entering outside the auto-chain
 - `/yf:execute_plan` — Orchestrated task dispatch with parallel agent routing
+- `/yf:task_pump` — Pull ready beads into parallel agent dispatch
 - `/yf:breakdown_task` — Recursive decomposition of non-trivial tasks
 - `/yf:select_agent` — Auto-discover agents and match to tasks
 - `/yf:dismiss_gate` — Escape hatch to abandon plan gate
@@ -36,6 +38,9 @@ Unified plan lifecycle management, execution orchestration, context persistence,
 - `/yf:diary` — Generate diary entries from chronicles
 - `/yf:disable` — Close chronicles without diary generation
 
+**Configuration:**
+- `/yf:setup` — Configure Yoshiko Flow for a project (first-run and reconfiguration)
+
 ## Plugin Structure
 
 Each plugin in this marketplace follows a standard structure:
@@ -43,7 +48,8 @@ Each plugin in this marketplace follows a standard structure:
 ```
 plugin-name/
 ├── .claude-plugin/
-│   └── plugin.json       # Plugin manifest (required)
+│   ├── plugin.json       # Plugin manifest (required)
+│   └── preflight.json    # Artifact declarations (optional)
 ├── skills/               # Automatic skills
 │   └── skill-name/
 │       └── SKILL.md
@@ -61,8 +67,8 @@ plugin-name/
 ## Quick Start
 
 ```bash
-# Load the marketplace
-claude --plugin-dir /Users/james/workspace/spikes/marketplace
+# Load the marketplace (from repo root)
+claude --plugin-dir .
 ```
 
 The preflight system automatically installs rules, creates directories, and initializes beads on first session start.
@@ -88,6 +94,10 @@ marketplace/
 ├── docs/
 │   ├── plans/              # Plan documentation
 │   └── diary/              # Generated diary entries
+├── tests/
+│   ├── harness/            # Go test harness source
+│   ├── scenarios/          # YAML test scenarios (unit-*.yaml)
+│   └── run-tests.sh        # Test runner script
 ├── CLAUDE.md               # Claude Code guidance
 ├── README.md               # This file
 ├── LICENSE                 # MIT License
