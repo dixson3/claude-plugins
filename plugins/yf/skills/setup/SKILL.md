@@ -12,10 +12,10 @@ Idempotent setup skill. Works for both first-run and reconfiguration.
 
 ### 1. Read existing config
 
-Check if `.claude/yf.local.json` exists. Load config:
+Check if `.claude/yf.json` exists. Load config:
 
 ```bash
-cat .claude/yf.local.json 2>/dev/null || echo "{}"
+cat .claude/yf.json 2>/dev/null || echo "{}"
 ```
 
 Extract current values (defaults shown):
@@ -49,25 +49,25 @@ Use AskUserQuestion with these questions (pre-populate descriptions with current
 
 ### 3. Write config
 
-All config goes to `.claude/yf.local.json` (gitignored, local-only):
+All config goes to `.claude/yf.json` (gitignored, local-only):
 
 ```bash
-YF_LOCAL="${CLAUDE_PROJECT_DIR:-.}/.claude/yf.local.json"
-mkdir -p "$(dirname "$YF_LOCAL")"
+YF_CONFIG="${CLAUDE_PROJECT_DIR:-.}/.claude/yf.json"
+mkdir -p "$(dirname "$YF_CONFIG")"
 
 # Write config to local file, preserving preflight
-if [ -f "$YF_LOCAL" ]; then
+if [ -f "$YF_CONFIG" ]; then
   jq --argjson enabled ENABLED_BOOL \
      --arg artifact_dir "ARTIFACT_DIR" \
      --argjson chronicler CHRONICLER_BOOL \
      '. + {enabled: $enabled, config: {artifact_dir: $artifact_dir, chronicler_enabled: $chronicler}}' \
-     "$YF_LOCAL" > "$YF_LOCAL.tmp" && mv "$YF_LOCAL.tmp" "$YF_LOCAL"
+     "$YF_CONFIG" > "$YF_CONFIG.tmp" && mv "$YF_CONFIG.tmp" "$YF_CONFIG"
 else
   jq -n --argjson enabled ENABLED_BOOL \
         --arg artifact_dir "ARTIFACT_DIR" \
         --argjson chronicler CHRONICLER_BOOL \
         '{enabled: $enabled, config: {artifact_dir: $artifact_dir, chronicler_enabled: $chronicler}}' \
-        > "$YF_LOCAL"
+        > "$YF_CONFIG"
 fi
 ```
 
@@ -93,7 +93,7 @@ Initial setup complete.
   Enabled: true
   Artifact directory: docs
   Chronicler: enabled
-  Config: local (.claude/yf.local.json)
+  Config: local (.claude/yf.json)
   Rules installed: 9
 ```
 
@@ -102,7 +102,7 @@ Initial setup complete.
 Configuration updated.
   Enabled: true → false
   Chronicler: enabled → disabled
-  Config: local (.claude/yf.local.json)
+  Config: local (.claude/yf.json)
   Rules removed: 9
 ```
 

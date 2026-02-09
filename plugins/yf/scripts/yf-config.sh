@@ -2,9 +2,7 @@
 # yf-config.sh — Shared config library for Yoshiko Flow
 #
 # Sourceable shell library (bash 3.2 compatible) providing config access.
-# Primary config: .claude/yf.local.json (gitignored, local-only).
-# Falls back to .claude/yf.json for migration compatibility (v2 → v3).
-# When both exist, local keys win on merge.
+# Config: .claude/yf.json (gitignored, local-only).
 #
 # Usage:
 #   . "$SCRIPT_DIR/yf-config.sh"
@@ -15,26 +13,20 @@
 
 _YF_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 _YF_JSON="$_YF_PROJECT_DIR/.claude/yf.json"
-_YF_LOCAL_JSON="$_YF_PROJECT_DIR/.claude/yf.local.json"
 
-# yf_config_exists — returns 0 if either config file exists
+# yf_config_exists — returns 0 if config file exists
 yf_config_exists() {
-  [ -f "$_YF_JSON" ] || [ -f "$_YF_LOCAL_JSON" ]
+  [ -f "$_YF_JSON" ]
 }
 
-# yf_merged_config — prints merged JSON to stdout
-# Merge semantics: yf.json * yf.local.json (local keys win via jq recursive merge)
+# yf_merged_config — prints config JSON to stdout
 yf_merged_config() {
   if ! command -v jq >/dev/null 2>&1; then
     echo "{}"
     return 0
   fi
-  if [ -f "$_YF_JSON" ] && [ -f "$_YF_LOCAL_JSON" ]; then
-    jq -s '.[0] * .[1]' "$_YF_JSON" "$_YF_LOCAL_JSON" 2>/dev/null || echo "{}"
-  elif [ -f "$_YF_JSON" ]; then
+  if [ -f "$_YF_JSON" ]; then
     cat "$_YF_JSON"
-  elif [ -f "$_YF_LOCAL_JSON" ]; then
-    cat "$_YF_LOCAL_JSON"
   else
     echo "{}"
   fi

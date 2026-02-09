@@ -4,12 +4,11 @@
 # Creates symlinks in .claude/rules/ pointing back to plugin source rules.
 # Single source of truth: edits to plugin rules are immediately active.
 #
-# Local-only config model:
-#   .claude/yf.local.json — gitignored config + preflight lock state
+# Config model:
+#   .claude/yf.json — gitignored config + preflight lock state
 #
 # Config-aware: reads config via yf-config.sh library.
-# Outputs YF_SETUP_NEEDED signal when no config files exist and no old lock
-# to migrate.
+# Outputs YF_SETUP_NEEDED signal when no config file exists.
 #
 # Compatible with bash 3.2+ (macOS default).
 #
@@ -29,9 +28,7 @@ if [ ! -d "$PROJECT_DIR" ]; then
   exit 0
 fi
 
-LOCAL_FILE="$PROJECT_DIR/.claude/yf.local.json"
-OLD_LOCK_FILE="$PROJECT_DIR/.claude/plugin-lock.json"
-OLD_SHARED_FILE="$PROJECT_DIR/.claude/yf.json"
+CONFIG_FILE="$PROJECT_DIR/.claude/yf.json"
 
 PLUGIN_NAME="yf"
 PJSON="$PLUGIN_ROOT/.claude-plugin/plugin.json"
@@ -50,31 +47,6 @@ fi
 
 # --- Source the config library ---
 . "$SCRIPT_DIR/yf-config.sh"
-
-# --- Migration: plugin-lock.json → yf.local.json (v0 → v3) ---
-if [ ! -f "$LOCAL_FILE" ] && [ -f "$OLD_LOCK_FILE" ]; then
-  echo "preflight: migrating plugin-lock.json → yf.local.json"
-  OLD_DATA=$(cat "$OLD_LOCK_FILE")
-  MIGRATED=$(echo "$OLD_DATA" | jq '{enabled: true, config: {artifact_dir: "docs", chronicler_enabled: true}, updated: .updated, preflight: {plugins: .plugins}}')
-  mkdir -p "$(dirname "$LOCAL_FILE")"
-  echo "$MIGRATED" | jq '.' > "$LOCAL_FILE"
-  rm -f "$OLD_LOCK_FILE"
-fi
-
-# --- Migration: yf.json v1/v2 → yf.local.json (merge and delete) ---
-if [ -f "$OLD_SHARED_FILE" ]; then
-  SHARED_VER=$(jq -r '.version // 1' "$OLD_SHARED_FILE" 2>/dev/null)
-  echo "preflight: migrating yf.json v$SHARED_VER → yf.local.json (local-only)"
-  if [ -f "$LOCAL_FILE" ]; then
-    # Merge shared config into local (local keys win)
-    jq -s '.[0] * .[1]' "$OLD_SHARED_FILE" "$LOCAL_FILE" > "$LOCAL_FILE.tmp"
-    mv "$LOCAL_FILE.tmp" "$LOCAL_FILE"
-  else
-    mkdir -p "$(dirname "$LOCAL_FILE")"
-    cp "$OLD_SHARED_FILE" "$LOCAL_FILE"
-  fi
-  rm -f "$OLD_SHARED_FILE"
-fi
 
 # --- Setup needed signal ---
 if ! yf_config_exists; then
@@ -111,13 +83,13 @@ if [ "$YF_ENABLED" = "false" ]; then
     updated: (now | strftime("%Y-%m-%dT%H:%M:%SZ")),
     preflight: {plugins: {yf: {version: $ver, mode: "symlink", artifacts: {rules: [], directories: [], setup: []}}}}
   }')
-  if [ -f "$LOCAL_FILE" ]; then
-    cat "$LOCAL_FILE" | jq --argjson new "$NEW_LOCAL_DISABLED" '. * $new' > "$LOCAL_FILE.tmp"
+  if [ -f "$CONFIG_FILE" ]; then
+    cat "$CONFIG_FILE" | jq --argjson new "$NEW_LOCAL_DISABLED" '. * $new' > "$CONFIG_FILE.tmp"
   else
-    mkdir -p "$(dirname "$LOCAL_FILE")"
-    echo "$NEW_LOCAL_DISABLED" | jq '.' > "$LOCAL_FILE.tmp"
+    mkdir -p "$(dirname "$CONFIG_FILE")"
+    echo "$NEW_LOCAL_DISABLED" | jq '.' > "$CONFIG_FILE.tmp"
   fi
-  mv "$LOCAL_FILE.tmp" "$LOCAL_FILE"
+  mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
   if [ "$REMOVED" -gt 0 ]; then
     echo "preflight: disabled — removed $REMOVED rules"
   else
@@ -158,8 +130,8 @@ compute_link_target() {
 
 # --- Read lock for preflight section ---
 LOCK="{}"
-if [ -f "$LOCAL_FILE" ]; then
-  LOCK=$(jq '.preflight // {}' "$LOCAL_FILE" 2>/dev/null || echo "{}")
+if [ -f "$CONFIG_FILE" ]; then
+  LOCK=$(jq '.preflight // {}' "$CONFIG_FILE" 2>/dev/null || echo "{}")
 fi
 
 # --- Plugin version ---
@@ -386,19 +358,19 @@ if [ -d "$PLUGIN_ROOT/hooks" ]; then
   find "$PLUGIN_ROOT/hooks" -name '*.sh' -exec chmod +x {} \; 2>/dev/null || true
 fi
 
-# --- Write lock to yf.local.json only ---
-mkdir -p "$(dirname "$LOCAL_FILE")"
+# --- Write lock to yf.json ---
+mkdir -p "$(dirname "$CONFIG_FILE")"
 
 NEW_LOCAL=$(jq -n --argjson plugin "$PLUGIN_LOCK" '{
   updated: (now | strftime("%Y-%m-%dT%H:%M:%SZ")),
   preflight: {plugins: {yf: $plugin}}
 }')
-if [ -f "$LOCAL_FILE" ]; then
-  EXISTING_LOCAL=$(cat "$LOCAL_FILE")
-  echo "$EXISTING_LOCAL" | jq --argjson new "$NEW_LOCAL" '. * $new' > "$LOCAL_FILE.tmp"
-  mv "$LOCAL_FILE.tmp" "$LOCAL_FILE"
+if [ -f "$CONFIG_FILE" ]; then
+  EXISTING_LOCAL=$(cat "$CONFIG_FILE")
+  echo "$EXISTING_LOCAL" | jq --argjson new "$NEW_LOCAL" '. * $new' > "$CONFIG_FILE.tmp"
+  mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
 else
-  echo "$NEW_LOCAL" | jq '.' > "$LOCAL_FILE"
+  echo "$NEW_LOCAL" | jq '.' > "$CONFIG_FILE"
 fi
 
 # --- Summary ---

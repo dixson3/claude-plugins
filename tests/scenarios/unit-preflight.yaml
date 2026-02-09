@@ -54,13 +54,13 @@ steps:
   # Case 4: Lock has mode:symlink and link fields (not checksums)
   - name: "lock_has_symlink_mode"
     run: |
-      if [ ! -f "$WORK_DIR/.claude/yf.local.json" ]; then
-        echo "FAIL: yf.local.json not created"
+      if [ ! -f "$WORK_DIR/.claude/yf.json" ]; then
+        echo "FAIL: yf.json not created"
         exit 1
       fi
-      MODE=$(jq -r '.preflight.plugins.yf.mode' "$WORK_DIR/.claude/yf.local.json")
-      LINK=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].link' "$WORK_DIR/.claude/yf.local.json")
-      CHECKSUM=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].checksum // "absent"' "$WORK_DIR/.claude/yf.local.json" 2>/dev/null)
+      MODE=$(jq -r '.preflight.plugins.yf.mode' "$WORK_DIR/.claude/yf.json")
+      LINK=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].link' "$WORK_DIR/.claude/yf.json")
+      CHECKSUM=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].checksum // "absent"' "$WORK_DIR/.claude/yf.json" 2>/dev/null)
       if [ "$MODE" = "symlink" ] && echo "$LINK" | grep -q "plugins/yf/rules/" && [ "$CHECKSUM" = "absent" ]; then
         echo "OK: mode=symlink, link field present, no checksum"
       else
@@ -73,21 +73,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: No yf.json created (local-only model)
-  - name: "no_yf_json_created"
-    run: |
-      if [ -f "$WORK_DIR/.claude/yf.json" ]; then
-        echo "FAIL: yf.json should not exist"
-        exit 1
-      fi
-      echo "OK: no yf.json"
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 6: Fast path — second run with no changes
+  # Case 5: Fast path — second run with no changes
   - name: "fast_path_up_to_date"
     run: |
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
@@ -97,7 +83,7 @@ steps:
       - type: output_contains
         value: "up to date"
 
-  # Case 7: Missing symlink gets reinstalled
+  # Case 6: Missing symlink gets reinstalled
   - name: "reinstall_missing_symlink"
     run: |
       rm -f "$WORK_DIR/.claude/rules/yf-beads.md"
@@ -108,10 +94,10 @@ steps:
       - type: output_contains
         value: "installed .claude/rules/yf-beads.md"
 
-  # Case 8: Directories created when missing
+  # Case 7: Directories created when missing
   - name: "creates_missing_directories"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.local.json"
+      rm -f "$WORK_DIR/.claude/yf.json"
       rm -rf "$WORK_DIR/docs/plans" "$WORK_DIR/docs/diary"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
@@ -127,7 +113,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 9: Fail-open on bad CLAUDE_PROJECT_DIR
+  # Case 8: Fail-open on bad CLAUDE_PROJECT_DIR
   - name: "failopen_bad_project_dir"
     run: |
       CLAUDE_PROJECT_DIR="/nonexistent/path" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1

@@ -12,8 +12,8 @@ steps:
       rm -f "$WORK_DIR/.claude/rules/"*.md
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       # Inject a fake stale entry into the local lock
-      LOCAL=$(cat "$WORK_DIR/.claude/yf.local.json")
-      echo "$LOCAL" | jq '.preflight.plugins.yf.artifacts.rules += [{"target": ".claude/rules/deprecated-rule.md", "link": "../../plugins/yf/rules/deprecated-rule.md"}]' > "$WORK_DIR/.claude/yf.local.json"
+      LOCAL=$(cat "$WORK_DIR/.claude/yf.json")
+      echo "$LOCAL" | jq '.preflight.plugins.yf.artifacts.rules += [{"target": ".claude/rules/deprecated-rule.md", "link": "../../plugins/yf/rules/deprecated-rule.md"}]' > "$WORK_DIR/.claude/yf.json"
       # Create the stale symlink
       ln -sf "../../plugins/yf/rules/deprecated-rule.md" "$WORK_DIR/.claude/rules/deprecated-rule.md"
       # Run preflight
@@ -37,7 +37,7 @@ steps:
   # Case 2: Stale entry no longer in lock after cleanup
   - name: "stale_entry_gone_from_lock"
     run: |
-      TARGETS=$(jq -r '.preflight.plugins.yf.artifacts.rules[].target' "$WORK_DIR/.claude/yf.local.json")
+      TARGETS=$(jq -r '.preflight.plugins.yf.artifacts.rules[].target' "$WORK_DIR/.claude/yf.json")
       if echo "$TARGETS" | grep -q 'deprecated-rule.md'; then
         echo "FAIL: deprecated-rule.md still in lock"
         exit 1
@@ -52,7 +52,7 @@ steps:
   # Case 3: Lock only contains yf plugin after sync
   - name: "lock_only_has_yf"
     run: |
-      PLUGINS=$(jq -r '.preflight.plugins | keys[]' "$WORK_DIR/.claude/yf.local.json")
+      PLUGINS=$(jq -r '.preflight.plugins | keys[]' "$WORK_DIR/.claude/yf.json")
       if [ "$PLUGINS" = "yf" ]; then
         echo "OK: only yf in lock"
       else
@@ -68,8 +68,8 @@ steps:
   # Case 4: Multiple stale symlinks removed in one pass
   - name: "multiple_stale_removed"
     run: |
-      LOCAL=$(cat "$WORK_DIR/.claude/yf.local.json")
-      echo "$LOCAL" | jq '.preflight.plugins.yf.artifacts.rules += [{"target": ".claude/rules/old-a.md", "link": "../../plugins/yf/rules/old-a.md"}, {"target": ".claude/rules/old-b.md", "link": "../../plugins/yf/rules/old-b.md"}]' > "$WORK_DIR/.claude/yf.local.json"
+      LOCAL=$(cat "$WORK_DIR/.claude/yf.json")
+      echo "$LOCAL" | jq '.preflight.plugins.yf.artifacts.rules += [{"target": ".claude/rules/old-a.md", "link": "../../plugins/yf/rules/old-a.md"}, {"target": ".claude/rules/old-b.md", "link": "../../plugins/yf/rules/old-b.md"}]' > "$WORK_DIR/.claude/yf.json"
       ln -sf "../../plugins/yf/rules/old-a.md" "$WORK_DIR/.claude/rules/old-a.md"
       ln -sf "../../plugins/yf/rules/old-b.md" "$WORK_DIR/.claude/rules/old-b.md"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)

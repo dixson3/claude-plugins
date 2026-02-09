@@ -58,7 +58,7 @@ steps:
   # Case 3: Regular file (old copy) replaced by symlink on migration
   - name: "regular_file_replaced_by_symlink"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.local.json"
+      rm -f "$WORK_DIR/.claude/yf.json"
       # Replace a symlink with a regular file (simulating old copy)
       rm -f "$WORK_DIR/.claude/rules/yf-beads.md"
       cp "$PLUGIN_DIR/plugins/yf/rules/yf-beads.md" "$WORK_DIR/.claude/rules/yf-beads.md"

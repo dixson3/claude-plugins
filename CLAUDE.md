@@ -177,12 +177,10 @@ Plugins declare their artifacts (rules, directories, setup commands) in `.claude
 - **Remove**: Symlinks for rules no longer in the manifest are deleted
 - **Fast path**: Checks `readlink` targets and symlink count — skips sync when all symlinks are correct
 
-Configuration is local-only:
-- **`.claude/yf.local.json`** — Gitignored config + preflight lock state (`enabled`, `config`, `updated`, `preflight`). All config lives here.
+Configuration:
+- **`.claude/yf.json`** — Gitignored config + preflight lock state (`enabled`, `config`, `updated`, `preflight`).
 
 Rules in `.claude/rules/yf-*.md` are gitignored symlinks pointing to `plugins/yf/rules/`. Edits to plugin source rules are immediately active — no re-sync needed.
-
-Migration from `plugin-lock.json` (v0), single-file `yf.json` (v1), and two-file `yf.json` v2 formats is automatic.
 
 ## Current Plugins
 

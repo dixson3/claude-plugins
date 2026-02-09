@@ -25,8 +25,8 @@ steps:
   - name: "disable_via_local_removes_symlinks"
     run: |
       # Add disabled override to existing local
-      jq '. + {enabled: false}' "$WORK_DIR/.claude/yf.local.json" > "$WORK_DIR/.claude/yf.local.json.tmp"
-      mv "$WORK_DIR/.claude/yf.local.json.tmp" "$WORK_DIR/.claude/yf.local.json"
+      jq '. + {enabled: false}' "$WORK_DIR/.claude/yf.json" > "$WORK_DIR/.claude/yf.json.tmp"
+      mv "$WORK_DIR/.claude/yf.json.tmp" "$WORK_DIR/.claude/yf.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       COUNT=0
@@ -53,7 +53,7 @@ steps:
       # Create a plan gate to ensure the hook would normally block
       mkdir -p "$WORK_DIR/.claude"
       echo '{"plan_idx":"99"}' > "$WORK_DIR/.claude/.plan-gate"
-      echo '{"enabled":false}' > "$WORK_DIR/.claude/yf.local.json"
+      echo '{"enabled":false}' > "$WORK_DIR/.claude/yf.json"
       echo '{"tool_input":{"file_path":"/some/code/file.py"}}' | \
         CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh"
       echo "OK: code-gate exited 0"
@@ -100,8 +100,8 @@ steps:
   # Case 7: Re-enable → symlinks reinstalled
   - name: "reenable_reinstalls_symlinks"
     run: |
-      jq '. + {enabled: true}' "$WORK_DIR/.claude/yf.local.json" > "$WORK_DIR/.claude/yf.local.json.tmp"
-      mv "$WORK_DIR/.claude/yf.local.json.tmp" "$WORK_DIR/.claude/yf.local.json"
+      jq '. + {enabled: true}' "$WORK_DIR/.claude/yf.json" > "$WORK_DIR/.claude/yf.json.tmp"
+      mv "$WORK_DIR/.claude/yf.json.tmp" "$WORK_DIR/.claude/yf.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       COUNT=0

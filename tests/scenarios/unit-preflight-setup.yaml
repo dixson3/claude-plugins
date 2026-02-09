@@ -1,14 +1,13 @@
-name: "Unit: plugin-preflight.sh — setup signal & migration"
+name: "Unit: plugin-preflight.sh — setup signal"
 
 setup:
   - "mkdir -p .claude/rules docs/plans docs/diary"
 
 steps:
-  # Case 1: YF_SETUP_NEEDED when no config files exist
+  # Case 1: YF_SETUP_NEEDED when no config exists
   - name: "setup_needed_signal"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
-      rm -f "$WORK_DIR/.claude/plugin-lock.json"
+      rm -f "$WORK_DIR/.claude/yf.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
@@ -18,91 +17,27 @@ steps:
       - type: output_contains
         value: "YF_SETUP_NEEDED"
 
-  # Case 2: No signal when yf.local.json exists
-  - name: "no_signal_when_local_exists"
+  # Case 2: No signal when yf.json exists
+  - name: "no_signal_when_config_exists"
     run: |
-      # yf.local.json was created by previous step's preflight run
+      # yf.json was created by previous step's preflight run
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       if echo "$OUTPUT" | grep -q "YF_SETUP_NEEDED"; then
-        echo "FAIL: got setup signal when yf.local.json exists"
+        echo "FAIL: got setup signal when yf.json exists"
         exit 1
       fi
-      echo "OK: no setup signal with yf.local.json"
+      echo "OK: no setup signal"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 3: Migration from old plugin-lock.json
-  - name: "migration_from_plugin_lock"
-    run: |
-      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
-      rm -f "$WORK_DIR/.claude/rules/"*.md
-      cat > "$WORK_DIR/.claude/plugin-lock.json" <<'LOCK'
-      {
-        "version": 1,
-        "updated": "2026-02-08T00:00:00Z",
-        "plugins": {
-          "yf": {
-            "version": "1.0.0",
-            "artifacts": { "rules": [], "directories": [], "setup": [] }
-          }
-        }
-      }
-      LOCK
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
-      echo "$OUTPUT"
-      if echo "$OUTPUT" | grep -q "YF_SETUP_NEEDED"; then
-        echo "FAIL: got setup signal during migration"
-        exit 1
-      fi
-      echo "OK: migration suppressed signal"
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "migrating"
-      - type: output_contains
-        value: "OK"
-
-  # Case 4: Migration from yf.json v2 → local-only
-  - name: "migration_v2_to_local"
-    run: |
-      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
-      rm -f "$WORK_DIR/.claude/rules/"*.md
-      mkdir -p "$WORK_DIR/.claude"
-      # Create v2 yf.json (shared config)
-      echo '{"version":2,"enabled":true,"config":{"artifact_dir":"docs","chronicler_enabled":true}}' > "$WORK_DIR/.claude/yf.json"
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
-      echo "$OUTPUT"
-      # yf.json should be deleted after migration
-      if [ -f "$WORK_DIR/.claude/yf.json" ]; then
-        echo "FAIL: yf.json should have been deleted"
-        exit 1
-      fi
-      # Config should be in yf.local.json
-      ENABLED=$(jq -r '.enabled' "$WORK_DIR/.claude/yf.local.json")
-      if [ "$ENABLED" = "true" ]; then
-        echo "OK: v2 migrated to local-only"
-      else
-        echo "FAIL: config not in local: enabled=$ENABLED"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "migrating yf.json"
-      - type: output_contains
-        value: "OK"
-
-  # Case 5: Artifacts still installed even with YF_SETUP_NEEDED
+  # Case 3: Artifacts still installed even with YF_SETUP_NEEDED
   - name: "artifacts_installed_on_first_run"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
-      rm -f "$WORK_DIR/.claude/plugin-lock.json"
+      rm -f "$WORK_DIR/.claude/yf.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       COUNT=0
@@ -121,17 +56,16 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: Config defaults in yf.local.json after first run
-  - name: "config_defaults_in_local"
+  # Case 4: Config defaults in yf.json after first run
+  - name: "config_defaults_in_yf_json"
     run: |
-      # yf.local.json should have preflight data (no config keys on fresh run)
-      if [ ! -f "$WORK_DIR/.claude/yf.local.json" ]; then
-        echo "FAIL: yf.local.json not created"
+      if [ ! -f "$WORK_DIR/.claude/yf.json" ]; then
+        echo "FAIL: yf.json not created"
         exit 1
       fi
-      MODE=$(jq -r '.preflight.plugins.yf.mode' "$WORK_DIR/.claude/yf.local.json")
+      MODE=$(jq -r '.preflight.plugins.yf.mode' "$WORK_DIR/.claude/yf.json")
       if [ "$MODE" = "symlink" ]; then
-        echo "OK: mode=symlink in local"
+        echo "OK: mode=symlink in yf.json"
       else
         echo "FAIL: expected mode=symlink, got $MODE"
         exit 1
@@ -142,10 +76,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: Copy-to-symlink migration
+  # Case 5: Copy-to-symlink migration
   - name: "copy_to_symlink_migration"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.local.json"
+      rm -f "$WORK_DIR/.claude/yf.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       # Create a regular file (simulating old copy mode)
       cp "$PLUGIN_DIR/plugins/yf/rules/yf-beads.md" "$WORK_DIR/.claude/rules/yf-beads.md"
@@ -166,4 +100,4 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .claude/yf.json .claude/yf.local.json .claude/plugin-lock.json"
+  - "rm -f .claude/yf.json"
