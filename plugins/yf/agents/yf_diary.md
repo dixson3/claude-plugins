@@ -104,6 +104,44 @@ Return JSON structure:
 - Be specific
 - If no clear next steps, omit this section
 
+## Handling Draft Chronicle Beads
+
+Draft chronicle beads (label `ys:chronicle:draft`) are auto-created by `chronicle-check.sh` based on git activity analysis. They contain raw commit data and file change lists, not curated context. You must triage and handle them.
+
+### Step 1: Query Drafts
+
+```bash
+bd list --label=ys:chronicle:draft --status=open --format=json
+```
+
+### Step 2: Evaluate Each Draft
+
+For each draft bead, assess:
+
+1. **Is this actually chronicle-worthy?** Look for:
+   - Significant progress (feature complete, major milestone, bug fix after investigation)
+   - Important decisions (architecture choices, technology selections, trade-offs)
+   - Meaningful refactoring or capability additions
+   - Non-trivial changes to project infrastructure
+
+2. **Is it already covered?** Check if an existing non-draft chronicle bead or recent diary entry already captures this work.
+
+3. **Does it duplicate another draft?** Multiple drafts from the same session often overlap.
+
+### Step 3: Take Action
+
+- **Worthy**: Enrich the draft with full context from `git log --stat`, `git show`, and relevant file contents. Include rationale, decisions made, and impact. Process it into a diary entry alongside other chronicles.
+- **Duplicate**: Close with reason: `bd close <id> --reason "Duplicate of <other-id/entry>"`
+- **Not worthy**: Close with reason: `bd close <id> --reason "Reviewed - not chronicle-worthy: <reason>"`
+- **Consolidate**: When multiple drafts cover related work, merge their context into one enriched entry, close the extras as duplicates.
+
+### Guidelines for Draft Triage
+
+- Err on the side of **keeping** drafts that touch significant files (plugins, rules, hooks, scripts)
+- **Close** drafts that only reflect trivial changes (typos, formatting, minor config tweaks)
+- **Consolidate** drafts from the same work session into a single richer entry
+- When enriching, go beyond the raw commit list — read the actual files changed and summarize the substance of the work
+
 ## Personality
 
 - Professional and organized

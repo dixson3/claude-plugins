@@ -1,0 +1,68 @@
+name: "Unit: pre-push-diary.sh — chronicle-check integration"
+
+setup:
+  - "mkdir -p .claude .beads"
+
+steps:
+  # Case 1: Chronicle-check runs before advisory
+  - name: "chronicle_check_runs"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      # The hook should call chronicle-check.sh and not fail even if bd is missing
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-diary.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ]; then
+        echo "OK: hook ran successfully with chronicle-check integration"
+      else
+        echo "FAIL: hook should exit 0 (exit=$EXIT_CODE)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Non-blocking (exit 0 always)
+  - name: "non_blocking"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-diary.sh" >/dev/null 2>&1
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ]; then
+        echo "OK: non-blocking exit 0"
+      else
+        echo "FAIL: should exit 0 (exit=$EXIT_CODE)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Chronicle-check skipped when chronicler disabled
+  - name: "skipped_when_chronicler_disabled"
+    run: |
+      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.json"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-diary.sh" 2>&1)
+      EXIT_CODE=$?
+      echo "$OUTPUT"
+      if [ "$EXIT_CODE" -eq 0 ]; then
+        if echo "$OUTPUT" | grep -q "CHRONICLE-CHECK"; then
+          echo "FAIL: chronicle-check should not run when chronicler disabled"
+          exit 1
+        fi
+        echo "OK: chronicle-check skipped when chronicler disabled"
+      else
+        echo "FAIL: should exit 0"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .claude/yf.json"

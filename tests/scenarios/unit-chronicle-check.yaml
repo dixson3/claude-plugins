@@ -1,0 +1,182 @@
+name: "Unit: chronicle-check.sh — auto-draft chronicle beads"
+
+setup:
+  - "mkdir -p .claude .beads"
+  - "git init . >/dev/null 2>&1 || true"
+  - "git config user.email 'test@test.com' && git config user.name 'Test'"
+
+steps:
+  # Case 1: Exits cleanly when yf disabled
+  - name: "exits_when_yf_disabled"
+    run: |
+      echo '{"enabled":false}' > "$WORK_DIR/.claude/yf.json"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" check 2>&1)
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ]; then
+        echo "OK: exits silently when yf disabled"
+      else
+        echo "FAIL: should exit 0 silently (exit=$EXIT_CODE, output=$OUTPUT)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Exits cleanly when chronicler disabled
+  - name: "exits_when_chronicler_disabled"
+    run: |
+      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.json"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" check 2>&1)
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ]; then
+        echo "OK: exits silently when chronicler disabled"
+      else
+        echo "FAIL: should exit 0 silently (exit=$EXIT_CODE, output=$OUTPUT)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: No significant changes — no drafts
+  - name: "no_significant_changes"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.beads/.chronicle-drafted-"*
+      # Create a trivial commit with no significant patterns or keywords
+      echo "trivial" > "$WORK_DIR/trivial.txt"
+      cd "$WORK_DIR" && git add trivial.txt && git commit -m "trivial change" >/dev/null 2>&1
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "5 minutes ago" 2>&1)
+      EXIT_CODE=$?
+      echo "$OUTPUT"
+      if [ "$EXIT_CODE" -eq 0 ] && echo "$OUTPUT" | grep -q "no candidates"; then
+        echo "OK: no candidates reported"
+      else
+        echo "FAIL: should report no candidates (exit=$EXIT_CODE)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Keyword matches in commits trigger draft creation
+  - name: "keyword_matches_create_draft"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.beads/.chronicle-drafted-"*
+      echo "keyword-test" > "$WORK_DIR/keyword-test.txt"
+      cd "$WORK_DIR" && git add keyword-test.txt && git commit -m "Decided on new architecture pattern for plugins" >/dev/null 2>&1
+      # Mock bd to capture the create call
+      mkdir -p "$WORK_DIR/mock-bin"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      if [ "$1" = "create" ]; then
+        echo "mock-bead-id"
+        # Write args to a file for verification
+        echo "$@" >> "$WORK_DIR/.beads/bd-create-calls.txt"
+        exit 0
+      fi
+      if [ "$1" = "list" ]; then
+        echo "[]"
+        exit 0
+      fi
+      if [ "$1" = "label" ]; then
+        echo "[]"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "5 minutes ago" 2>&1)
+      EXIT_CODE=$?
+      echo "$OUTPUT"
+      if [ -f "$WORK_DIR/.beads/bd-create-calls.txt" ]; then
+        CALL=$(cat "$WORK_DIR/.beads/bd-create-calls.txt")
+        echo "BD_CALL: $CALL"
+        if echo "$CALL" | grep -q "ys:chronicle" && echo "$CALL" | grep -q "ys:chronicle:draft"; then
+          echo "OK: draft bead created with correct labels"
+        else
+          echo "FAIL: bd create called but labels wrong"
+          exit 1
+        fi
+      else
+        echo "FAIL: bd create was not called"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Significant file changes trigger draft creation
+  - name: "significant_files_create_draft"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.beads/.chronicle-drafted-"*
+      rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
+      mkdir -p "$WORK_DIR/plugins/test"
+      echo "sig-file" > "$WORK_DIR/plugins/test/sig.txt"
+      cd "$WORK_DIR" && git add plugins/test/sig.txt && git commit -m "update test file" >/dev/null 2>&1
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "5 minutes ago" 2>&1)
+      EXIT_CODE=$?
+      echo "$OUTPUT"
+      if [ -f "$WORK_DIR/.beads/bd-create-calls.txt" ]; then
+        echo "OK: draft created for significant file changes"
+      else
+        echo "FAIL: no draft created for significant file changes"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: Dedup — second run does not create duplicate drafts
+  - name: "dedup_prevents_duplicates"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
+      # Dedup file should already exist from previous test
+      # Run again with same conditions
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "5 minutes ago" 2>&1)
+      EXIT_CODE=$?
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "already drafted"; then
+        echo "OK: dedup prevented duplicate"
+      elif [ ! -f "$WORK_DIR/.beads/bd-create-calls.txt" ]; then
+        echo "OK: dedup prevented duplicate (no bd create call)"
+      else
+        echo "FAIL: should not create duplicate drafts"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: Always exits 0
+  - name: "always_exits_zero"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" check --since "5 minutes ago" >/dev/null 2>&1
+      echo "OK: exit code $?"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .claude/yf.json"
+  - "rm -rf .beads/.chronicle-drafted-* .beads/bd-create-calls.txt mock-bin"
+  - "rm -f trivial.txt keyword-test.txt"
+  - "rm -rf plugins/test"

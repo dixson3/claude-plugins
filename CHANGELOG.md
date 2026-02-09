@@ -5,6 +5,31 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-02-08
+
+### Added
+
+- **Automatic chronicle creation at pre-push**: Draft chronicle beads are auto-created when significant work is detected, removing the human-in-the-loop for capture decisions
+  - `chronicle-check.sh` script — analyzes git commits for keywords, significant file changes, and activity volume
+  - Keyword detection: decided, chose, realized, discovered, architecture, pattern, refactored, capability, breaking change, new skill/agent/rule, etc.
+  - Significant file detection: changes to plugins/, skills/, agents/, rules/, hooks/, scripts/, docs/plans/, CLAUDE.md, CHANGELOG.md, etc.
+  - High activity volume detection: 5+ commits in the analysis window
+  - Daily dedup via `.beads/.chronicle-drafted-YYYYMMDD` file (prevents duplicate drafts on repeated pushes)
+  - Auto-tags drafts with `plan:<idx>` when a plan is executing
+  - Two modes: `check` (returns count) and `pre-push` (formatted output)
+  - Labels: `ys:chronicle,ys:chronicle:draft` (plus optional plan label)
+- **Diary agent draft handling**: `yf_diary` agent now triages draft chronicle beads
+  - Evaluates each draft for chronicle-worthiness
+  - Enriches worthy drafts with full context from git history and file contents
+  - Closes non-worthy drafts with reason
+  - Consolidates duplicate drafts into single enriched entries
+- Test scenarios: `unit-chronicle-check.yaml` (7 cases), `unit-pre-push-chronicle-check.yaml` (3 cases)
+
+### Changed
+
+- `pre-push-diary.sh` hook now calls `chronicle-check.sh pre-push` before the advisory warning — drafts are **created**, not just warned about
+- Plugin version bumped: 2.6.0 → 2.7.0
+
 ## [2.6.0] - 2026-02-08
 
 ### Added

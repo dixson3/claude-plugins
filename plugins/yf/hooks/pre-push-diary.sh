@@ -17,6 +17,10 @@ if ! command -v bd &> /dev/null; then
     exit 0
 fi
 
+# ── Auto-create draft chronicles for significant work ──────────────
+bash "$SCRIPT_DIR/scripts/chronicle-check.sh" pre-push 2>/dev/null || true
+
+# ── Advisory: report open chronicles (including any new drafts) ────
 OPEN_CHRONICLES=$(bd list --label=ys:chronicle --status=open --format=json 2>/dev/null || echo "[]")
 
 COUNT=$(echo "$OPEN_CHRONICLES" | jq 'length' 2>/dev/null || echo "0")

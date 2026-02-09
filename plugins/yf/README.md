@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.6.0
+# Yoshiko Flow (yf) Plugin — v2.7.0
 
 Unified plan lifecycle management, execution orchestration, context persistence, diary generation, and research/decision archiving for Claude projects.
 
@@ -137,6 +137,7 @@ All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignore
 | `plan-exec.sh` | Deterministic state transitions for plan execution |
 | `pump-state.sh` | Tracks dispatched/done beads to prevent double-dispatch |
 | `archive-suggest.sh` | Scans git commits for research/decision archive candidates |
+| `chronicle-check.sh` | Auto-creates draft chronicle beads from significant git activity |
 
 ## Hooks (5)
 
@@ -146,7 +147,7 @@ All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignore
 | `exit-plan-gate.sh` | ExitPlanMode | Saves plan and creates gate |
 | `code-gate.sh` | Edit, Write | Blocks implementation edits when plan not executing |
 | `plan-exec-guard.sh` | `bd update/close` | Blocks task ops on non-executing plans |
-| `pre-push-diary.sh` | `git push` | Reminds about open chronicles before push |
+| `pre-push-diary.sh` | `git push` | Auto-creates draft chronicles and reminds about open chronicles before push |
 
 ## Dependencies
 
