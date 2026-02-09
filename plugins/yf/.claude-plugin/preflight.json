@@ -1,4 +1,5 @@
 {
+  "mode": "symlink",
   "dependencies": [],
   "artifacts": {
     "rules": [

@@ -1,15 +1,14 @@
-name: "Unit: plugin-preflight.sh — core sync"
+name: "Unit: plugin-preflight.sh — core symlink sync"
 
 setup:
   - "mkdir -p .claude/rules docs/plans docs/diary"
 
 steps:
-  # Case 1: No lock file → installs all rules
-  - name: "fresh_install_creates_rules"
+  # Case 1: No config → installs all rules as symlinks
+  - name: "fresh_install_creates_symlinks"
     run: |
       rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
-      rm -f "$WORK_DIR/.claude/rules/yf-beads.md"
-      rm -f "$WORK_DIR/.claude/rules/yf-beads-drive-tasks.md"
+      rm -f "$WORK_DIR/.claude/rules/yf-"*.md
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
     assertions:
       - type: exit_code
@@ -17,18 +16,33 @@ steps:
       - type: output_contains
         value: "installed"
 
-  # Case 2: yf.json created with v2 structure after preflight
-  - name: "yf_json_created_v2"
+  # Case 2: Installed rules are symlinks (not regular files)
+  - name: "rules_are_symlinks"
     run: |
-      if [ ! -f "$WORK_DIR/.claude/yf.json" ]; then
-        echo "FAIL: yf.json not created"
-        exit 1
-      fi
-      VERSION=$(jq -r '.version' "$WORK_DIR/.claude/yf.json")
-      if [ "$VERSION" = "2" ]; then
-        echo "OK: version 2"
+      FAIL=false
+      for f in "$WORK_DIR/.claude/rules"/yf-*.md; do
+        [ -e "$f" ] || continue
+        if [ ! -L "$f" ]; then
+          echo "FAIL: $(basename "$f") is not a symlink"
+          FAIL=true
+        fi
+      done
+      if $FAIL; then exit 1; fi
+      echo "OK: all rules are symlinks"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Symlinks point to plugin source (relative when in-tree, absolute otherwise)
+  - name: "symlinks_point_to_plugin_source"
+    run: |
+      LINK=$(readlink "$WORK_DIR/.claude/rules/yf-beads.md")
+      if echo "$LINK" | grep -q "plugins/yf/rules/yf-beads.md"; then
+        echo "OK: symlink target correct: $LINK"
       else
-        echo "FAIL: expected version 2, got $VERSION"
+        echo "FAIL: unexpected target: $LINK"
         exit 1
       fi
     assertions:
@@ -37,32 +51,43 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: Preflight data in yf.local.json (not yf.json)
-  - name: "preflight_in_local"
+  # Case 4: Lock has mode:symlink and link fields (not checksums)
+  - name: "lock_has_symlink_mode"
     run: |
       if [ ! -f "$WORK_DIR/.claude/yf.local.json" ]; then
         echo "FAIL: yf.local.json not created"
         exit 1
       fi
-      YF=$(jq -r '.preflight.plugins.yf.version' "$WORK_DIR/.claude/yf.local.json")
-      if [ -z "$YF" ] || [ "$YF" = "null" ]; then
-        echo "FAIL: yf not in local lock"
+      MODE=$(jq -r '.preflight.plugins.yf.mode' "$WORK_DIR/.claude/yf.local.json")
+      LINK=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].link' "$WORK_DIR/.claude/yf.local.json")
+      CHECKSUM=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].checksum // "absent"' "$WORK_DIR/.claude/yf.local.json" 2>/dev/null)
+      if [ "$MODE" = "symlink" ] && echo "$LINK" | grep -q "plugins/yf/rules/" && [ "$CHECKSUM" = "absent" ]; then
+        echo "OK: mode=symlink, link field present, no checksum"
+      else
+        echo "FAIL: mode=$MODE link=$LINK checksum=$CHECKSUM"
         exit 1
       fi
-      # Verify yf.json does NOT have preflight
-      HAS_PREFLIGHT=$(jq -e '.preflight' "$WORK_DIR/.claude/yf.json" >/dev/null 2>&1 && echo "yes" || echo "no")
-      if [ "$HAS_PREFLIGHT" = "yes" ]; then
-        echo "FAIL: yf.json should not have preflight"
-        exit 1
-      fi
-      echo "OK: preflight in local, yf=$YF"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 4: Fast path — second run with no changes
+  # Case 5: No yf.json created (local-only model)
+  - name: "no_yf_json_created"
+    run: |
+      if [ -f "$WORK_DIR/.claude/yf.json" ]; then
+        echo "FAIL: yf.json should not exist"
+        exit 1
+      fi
+      echo "OK: no yf.json"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: Fast path — second run with no changes
   - name: "fast_path_up_to_date"
     run: |
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
@@ -72,8 +97,8 @@ steps:
       - type: output_contains
         value: "up to date"
 
-  # Case 5: Missing rule gets reinstalled
-  - name: "reinstall_missing_rule"
+  # Case 7: Missing symlink gets reinstalled
+  - name: "reinstall_missing_symlink"
     run: |
       rm -f "$WORK_DIR/.claude/rules/yf-beads.md"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
@@ -83,29 +108,10 @@ steps:
       - type: output_contains
         value: "installed .claude/rules/yf-beads.md"
 
-  # Case 6: Single plugin processed correctly
-  - name: "single_plugin_processed"
-    run: |
-      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
-      rm -f "$WORK_DIR/.claude/rules/"*.md
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
-      echo "$OUTPUT"
-      if echo "$OUTPUT" | grep -q "yf"; then
-        echo "OK: yf plugin processed"
-      else
-        echo "FAIL: yf not found in output"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 7: Directories created when missing
+  # Case 8: Directories created when missing
   - name: "creates_missing_directories"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
+      rm -f "$WORK_DIR/.claude/yf.local.json"
       rm -rf "$WORK_DIR/docs/plans" "$WORK_DIR/docs/diary"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
@@ -113,22 +119,6 @@ steps:
         echo "OK: directories created"
       else
         echo "FAIL: directories missing"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 8: Checksums recorded in local lock
-  - name: "checksums_in_local_lock"
-    run: |
-      CKSUM=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].checksum' "$WORK_DIR/.claude/yf.local.json")
-      if echo "$CKSUM" | grep -q '^sha256:'; then
-        echo "OK: checksum format correct: $CKSUM"
-      else
-        echo "FAIL: bad checksum: $CKSUM"
         exit 1
       fi
     assertions:

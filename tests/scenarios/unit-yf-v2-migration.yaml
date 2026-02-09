@@ -1,11 +1,11 @@
-name: "Unit: yf.json v1 → v2 migration (split config + local)"
+name: "Unit: yf.json v1/v2 → yf.local.json migration (local-only)"
 
 setup:
   - "mkdir -p .claude/rules docs/plans docs/diary"
 
 steps:
-  # Case 1: v1 yf.json with preflight → splits into v2 yf.json + yf.local.json
-  - name: "v1_splits_into_two_files"
+  # Case 1: v1 yf.json with preflight → migrates to yf.local.json and deletes yf.json
+  - name: "v1_migrates_to_local"
     run: |
       rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
@@ -36,30 +36,23 @@ steps:
       - type: exit_code
         value: "0"
       - type: output_contains
-        value: "migrating yf.json v1"
+        value: "migrating yf.json"
 
-  # Case 2: After migration, yf.json has v2 structure (no preflight key)
-  - name: "yf_json_is_v2"
+  # Case 2: After migration, yf.json is deleted
+  - name: "yf_json_deleted"
     run: |
-      VERSION=$(jq -r '.version' "$WORK_DIR/.claude/yf.json")
-      HAS_PREFLIGHT=$(jq -e '.preflight' "$WORK_DIR/.claude/yf.json" >/dev/null 2>&1 && echo "yes" || echo "no")
-      ENABLED=$(jq -r '.enabled' "$WORK_DIR/.claude/yf.json")
-      ART_DIR=$(jq -r '.config.artifact_dir' "$WORK_DIR/.claude/yf.json")
-      echo "version=$VERSION preflight=$HAS_PREFLIGHT enabled=$ENABLED art_dir=$ART_DIR"
-      if [ "$VERSION" = "2" ] && [ "$HAS_PREFLIGHT" = "no" ] && [ "$ENABLED" = "true" ] && [ "$ART_DIR" = "docs" ]; then
-        echo "OK: yf.json is clean v2"
-      else
-        echo "FAIL: wrong v2 structure"
-        jq '.' "$WORK_DIR/.claude/yf.json"
+      if [ -f "$WORK_DIR/.claude/yf.json" ]; then
+        echo "FAIL: yf.json should have been deleted"
         exit 1
       fi
+      echo "OK: yf.json deleted"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 3: After migration, yf.local.json has preflight data
+  # Case 3: After migration, yf.local.json has preflight and config data
   - name: "local_has_preflight"
     run: |
       if [ ! -f "$WORK_DIR/.claude/yf.local.json" ]; then
@@ -67,12 +60,11 @@ steps:
         exit 1
       fi
       HAS_PREFLIGHT=$(jq -e '.preflight.plugins.yf' "$WORK_DIR/.claude/yf.local.json" >/dev/null 2>&1 && echo "yes" || echo "no")
-      HAS_UPDATED=$(jq -e '.updated' "$WORK_DIR/.claude/yf.local.json" >/dev/null 2>&1 && echo "yes" || echo "no")
-      echo "preflight=$HAS_PREFLIGHT updated=$HAS_UPDATED"
-      if [ "$HAS_PREFLIGHT" = "yes" ] && [ "$HAS_UPDATED" = "yes" ]; then
-        echo "OK: local has preflight and updated"
+      echo "preflight=$HAS_PREFLIGHT"
+      if [ "$HAS_PREFLIGHT" = "yes" ]; then
+        echo "OK: local has preflight"
       else
-        echo "FAIL: missing data in local"
+        echo "FAIL: missing preflight in local"
         jq '.' "$WORK_DIR/.claude/yf.local.json"
         exit 1
       fi
@@ -82,10 +74,9 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Config values preserved through migration
+  # Case 4: Config values preserved through migration (in local file)
   - name: "config_preserved"
     run: |
-      # Check merged config sees the right values
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       if yf_is_enabled; then
@@ -100,25 +91,24 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: Already v2 → not re-migrated
-  - name: "v2_not_remigrated"
+  # Case 5: No re-migration when yf.json doesn't exist
+  - name: "no_remigration"
     run: |
-      # yf.json is already v2 from migration above
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
-      if echo "$OUTPUT" | grep -q "migrating yf.json v1"; then
-        echo "FAIL: should not re-migrate v2"
+      if echo "$OUTPUT" | grep -q "migrating yf.json"; then
+        echo "FAIL: should not re-migrate"
         exit 1
       fi
-      echo "OK: v2 not re-migrated"
+      echo "OK: no re-migration"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 6: plugin-lock.json → v1 → v2 chain migration
-  - name: "chain_migration_v0_to_v2"
+  # Case 6: plugin-lock.json → yf.local.json chain migration
+  - name: "chain_migration_v0_to_local"
     run: |
       rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
@@ -141,12 +131,10 @@ steps:
       EOF
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
-      # Should see both migrations
-      VERSION=$(jq -r '.version' "$WORK_DIR/.claude/yf.json")
-      if [ "$VERSION" = "2" ] && [ ! -f "$WORK_DIR/.claude/plugin-lock.json" ]; then
-        echo "OK: chain migration complete"
+      if [ ! -f "$WORK_DIR/.claude/plugin-lock.json" ] && [ -f "$WORK_DIR/.claude/yf.local.json" ] && [ ! -f "$WORK_DIR/.claude/yf.json" ]; then
+        echo "OK: chain migration complete (local-only)"
       else
-        echo "FAIL: chain migration incomplete (version=$VERSION)"
+        echo "FAIL: chain migration incomplete"
         exit 1
       fi
     assertions:
@@ -157,7 +145,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: v1 yf.json with custom config values preserved
+  # Case 7: v1 yf.json with custom config values preserved in local
   - name: "custom_config_preserved"
     run: |
       rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
@@ -173,10 +161,11 @@ steps:
       }
       EOF
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
-      ART_DIR=$(jq -r '.config.artifact_dir' "$WORK_DIR/.claude/yf.json")
-      CHRON=$(jq -r '.config.chronicler_enabled' "$WORK_DIR/.claude/yf.json")
+      # Config should be in local file now
+      ART_DIR=$(jq -r '.config.artifact_dir' "$WORK_DIR/.claude/yf.local.json")
+      CHRON=$(jq -r '.config.chronicler_enabled' "$WORK_DIR/.claude/yf.local.json")
       if [ "$ART_DIR" = "output" ] && [ "$CHRON" = "false" ]; then
-        echo "OK: custom config preserved"
+        echo "OK: custom config preserved in local"
       else
         echo "FAIL: config lost (artifact_dir=$ART_DIR chronicler=$CHRON)"
         exit 1

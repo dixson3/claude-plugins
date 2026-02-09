@@ -1,9 +1,10 @@
 #!/bin/bash
 # yf-config.sh — Shared config library for Yoshiko Flow
 #
-# Sourceable shell library (bash 3.2 compatible) providing config access
-# with two-file merge semantics: yf.json (committed) + yf.local.json (gitignored).
-# Local keys always win on merge.
+# Sourceable shell library (bash 3.2 compatible) providing config access.
+# Primary config: .claude/yf.local.json (gitignored, local-only).
+# Falls back to .claude/yf.json for migration compatibility (v2 → v3).
+# When both exist, local keys win on merge.
 #
 # Usage:
 #   . "$SCRIPT_DIR/yf-config.sh"

@@ -1,0 +1,147 @@
+name: "Unit: plugin-preflight.sh — symlink-specific behavior"
+
+setup:
+  - "mkdir -p .claude/rules docs/plans docs/diary"
+
+steps:
+  # Case 1: Fresh install creates symlinks (not copies)
+  - name: "fresh_creates_symlinks_not_copies"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
+      rm -f "$WORK_DIR/.claude/rules/"*.md
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
+      SYMLINKS=0
+      FILES=0
+      for f in "$WORK_DIR/.claude/rules"/yf-*.md; do
+        if [ -L "$f" ]; then
+          SYMLINKS=$((SYMLINKS + 1))
+        elif [ -f "$f" ]; then
+          FILES=$((FILES + 1))
+        fi
+      done
+      if [ "$SYMLINKS" -gt 0 ] && [ "$FILES" -eq 0 ]; then
+        echo "OK: $SYMLINKS symlinks, 0 regular files"
+      else
+        echo "FAIL: symlinks=$SYMLINKS files=$FILES"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Broken symlink is recreated
+  - name: "broken_symlink_recreated"
+    run: |
+      # Create a broken symlink
+      rm -f "$WORK_DIR/.claude/rules/yf-beads.md"
+      ln -sf "/nonexistent/NONEXISTENT.md" "$WORK_DIR/.claude/rules/yf-beads.md"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      # Should have been updated to correct target
+      LINK=$(readlink "$WORK_DIR/.claude/rules/yf-beads.md")
+      if echo "$LINK" | grep -q "yf-beads.md"; then
+        echo "OK: broken symlink fixed: $LINK"
+      else
+        echo "FAIL: symlink not fixed: $LINK"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "updated symlink"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Regular file (old copy) replaced by symlink on migration
+  - name: "regular_file_replaced_by_symlink"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.local.json"
+      # Replace a symlink with a regular file (simulating old copy)
+      rm -f "$WORK_DIR/.claude/rules/yf-beads.md"
+      cp "$PLUGIN_DIR/plugins/yf/rules/yf-beads.md" "$WORK_DIR/.claude/rules/yf-beads.md"
+      # Verify it's a regular file
+      if [ -L "$WORK_DIR/.claude/rules/yf-beads.md" ]; then
+        echo "FAIL: should be regular file before test"
+        exit 1
+      fi
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if [ -L "$WORK_DIR/.claude/rules/yf-beads.md" ]; then
+        echo "OK: regular file replaced by symlink"
+      else
+        echo "FAIL: still a regular file"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "migrated to symlink"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Symlink targets point to plugin source files
+  # Note: In test harness, plugin is outside project tree, so absolute paths are used
+  - name: "symlink_targets_point_to_plugin"
+    run: |
+      FAIL=false
+      for f in "$WORK_DIR/.claude/rules"/yf-*.md; do
+        [ -L "$f" ] || continue
+        LINK=$(readlink "$f")
+        # Must end with the correct rule filename from plugins/yf/rules/
+        BASENAME=$(basename "$f")
+        if ! echo "$LINK" | grep -q "plugins/yf/rules/$BASENAME"; then
+          echo "FAIL: $(basename "$f") points to unexpected target: $LINK"
+          FAIL=true
+        fi
+      done
+      if $FAIL; then exit 1; fi
+      echo "OK: all symlinks point to plugin source"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Symlinks resolve to readable content
+  - name: "symlinks_resolve_to_content"
+    run: |
+      CONTENT=$(cat "$WORK_DIR/.claude/rules/yf-beads.md" 2>/dev/null | head -1)
+      if echo "$CONTENT" | grep -q "Agent Instructions"; then
+        echo "OK: symlink resolves to content"
+      else
+        echo "FAIL: cannot read through symlink: $CONTENT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: Fast path detects non-symlink and falls through to full sync
+  - name: "fast_path_detects_non_symlink"
+    run: |
+      # Replace one symlink with a regular file
+      rm -f "$WORK_DIR/.claude/rules/yf-beads.md"
+      echo "# dummy" > "$WORK_DIR/.claude/rules/yf-beads.md"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "up to date"; then
+        echo "FAIL: fast path should have detected non-symlink"
+        exit 1
+      fi
+      echo "OK: fast path fell through to full sync"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "migrated to symlink"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .claude/yf.json .claude/yf.local.json"

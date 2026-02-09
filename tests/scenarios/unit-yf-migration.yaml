@@ -1,4 +1,4 @@
-name: "Unit: plugin-lock.json → yf.json migration"
+name: "Unit: plugin-lock.json → yf.local.json migration"
 
 setup:
   - "mkdir -p .claude/rules docs/plans docs/diary"
@@ -33,18 +33,22 @@ steps:
       - type: output_contains
         value: "migrating"
 
-  # Case 2: yf.json exists with v2 structure after migration
-  - name: "yf_json_exists_v2"
+  # Case 2: After migration, config is in yf.local.json (no yf.json)
+  - name: "config_in_local_only"
     run: |
-      if [ ! -f "$WORK_DIR/.claude/yf.json" ]; then
-        echo "FAIL: yf.json not found"
+      if [ -f "$WORK_DIR/.claude/yf.json" ]; then
+        echo "FAIL: yf.json should not exist (local-only model)"
         exit 1
       fi
-      VERSION=$(jq -r '.version' "$WORK_DIR/.claude/yf.json")
-      if [ "$VERSION" = "2" ]; then
-        echo "OK: yf.json exists with version 2"
+      if [ ! -f "$WORK_DIR/.claude/yf.local.json" ]; then
+        echo "FAIL: yf.local.json not found"
+        exit 1
+      fi
+      MODE=$(jq -r '.preflight.plugins.yf.mode' "$WORK_DIR/.claude/yf.local.json")
+      if [ "$MODE" = "symlink" ]; then
+        echo "OK: config in yf.local.json with symlink mode"
       else
-        echo "FAIL: expected v2, got $VERSION"
+        echo "FAIL: mode=$MODE"
         exit 1
       fi
     assertions:
@@ -70,10 +74,6 @@ steps:
   # Case 4: Preflight data in yf.local.json after migration
   - name: "preflight_in_local"
     run: |
-      if [ ! -f "$WORK_DIR/.claude/yf.local.json" ]; then
-        echo "FAIL: yf.local.json not created"
-        exit 1
-      fi
       if jq -e '.preflight.plugins' "$WORK_DIR/.claude/yf.local.json" >/dev/null 2>&1; then
         echo "OK: preflight in local file"
       else
@@ -87,19 +87,19 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: No migration needed when yf.json already exists
+  # Case 5: No migration needed when yf.local.json already exists
   - name: "no_migration_when_exists"
     run: |
-      # yf.json already exists from previous steps
+      # yf.local.json already exists from previous steps
       # Create a dummy old lock to see if it gets ignored
       echo '{"version":1,"plugins":{}}' > "$WORK_DIR/.claude/plugin-lock.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
-      # Old lock should NOT have been deleted since yf.json already existed
+      # Old lock should NOT have been deleted since yf.local.json already existed
       if [ -f "$WORK_DIR/.claude/plugin-lock.json" ]; then
-        echo "OK: old lock untouched when yf.json exists"
+        echo "OK: old lock untouched when yf.local.json exists"
       else
-        echo "FAIL: old lock was deleted even though yf.json exists"
+        echo "FAIL: old lock was deleted even though yf.local.json exists"
         exit 1
       fi
     assertions:
@@ -108,25 +108,20 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: Fresh install creates v2 yf.json + yf.local.json
+  # Case 6: Fresh install creates yf.local.json only
   - name: "fresh_install_structure"
     run: |
       rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/plugin-lock.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
-      # Check yf.json structure
-      VERSION=$(jq -r '.version' "$WORK_DIR/.claude/yf.json")
-      HAS_PREFLIGHT_MAIN=$(jq -e '.preflight' "$WORK_DIR/.claude/yf.json" >/dev/null 2>&1 && echo "yes" || echo "no")
-      # Check yf.local.json structure
-      HAS_PREFLIGHT_LOCAL=$(jq -e '.preflight.plugins.yf' "$WORK_DIR/.claude/yf.local.json" >/dev/null 2>&1 && echo "yes" || echo "no")
-      echo "version=$VERSION preflight_main=$HAS_PREFLIGHT_MAIN preflight_local=$HAS_PREFLIGHT_LOCAL"
-      if [ "$VERSION" = "2" ] && [ "$HAS_PREFLIGHT_MAIN" = "no" ] && [ "$HAS_PREFLIGHT_LOCAL" = "yes" ]; then
-        echo "OK: correct two-file structure"
+      HAS_YF_JSON=$(test -f "$WORK_DIR/.claude/yf.json" && echo "yes" || echo "no")
+      HAS_LOCAL=$(jq -e '.preflight.plugins.yf' "$WORK_DIR/.claude/yf.local.json" >/dev/null 2>&1 && echo "yes" || echo "no")
+      echo "yf_json=$HAS_YF_JSON preflight_local=$HAS_LOCAL"
+      if [ "$HAS_YF_JSON" = "no" ] && [ "$HAS_LOCAL" = "yes" ]; then
+        echo "OK: local-only structure"
       else
         echo "FAIL: wrong structure"
-        echo "yf.json:" && jq '.' "$WORK_DIR/.claude/yf.json"
-        echo "yf.local.json:" && jq '.' "$WORK_DIR/.claude/yf.local.json"
         exit 1
       fi
     assertions:

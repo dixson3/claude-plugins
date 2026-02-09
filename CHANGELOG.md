@@ -5,6 +5,37 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-02-08
+
+### Changed
+
+- **Symlink-based rule management**: Preflight now creates symlinks in `.claude/rules/` pointing to plugin source files instead of copying them
+  - Single source of truth — edits to `plugins/yf/rules/` are immediately active
+  - Eliminates checksum/conflict detection (symlinks can't diverge)
+  - Fast path uses `readlink` comparison instead of SHA256 checksums
+  - Relative symlinks when plugin is in project tree, absolute when outside
+- **Local-only config model**: All config consolidated into `.claude/yf.local.json` (gitignored)
+  - `.claude/yf.json` (committed shared config) no longer created or used
+  - v2→v3 migration: existing `yf.json` content merged into `yf.local.json`, then deleted
+  - Setup skill (`/yf:setup`) simplified — removed "share config?" question
+- **Zero git footprint**: Rule symlinks and config are gitignored — enabling the plugin leaves no committed artifacts outside `plugins/`
+- **Lock format**: `mode: "symlink"` field, `link` field replaces `checksum` per rule entry
+- `plugin-preflight.sh` reduced from ~455 to ~180 lines
+- Plugin version bumped: 2.3.0 → 2.4.0
+
+### Removed
+
+- Checksum calculation and comparison logic (`sha256_file()`)
+- Conflict detection ("modified by user, skipping update")
+- File copy operations (replaced by `ln -sf`)
+- `yf.json` write logic (no committed config)
+- `unit-preflight-conflict.yaml` test scenario (irrelevant with symlinks)
+
+### Added
+
+- `unit-preflight-symlinks.yaml` — 6 test cases for symlink-specific behavior (creation, broken symlink repair, copy→symlink migration, target validation, content resolution, fast-path detection)
+- Copy-to-symlink migration: regular files (from older versions) automatically replaced by symlinks on preflight run
+
 ## [2.3.0] - 2026-02-08
 
 ### Added

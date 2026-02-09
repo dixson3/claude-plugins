@@ -10,5 +10,8 @@
 # Plugin preflight - local overrides & lock state (NOT committed)
 .claude/yf.local.json
 
+# Plugin-managed rules (symlinked by preflight)
+.claude/rules/yf-*.md
+
 # Test harness binary
 tests/bin/

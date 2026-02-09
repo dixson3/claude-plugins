@@ -4,8 +4,8 @@ setup:
   - "mkdir -p .claude/rules docs/plans docs/diary"
 
 steps:
-  # Case 1: Stale rule gets removed
-  - name: "stale_rule_removed"
+  # Case 1: Stale symlink gets removed
+  - name: "stale_symlink_removed"
     run: |
       # First, do a clean preflight to get lock files
       rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
@@ -13,17 +13,17 @@ steps:
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       # Inject a fake stale entry into the local lock
       LOCAL=$(cat "$WORK_DIR/.claude/yf.local.json")
-      echo "$LOCAL" | jq '.preflight.plugins.yf.artifacts.rules += [{"target": ".claude/rules/deprecated-rule.md", "checksum": "sha256:fakefake"}]' > "$WORK_DIR/.claude/yf.local.json"
-      # Create the file
-      echo "# deprecated" > "$WORK_DIR/.claude/rules/deprecated-rule.md"
+      echo "$LOCAL" | jq '.preflight.plugins.yf.artifacts.rules += [{"target": ".claude/rules/deprecated-rule.md", "link": "../../plugins/yf/rules/deprecated-rule.md"}]' > "$WORK_DIR/.claude/yf.local.json"
+      # Create the stale symlink
+      ln -sf "../../plugins/yf/rules/deprecated-rule.md" "$WORK_DIR/.claude/rules/deprecated-rule.md"
       # Run preflight
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
-      # Verify file removed
-      if [ ! -f "$WORK_DIR/.claude/rules/deprecated-rule.md" ]; then
-        echo "OK: stale file removed"
+      # Verify symlink removed
+      if [ ! -e "$WORK_DIR/.claude/rules/deprecated-rule.md" ] && [ ! -L "$WORK_DIR/.claude/rules/deprecated-rule.md" ]; then
+        echo "OK: stale symlink removed"
       else
-        echo "FAIL: stale file still exists"
+        echo "FAIL: stale symlink still exists"
         exit 1
       fi
     assertions:
@@ -65,23 +65,23 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Multiple stale rules removed in one pass
+  # Case 4: Multiple stale symlinks removed in one pass
   - name: "multiple_stale_removed"
     run: |
       LOCAL=$(cat "$WORK_DIR/.claude/yf.local.json")
-      echo "$LOCAL" | jq '.preflight.plugins.yf.artifacts.rules += [{"target": ".claude/rules/old-a.md", "checksum": "sha256:aaa"}, {"target": ".claude/rules/old-b.md", "checksum": "sha256:bbb"}]' > "$WORK_DIR/.claude/yf.local.json"
-      echo "# old-a" > "$WORK_DIR/.claude/rules/old-a.md"
-      echo "# old-b" > "$WORK_DIR/.claude/rules/old-b.md"
+      echo "$LOCAL" | jq '.preflight.plugins.yf.artifacts.rules += [{"target": ".claude/rules/old-a.md", "link": "../../plugins/yf/rules/old-a.md"}, {"target": ".claude/rules/old-b.md", "link": "../../plugins/yf/rules/old-b.md"}]' > "$WORK_DIR/.claude/yf.local.json"
+      ln -sf "../../plugins/yf/rules/old-a.md" "$WORK_DIR/.claude/rules/old-a.md"
+      ln -sf "../../plugins/yf/rules/old-b.md" "$WORK_DIR/.claude/rules/old-b.md"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       FAIL=false
-      if [ -f "$WORK_DIR/.claude/rules/old-a.md" ]; then FAIL=true; fi
-      if [ -f "$WORK_DIR/.claude/rules/old-b.md" ]; then FAIL=true; fi
+      if [ -e "$WORK_DIR/.claude/rules/old-a.md" ] || [ -L "$WORK_DIR/.claude/rules/old-a.md" ]; then FAIL=true; fi
+      if [ -e "$WORK_DIR/.claude/rules/old-b.md" ] || [ -L "$WORK_DIR/.claude/rules/old-b.md" ]; then FAIL=true; fi
       if $FAIL; then
-        echo "FAIL: stale files remain"
+        echo "FAIL: stale symlinks remain"
         exit 1
       fi
-      echo "OK: multiple stale rules removed"
+      echo "OK: multiple stale symlinks removed"
     assertions:
       - type: exit_code
         value: "0"

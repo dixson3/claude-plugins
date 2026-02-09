@@ -10,12 +10,12 @@ steps:
       rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
-      if [ -f "$WORK_DIR/.claude/rules/yf-watch-for-chronicle-worthiness.md" ] && \
-         [ -f "$WORK_DIR/.claude/rules/yf-plan-transition-chronicle.md" ]; then
-        echo "OK: chronicle rules installed"
+      if [ -L "$WORK_DIR/.claude/rules/yf-watch-for-chronicle-worthiness.md" ] && \
+         [ -L "$WORK_DIR/.claude/rules/yf-plan-transition-chronicle.md" ]; then
+        echo "OK: chronicle rules installed as symlinks"
       else
         echo "FAIL: chronicle rules missing"
-        ls "$WORK_DIR/.claude/rules/" 2>/dev/null
+        ls -la "$WORK_DIR/.claude/rules/" 2>/dev/null
         exit 1
       fi
     assertions:
@@ -24,28 +24,29 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Chronicle rules skipped when chronicler disabled via shared config
+  # Case 2: Chronicle rules skipped when chronicler disabled via local config
   - name: "chronicle_rules_skipped_when_disabled"
     run: |
       rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
-      # Create v2 yf.json with chronicler disabled
       mkdir -p "$WORK_DIR/.claude"
-      echo '{"version":2,"enabled":true,"config":{"artifact_dir":"docs","chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"enabled":true,"config":{"artifact_dir":"docs","chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.local.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       FAIL=false
-      if [ -f "$WORK_DIR/.claude/rules/yf-watch-for-chronicle-worthiness.md" ]; then
+      if [ -e "$WORK_DIR/.claude/rules/yf-watch-for-chronicle-worthiness.md" ] || \
+         [ -L "$WORK_DIR/.claude/rules/yf-watch-for-chronicle-worthiness.md" ]; then
         echo "FAIL: yf-watch-for-chronicle-worthiness.md should not be installed"
         FAIL=true
       fi
-      if [ -f "$WORK_DIR/.claude/rules/yf-plan-transition-chronicle.md" ]; then
+      if [ -e "$WORK_DIR/.claude/rules/yf-plan-transition-chronicle.md" ] || \
+         [ -L "$WORK_DIR/.claude/rules/yf-plan-transition-chronicle.md" ]; then
         echo "FAIL: yf-plan-transition-chronicle.md should not be installed"
         FAIL=true
       fi
       # Non-chronicle rules should still be installed
-      if [ ! -f "$WORK_DIR/.claude/rules/yf-beads.md" ]; then
-        echo "FAIL: yf-beads.md should be installed"
+      if [ ! -L "$WORK_DIR/.claude/rules/yf-beads.md" ]; then
+        echo "FAIL: yf-beads.md should be installed as symlink"
         FAIL=true
       fi
       if $FAIL; then
@@ -58,35 +59,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: Chronicle rules skipped via local override
-  - name: "chronicle_rules_skipped_via_local_override"
-    run: |
-      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
-      rm -f "$WORK_DIR/.claude/rules/"*.md
-      mkdir -p "$WORK_DIR/.claude"
-      # Shared config has chronicler enabled
-      echo '{"version":2,"enabled":true,"config":{"artifact_dir":"docs","chronicler_enabled":true}}' > "$WORK_DIR/.claude/yf.json"
-      # Local override disables chronicler
-      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.local.json"
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
-      echo "$OUTPUT"
-      if [ -f "$WORK_DIR/.claude/rules/yf-watch-for-chronicle-worthiness.md" ]; then
-        echo "FAIL: chronicle rule installed despite local override"
-        exit 1
-      fi
-      if [ -f "$WORK_DIR/.claude/rules/yf-beads.md" ]; then
-        echo "OK: local override disabled chronicler rules"
-      else
-        echo "FAIL: non-chronicle rule missing"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 4: Chronicle rules removed when reconfiguring to disabled
+  # Case 3: Chronicle rules removed when reconfiguring to disabled
   - name: "chronicle_rules_removed_on_reconfigure"
     run: |
       # First install with chronicler enabled
@@ -94,20 +67,22 @@ steps:
       rm -f "$WORK_DIR/.claude/rules/"*.md
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       # Verify chronicle rules exist
-      if [ ! -f "$WORK_DIR/.claude/rules/yf-watch-for-chronicle-worthiness.md" ]; then
+      if [ ! -L "$WORK_DIR/.claude/rules/yf-watch-for-chronicle-worthiness.md" ]; then
         echo "FAIL: chronicle rules not installed in first pass"
         exit 1
       fi
-      # Now disable chronicler via shared config
-      jq '.config.chronicler_enabled = false' "$WORK_DIR/.claude/yf.json" > "$WORK_DIR/.claude/yf.json.tmp"
-      mv "$WORK_DIR/.claude/yf.json.tmp" "$WORK_DIR/.claude/yf.json"
+      # Now disable chronicler via local config
+      jq '. + {config: (.config + {chronicler_enabled: false})}' "$WORK_DIR/.claude/yf.local.json" > "$WORK_DIR/.claude/yf.local.json.tmp"
+      mv "$WORK_DIR/.claude/yf.local.json.tmp" "$WORK_DIR/.claude/yf.local.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
-      if [ -f "$WORK_DIR/.claude/rules/yf-watch-for-chronicle-worthiness.md" ]; then
+      if [ -e "$WORK_DIR/.claude/rules/yf-watch-for-chronicle-worthiness.md" ] || \
+         [ -L "$WORK_DIR/.claude/rules/yf-watch-for-chronicle-worthiness.md" ]; then
         echo "FAIL: chronicle rule still exists"
         exit 1
       fi
-      if [ -f "$WORK_DIR/.claude/rules/yf-plan-transition-chronicle.md" ]; then
+      if [ -e "$WORK_DIR/.claude/rules/yf-plan-transition-chronicle.md" ] || \
+         [ -L "$WORK_DIR/.claude/rules/yf-plan-transition-chronicle.md" ]; then
         echo "FAIL: chronicle transition rule still exists"
         exit 1
       fi
@@ -120,10 +95,9 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: pre-push-diary exits 0 when chronicler disabled via local override
+  # Case 4: pre-push-diary exits 0 when chronicler disabled via local config
   - name: "pre_push_diary_exits_chronicler_disabled"
     run: |
-      # Set chronicler disabled via local override
       echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.local.json"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-diary.sh"
       echo "OK: pre-push-diary exited 0"
@@ -133,15 +107,18 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: Non-chronicle rules still present after chronicler disable
+  # Case 5: Non-chronicle rules still present after chronicler disable
   - name: "non_chronicle_rules_preserved"
     run: |
-      if [ -f "$WORK_DIR/.claude/rules/yf-beads.md" ] && \
-         [ -f "$WORK_DIR/.claude/rules/yf-engage-the-plan.md" ]; then
+      # Re-run preflight with chronicler disabled to get back to a consistent state
+      echo '{"enabled":true,"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.local.json"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
+      if [ -L "$WORK_DIR/.claude/rules/yf-beads.md" ] && \
+         [ -L "$WORK_DIR/.claude/rules/yf-engage-the-plan.md" ]; then
         echo "OK: non-chronicle rules preserved"
       else
         echo "FAIL: non-chronicle rules missing"
-        ls "$WORK_DIR/.claude/rules/" 2>/dev/null
+        ls -la "$WORK_DIR/.claude/rules/" 2>/dev/null
         exit 1
       fi
     assertions:
@@ -150,7 +127,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: Lock file doesn't contain chronicle rules when disabled
+  # Case 6: Lock file doesn't contain chronicle rules when disabled
   - name: "lock_excludes_chronicle_rules"
     run: |
       TARGETS=$(jq -r '.preflight.plugins.yf.artifacts.rules[].target' "$WORK_DIR/.claude/yf.local.json")

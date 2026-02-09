@@ -67,7 +67,7 @@ Draft ───► Ready ───► Executing ◄──► Paused ───►
 
 ## Rules (9)
 
-All rules are prefixed with `yf-` and installed to `.claude/rules/`:
+All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignored, pointing to `plugins/yf/rules/`):
 
 | Rule | Purpose |
 |------|---------|
@@ -85,6 +85,8 @@ All rules are prefixed with `yf-` and installed to `.claude/rules/`:
 
 | Script | Description |
 |--------|-------------|
+| `plugin-preflight.sh` | Symlink-based artifact sync engine |
+| `yf-config.sh` | Sourceable shell library for config access |
 | `plan-exec.sh` | Deterministic state transitions for plan execution |
 | `pump-state.sh` | Tracks dispatched/done beads to prevent double-dispatch |
 

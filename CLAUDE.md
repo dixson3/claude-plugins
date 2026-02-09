@@ -170,19 +170,20 @@ Pre/post tool-use hooks declared in `plugin.json` under the `hooks` key. Hook co
 
 ## Preflight System
 
-Plugins declare their artifacts (rules, directories, setup commands) in `.claude-plugin/preflight.json` (separate from `plugin.json` to comply with Claude Code's strict manifest schema). A preflight script (`scripts/plugin-preflight.sh`) runs automatically on SessionStart and syncs artifacts to the project:
+Plugins declare their artifacts (rules, directories, setup commands) in `.claude-plugin/preflight.json` (separate from `plugin.json` to comply with Claude Code's strict manifest schema). A preflight script (`scripts/plugin-preflight.sh`) runs automatically on SessionStart and syncs artifacts to the project using **symlinks** (not copies):
 
-- **Install**: Missing rules are copied from plugin source to project
-- **Update**: Changed rules are overwritten (unless user modified them)
-- **Remove**: Rules that were in the lock but are no longer in the manifest are deleted
-- **Conflict**: If a user modified an installed rule and the source also changed, the update is skipped with a warning
+- **Install**: Missing rules are created as symlinks pointing to the plugin source files
+- **Update**: Broken or incorrect symlinks are recreated; regular files (from older versions) are migrated to symlinks
+- **Remove**: Symlinks for rules no longer in the manifest are deleted
+- **Fast path**: Checks `readlink` targets and symlink count — skips sync when all symlinks are correct
 
-Configuration uses a two-file model:
-- **`.claude/yf.json`** — Committable shared config (`version`, `enabled`, `config`). Checked into git so team members share settings.
-- **`.claude/yf.local.json`** — Gitignored local overrides + preflight lock state (`updated`, `preflight`). Local keys win on merge.
+Configuration is local-only:
+- **`.claude/yf.local.json`** — Gitignored config + preflight lock state (`enabled`, `config`, `updated`, `preflight`). All config lives here.
 
-Migration from `plugin-lock.json` (v0) and single-file `yf.json` (v1) formats is automatic.
+Rules in `.claude/rules/yf-*.md` are gitignored symlinks pointing to `plugins/yf/rules/`. Edits to plugin source rules are immediately active — no re-sync needed.
+
+Migration from `plugin-lock.json` (v0), single-file `yf.json` (v1), and two-file `yf.json` v2 formats is automatic.
 
 ## Current Plugins
 
-- **yf** (v2.2.0) - Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation
+- **yf** (v2.4.0) - Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation
