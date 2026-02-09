@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Preflight setup**: `bd init` → `bd init --skip-hooks` (git hooks serve no purpose in local-only mode)
 - Plugin version bumped: 2.4.0 → 2.5.0
 
+### Fixed
+
+- Stale `/yf:init` references in agents and skills updated to `/yf:setup`
+
 ### Removed
 
 - Git tracking of `.beads/` directory (14 files untracked via `git rm --cached`)
@@ -44,6 +48,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Lock format**: `mode: "symlink"` field, `link` field replaces `checksum` per rule entry
 - `plugin-preflight.sh` reduced from ~455 to ~180 lines
 - Plugin version bumped: 2.3.0 → 2.4.0
+- **Documentation audit**: Aligned versions and content across all project documentation
+  - `README.md`: Bumped version, added missing skills (`/yf:task_pump`, `/yf:plan_intake`, `/yf:setup`), added `tests/` to repo structure
+  - `plugins/yf/README.md`: Added version, missing skills, Configuration section, fixed lifecycle table
+  - `CLAUDE.md`: Added `tests/` to structure, switched to relative paths, clarified symlink-based rules
+  - `marketplace.json`: Bumped marketplace and plugin versions to 2.4.0
 
 ### Removed
 
@@ -99,6 +108,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Plugin version bumped: 2.1.0 → 2.2.0
 - All existing preflight test scenarios updated for two-file model
 
+## [2.1.0] - 2026-02-08
+
+### Added
+
+- **`/yf:setup` skill**: Interactive configuration wizard for per-project setup
+  - Asks 3 questions via `AskUserQuestion`: enable YF, artifact directory, chronicler enabled
+  - Merges answers into `yf.json` without overwriting `preflight` section
+  - Idempotent — works for both first-run and reconfiguration
+- **Config-aware preflight**: Rules conditionally installed based on configuration
+  - `enabled=false` removes all rule symlinks from the project
+  - `chronicler_enabled=false` skips chronicle-specific rules (`yf-watch-for-chronicle-worthiness.md`, `yf-plan-transition-chronicle.md`)
+- **`YF_SETUP_NEEDED` signal**: Preflight outputs this when no `yf.json` exists and no old lock file to migrate, prompting user to run `/yf:setup`
+- Test scenarios: `unit-preflight-chronicler.yaml`, `unit-preflight-disabled.yaml`, `unit-preflight-setup.yaml`
+
+### Changed
+
+- **Self-contained preflight**: Moved `plugin-preflight.sh` from marketplace root (`scripts/`) into the plugin (`plugins/yf/scripts/`). Resolves its own plugin root via `BASH_SOURCE` — works identically from source tree or Claude Code plugin cache
+- **Enabled guards in hooks**: All 4 behavioral hooks (`code-gate.sh`, `exit-plan-gate.sh`, `plan-exec-guard.sh`, `pre-push-diary.sh`) exit 0 immediately when `enabled=false` in `yf.json`
+  - `pre-push-diary.sh` has additional `chronicler_enabled` guard
+- Plugin version bumped: 2.0.0 → 2.1.0
+
+### Removed
+
+- Marketplace-level `scripts/plugin-preflight.sh` (404 lines) — replaced by self-contained version in plugin (389 lines)
+
 ## [2.0.0] - 2026-02-08
 
 ### Added
@@ -112,6 +146,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lock file migration: `.claude/plugin-lock.json` → `.claude/yf.json` with `preflight` nesting
   - Automatic migration on first preflight run
   - New JSON structure: `{version, updated, preflight: {plugins: {...}}}`
+- Split `plugin.json` into `plugin.json` + `preflight.json` for Claude Code strict schema compliance
+  - `plugin.json` contains only official Claude Code schema fields (name, version, hooks, etc.)
+  - `preflight.json` contains custom fields (`dependencies`, `artifacts`) used by the preflight system
+  - Fixes plugin installation failure via Claude Code's `/plugin` command
 - Test scenario: `unit-yf-migration.yaml` — verifies old lock file migrates to new format
 
 ### Removed
@@ -248,10 +286,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `exit-plan-gate.md` rule — advisory backup ensuring engage_plan is called before ExitPlanMode
   - Gate created by engage_plan skill (Draft transition) and/or ExitPlanMode hook
   - Gate removed by `plan-exec.sh start` (Ready/Paused → Executing transition)
+- `workflows` plugin: Auto-chain plan lifecycle triggered by ExitPlanMode
+  - `auto-chain-plan.md` rule — drives full lifecycle (plan_to_beads → plan-exec.sh start → execute_plan) when ExitPlanMode fires
+  - `exit-plan-gate.sh` now outputs "Auto-chaining" signal with parseable `PLAN_IDX`/`PLAN_FILE` for the rule to consume
+  - Hook + rule mechanism: shell hook handles deterministic work (save plan, create gate), behavioral rule drives AI-dependent steps (beads creation, execution)
+  - If user explicitly says "engage the plan" (gate already exists), hook exits silently and auto-chain does NOT double-fire
+- `chronicler` plugin: `plan-transition-chronicle.md` rule — captures planning context as a chronicle bead between plan save and beads creation during auto-chain
 
 ### Changed
 
+- `engage-the-plan.md` rule: Draft triggers removed (now handled by auto-chain); kept Pause/Resume/Complete
+- `engage_plan` SKILL.md: Draft section annotated as legacy fallback
 - Updated workflows plugin to v1.2.0
+- Test scenario: `unit-exit-plan-gate.yaml` — added auto-chain output format case
 
 ## [1.3.0] - 2026-02-07
 
