@@ -2,7 +2,7 @@
 .claude/settings.local.json
 .claude/CLAUDE.local.md
 
-# Workflows plugin - ephemeral session state
+# yf plugin - ephemeral session state
 .claude/.task-pump.json
 .claude/.plan-gate
 .claude/.plan-intake-ok
