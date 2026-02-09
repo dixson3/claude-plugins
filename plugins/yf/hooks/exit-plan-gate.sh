@@ -10,6 +10,12 @@
 
 set -euo pipefail
 
+# ── Enabled guard: exit early if yf disabled ──────────────────────────
+YF_JSON="${CLAUDE_PROJECT_DIR:-.}/.claude/yf.json"
+if [ -f "$YF_JSON" ] && command -v jq >/dev/null 2>&1; then
+  [ "$(jq -r 'if .enabled == null then true else .enabled end' "$YF_JSON" 2>/dev/null)" = "false" ] && exit 0
+fi
+
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 GATE_FILE="$PROJECT_DIR/.claude/.plan-gate"
 PLANS_DIR="$PROJECT_DIR/docs/plans"

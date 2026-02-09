@@ -1,0 +1,110 @@
+name: "Unit: plugin-preflight.sh — setup signal"
+
+setup:
+  - "mkdir -p .claude/rules docs/plans docs/diary"
+
+steps:
+  # Case 1: YF_SETUP_NEEDED when no yf.json and no old lock
+  - name: "setup_needed_signal"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/plugin-lock.json"
+      rm -f "$WORK_DIR/.claude/rules/"*.md
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "YF_SETUP_NEEDED"
+
+  # Case 2: No signal when yf.json exists
+  - name: "no_signal_when_configured"
+    run: |
+      # yf.json was created by previous step
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "YF_SETUP_NEEDED"; then
+        echo "FAIL: got setup signal when yf.json exists"
+        exit 1
+      fi
+      echo "OK: no setup signal"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Migration from old lock suppresses signal
+  - name: "migration_suppresses_signal"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/rules/"*.md
+      cat > "$WORK_DIR/.claude/plugin-lock.json" <<'LOCK'
+      {
+        "version": 1,
+        "updated": "2026-02-08T00:00:00Z",
+        "plugins": {
+          "yf": {
+            "version": "1.0.0",
+            "artifacts": { "rules": [], "directories": [], "setup": [] }
+          }
+        }
+      }
+      LOCK
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "YF_SETUP_NEEDED"; then
+        echo "FAIL: got setup signal during migration"
+        exit 1
+      fi
+      echo "OK: migration suppressed signal"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "migrating"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Artifacts still installed even with YF_SETUP_NEEDED
+  - name: "artifacts_installed_on_first_run"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/plugin-lock.json"
+      rm -f "$WORK_DIR/.claude/rules/"*.md
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
+      COUNT=$(ls "$WORK_DIR/.claude/rules/"yf-*.md 2>/dev/null | wc -l | tr -d ' ')
+      if [ "$COUNT" -gt 0 ]; then
+        echo "OK: $COUNT rules installed"
+      else
+        echo "FAIL: no rules installed"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: yf.json has config defaults after first run
+  - name: "config_defaults_in_lock"
+    run: |
+      ENABLED=$(jq -r '.enabled' "$WORK_DIR/.claude/yf.json")
+      ART_DIR=$(jq -r '.config.artifact_dir' "$WORK_DIR/.claude/yf.json")
+      CHRON=$(jq -r '.config.chronicler_enabled' "$WORK_DIR/.claude/yf.json")
+      echo "enabled=$ENABLED artifact_dir=$ART_DIR chronicler=$CHRON"
+      if [ "$ENABLED" = "true" ] && [ "$ART_DIR" = "docs" ] && [ "$CHRON" = "true" ]; then
+        echo "OK: defaults correct"
+      else
+        echo "FAIL: wrong defaults"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .claude/yf.json .claude/plugin-lock.json"

@@ -115,7 +115,7 @@ steps:
       rm -f "$WORK_DIR/.claude/yf.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       mkdir -p "$WORK_DIR/.claude/rules" "$WORK_DIR/docs/plans" "$WORK_DIR/docs/diary"
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1)
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       if [ -f "$WORK_DIR/.claude/rules/yf-plan-intake.md" ]; then
         echo "OK: rule synced by preflight"

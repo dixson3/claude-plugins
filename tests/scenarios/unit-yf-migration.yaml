@@ -26,7 +26,7 @@ steps:
         }
       }
       LOCK
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
     assertions:
       - type: exit_code
         value: "0"
@@ -84,7 +84,7 @@ steps:
       # yf.json already exists from previous steps
       # Create a dummy old lock to see if it gets ignored
       echo '{"version":1,"plugins":{}}' > "$WORK_DIR/.claude/plugin-lock.json"
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1)
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       # Old lock should NOT have been deleted since yf.json already existed
       if [ -f "$WORK_DIR/.claude/plugin-lock.json" ]; then
@@ -105,7 +105,7 @@ steps:
       rm -f "$WORK_DIR/.claude/yf.json"
       rm -f "$WORK_DIR/.claude/plugin-lock.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" >/dev/null 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       # Check structure
       VERSION=$(jq -r '.version' "$WORK_DIR/.claude/yf.json")
       HAS_PREFLIGHT=$(jq -e '.preflight' "$WORK_DIR/.claude/yf.json" >/dev/null 2>&1 && echo "yes" || echo "no")

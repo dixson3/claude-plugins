@@ -10,14 +10,14 @@ steps:
       # Clean install
       rm -f "$WORK_DIR/.claude/yf.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" >/dev/null 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       # User modifies a rule
       echo "# User customization" >> "$WORK_DIR/.claude/rules/yf-engage-the-plan.md"
       # Modify the source too (simulate plugin update)
       cp "$PLUGIN_DIR/plugins/yf/rules/yf-engage-the-plan.md" /tmp/engage-backup.md
       echo "" >> "$PLUGIN_DIR/plugins/yf/rules/yf-engage-the-plan.md"
       # Run preflight
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1)
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       # Restore source
       cp /tmp/engage-backup.md "$PLUGIN_DIR/plugins/yf/rules/yf-engage-the-plan.md"
@@ -43,12 +43,12 @@ steps:
       # Clean install
       rm -f "$WORK_DIR/.claude/yf.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" >/dev/null 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       # Modify only the source (simulate plugin update)
       cp "$PLUGIN_DIR/plugins/yf/rules/yf-engage-the-plan.md" /tmp/engage-backup.md
       echo "# Plugin update v2" >> "$PLUGIN_DIR/plugins/yf/rules/yf-engage-the-plan.md"
       # Run preflight
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1)
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       # Restore source
       cp /tmp/engage-backup.md "$PLUGIN_DIR/plugins/yf/rules/yf-engage-the-plan.md"
@@ -74,9 +74,9 @@ steps:
       # Clean install
       rm -f "$WORK_DIR/.claude/yf.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" >/dev/null 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       # Run again — everything matches
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1)
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
     assertions:
       - type: exit_code

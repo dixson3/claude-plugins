@@ -10,7 +10,7 @@ steps:
       rm -f "$WORK_DIR/.claude/yf.json"
       rm -f "$WORK_DIR/.claude/rules/yf-beads.md"
       rm -f "$WORK_DIR/.claude/rules/yf-beads-drive-tasks.md"
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
     assertions:
       - type: exit_code
         value: "0"
@@ -49,7 +49,7 @@ steps:
   # Case 4: Fast path — second run with no changes
   - name: "fast_path_up_to_date"
     run: |
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
     assertions:
       - type: exit_code
         value: "0"
@@ -60,7 +60,7 @@ steps:
   - name: "reinstall_missing_rule"
     run: |
       rm -f "$WORK_DIR/.claude/rules/yf-beads.md"
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
     assertions:
       - type: exit_code
         value: "0"
@@ -72,7 +72,7 @@ steps:
     run: |
       rm -f "$WORK_DIR/.claude/yf.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1)
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       if echo "$OUTPUT" | grep -q "yf"; then
         echo "OK: yf plugin processed"
@@ -91,7 +91,7 @@ steps:
     run: |
       rm -f "$WORK_DIR/.claude/yf.json"
       rm -rf "$WORK_DIR/docs/plans" "$WORK_DIR/docs/diary"
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1)
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       if [ -d "$WORK_DIR/docs/plans" ] && [ -d "$WORK_DIR/docs/diary" ]; then
         echo "OK: directories created"
@@ -124,7 +124,7 @@ steps:
   # Case 9: Fail-open on bad CLAUDE_PROJECT_DIR
   - name: "failopen_bad_project_dir"
     run: |
-      CLAUDE_PROJECT_DIR="/nonexistent/path" bash "$PLUGIN_DIR/scripts/plugin-preflight.sh" 2>&1
+      CLAUDE_PROJECT_DIR="/nonexistent/path" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
     assertions:
       - type: exit_code
         value: "0"
