@@ -5,6 +5,23 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0] - 2026-02-09
+
+### Added
+
+- **Automatic session boundary hooks for chronicler**: Zero-effort context recovery and preservation at session boundaries
+  - `session-recall.sh` script — SessionStart hook outputs open chronicle summaries to agent context, detects and consumes `.beads/.pending-diary` marker from previous session
+  - `session-end.sh` hook — SessionEnd hook runs `chronicle-check.sh` to create draft beads, writes `.beads/.pending-diary` marker when open chronicles exist
+  - `pre-compact.sh` hook — PreCompact hook runs `chronicle-check.sh` to capture work before context erasure
+  - All three hooks are fail-open (exit 0 always) and respect `enabled` + `chronicler_enabled` config guards
+  - Pending-diary marker bridges sessions: SessionEnd writes it, next SessionStart consumes it and suggests `/yf:chronicle_diary`
+- Test scenarios: `unit-session-recall.yaml` (7 cases), `unit-session-end.yaml` (5 cases), `unit-pre-compact.yaml` (5 cases)
+
+### Changed
+
+- `plugin.json`: SessionStart now runs both `preflight-wrapper.sh` and `session-recall.sh`; added `SessionEnd` and `PreCompact` hook event arrays
+- Plugin version bumped: 2.8.0 → 2.9.0
+
 ## [2.8.0] - 2026-02-08
 
 ### Changed

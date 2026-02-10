@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.8.0
+# Yoshiko Flow (yf) Plugin — v2.9.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -90,9 +90,11 @@ Claude sessions lose context on compaction, clear, or new session start. The ins
 ### How It Works
 
 - **Manual**: `/yf:chronicle_capture` to snapshot current context
-- **Automatic**: Pre-push hook creates draft chronicles from significant git activity
+- **Automatic**: SessionStart hook outputs open chronicle summaries for immediate context recovery
+- **Automatic**: SessionEnd and PreCompact hooks create draft chronicles from significant git activity
+- **Automatic**: Pre-push hook creates draft chronicles and warns about open chronicles
 - **Automatic**: Plan transitions capture planning context
-- **Recovery**: `/yf:chronicle_recall` restores context in new sessions
+- **Recovery**: `/yf:chronicle_recall` restores context in new sessions (also triggered automatically via SessionStart)
 - **Consolidation**: `/yf:chronicle_diary` generates permanent markdown diary entries
 
 ### Artifacts
@@ -183,7 +185,7 @@ All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignore
 | `yf-watch-for-archive-worthiness.md` | Monitors for archive-worthy research and decisions |
 | `yf-plan-transition-archive.md` | Archives research and decisions during plan transitions |
 
-### Scripts (6)
+### Scripts (7)
 
 | Script | Description |
 |--------|-------------|
@@ -193,8 +195,9 @@ All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignore
 | `pump-state.sh` | Tracks dispatched/done beads to prevent double-dispatch |
 | `archive-suggest.sh` | Scans git commits for research/decision archive candidates |
 | `chronicle-check.sh` | Auto-creates draft chronicle beads from significant git activity |
+| `session-recall.sh` | Outputs open chronicle summaries on SessionStart for context recovery |
 
-### Hooks (5)
+### Hooks (7)
 
 | Hook | Trigger | Description |
 |------|---------|-------------|
@@ -203,6 +206,8 @@ All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignore
 | `code-gate.sh` | Edit, Write | Blocks implementation edits when plan not executing |
 | `plan-exec-guard.sh` | `bd update/close` | Blocks task ops on non-executing plans |
 | `pre-push-diary.sh` | `git push` | Auto-creates draft chronicles and reminds about open chronicles before push |
+| `session-end.sh` | SessionEnd | Auto-creates draft chronicles and writes pending-diary marker |
+| `pre-compact.sh` | PreCompact | Auto-creates draft chronicles before context compaction |
 
 ## Dependencies
 

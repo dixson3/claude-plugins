@@ -1,0 +1,133 @@
+name: "Unit: session-end.sh — SessionEnd auto-draft + pending marker"
+
+setup:
+  - "mkdir -p .claude .beads"
+  - "git init . >/dev/null 2>&1 || true"
+  - "git config user.email 'test@test.com' && git config user.name 'Test'"
+
+steps:
+  # Case 1: Exits silently when yf disabled
+  - name: "exits_when_yf_disabled"
+    run: |
+      echo '{"enabled":false}' > "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.beads/.pending-diary"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ] && [ ! -f "$WORK_DIR/.beads/.pending-diary" ]; then
+        echo "OK: exits silently when yf disabled, no marker written"
+      else
+        echo "FAIL: should exit 0 silently with no marker (exit=$EXIT_CODE, output=$OUTPUT)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Exits silently when chronicler disabled
+  - name: "exits_when_chronicler_disabled"
+    run: |
+      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.beads/.pending-diary"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ] && [ ! -f "$WORK_DIR/.beads/.pending-diary" ]; then
+        echo "OK: exits silently when chronicler disabled"
+      else
+        echo "FAIL: should exit 0 silently (exit=$EXIT_CODE, output=$OUTPUT)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Writes pending-diary marker when open chronicles exist
+  - name: "writes_pending_marker"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.beads/.pending-diary"
+      mkdir -p "$WORK_DIR/mock-bin"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      if [ "$1" = "list" ]; then
+        echo '[{"id":"test-001","title":"Chronicle: work"},{"id":"test-002","title":"Chronicle: more"}]'
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      # Also mock chronicle-check.sh by making it a no-op (we control bd output)
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ -f "$WORK_DIR/.beads/.pending-diary" ]; then
+        MARKER_CONTENT=$(cat "$WORK_DIR/.beads/.pending-diary")
+        echo "MARKER: $MARKER_CONTENT"
+        if echo "$MARKER_CONTENT" | grep -q '"reason": "session_end"' && \
+           echo "$MARKER_CONTENT" | grep -q '"chronicle_count": 2'; then
+          echo "OK: marker written with correct content"
+        else
+          echo "FAIL: marker content incorrect"
+          exit 1
+        fi
+      else
+        echo "FAIL: pending-diary marker not created"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: No marker when no open chronicles
+  - name: "no_marker_when_no_chronicles"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.beads/.pending-diary"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      if [ "$1" = "list" ]; then
+        echo "[]"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ] && [ ! -f "$WORK_DIR/.beads/.pending-diary" ]; then
+        echo "OK: no marker when no open chronicles"
+      else
+        echo "FAIL: should not write marker (exit=$EXIT_CODE, marker_exists=$(test -f "$WORK_DIR/.beads/.pending-diary" && echo yes || echo no))"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Always exits 0 even when bd fails
+  - name: "always_exits_zero"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      exit 1
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" >/dev/null 2>&1
+      echo "OK: exit code $?"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .claude/yf.json"
+  - "rm -f .beads/.pending-diary"
+  - "rm -rf mock-bin"

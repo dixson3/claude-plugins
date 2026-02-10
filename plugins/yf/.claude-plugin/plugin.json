@@ -1,6 +1,6 @@
 {
   "name": "yf",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "description": "Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, diary generation, and research/decision archiving",
   "author": {
     "name": "James Dixson",
@@ -15,6 +15,32 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/preflight-wrapper.sh"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/session-recall.sh"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-end.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.sh"
           }
         ]
       }

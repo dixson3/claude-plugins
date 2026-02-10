@@ -66,4 +66,4 @@ See `plugins/yf/DEVELOPERS.md` for the full developer guide including naming con
 
 ## Current Plugins
 
-- **yf** (v2.8.0) - Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation
+- **yf** (v2.9.0) - Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation

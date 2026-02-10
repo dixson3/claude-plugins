@@ -1,0 +1,124 @@
+name: "Unit: pre-compact.sh — PreCompact auto-draft"
+
+setup:
+  - "mkdir -p .claude .beads"
+  - "git init . >/dev/null 2>&1 || true"
+  - "git config user.email 'test@test.com' && git config user.name 'Test'"
+
+steps:
+  # Case 1: Exits silently when yf disabled
+  - name: "exits_when_yf_disabled"
+    run: |
+      echo '{"enabled":false}' > "$WORK_DIR/.claude/yf.json"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ]; then
+        echo "OK: exits silently when yf disabled"
+      else
+        echo "FAIL: should exit 0 silently (exit=$EXIT_CODE, output=$OUTPUT)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Exits silently when chronicler disabled
+  - name: "exits_when_chronicler_disabled"
+    run: |
+      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.json"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ]; then
+        echo "OK: exits silently when chronicler disabled"
+      else
+        echo "FAIL: should exit 0 silently (exit=$EXIT_CODE, output=$OUTPUT)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Runs chronicle-check.sh (calls bd)
+  - name: "runs_chronicle_check"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      mkdir -p "$WORK_DIR/mock-bin"
+      # Create a bd mock that logs calls
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      echo "$@" >> "$WORK_DIR/.beads/bd-calls.txt"
+      if [ "$1" = "list" ]; then
+        echo "[]"
+        exit 0
+      fi
+      if [ "$1" = "label" ]; then
+        echo "[]"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      rm -f "$WORK_DIR/.beads/bd-calls.txt"
+      # Need a git commit for chronicle-check to analyze
+      echo "compact-test" > "$WORK_DIR/compact-test.txt"
+      cd "$WORK_DIR" && git add compact-test.txt && git commit -m "test compact" >/dev/null 2>&1
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" 2>&1)
+      EXIT_CODE=$?
+      echo "exit=$EXIT_CODE"
+      if [ "$EXIT_CODE" -eq 0 ]; then
+        echo "OK: pre-compact exits 0"
+      else
+        echo "FAIL: should exit 0 (exit=$EXIT_CODE)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Always exits 0 even when bd missing
+  - name: "always_exits_zero_bd_missing"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      # Use a PATH with no bd
+      OUTPUT=$(PATH="/usr/bin:/bin" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ]; then
+        echo "OK: exits 0 when bd missing"
+      else
+        echo "FAIL: should exit 0 (exit=$EXIT_CODE)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Always exits 0 even when chronicle-check fails
+  - name: "always_exits_zero_on_failure"
+    run: |
+      rm -f "$WORK_DIR/.claude/yf.json"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      exit 1
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" >/dev/null 2>&1
+      echo "OK: exit code $?"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .claude/yf.json"
+  - "rm -f .beads/bd-calls.txt"
+  - "rm -rf mock-bin"
+  - "rm -f compact-test.txt"

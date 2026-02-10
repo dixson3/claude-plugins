@@ -10,7 +10,7 @@ The yf plugin is composed of six artifact types:
 - **Agents** — Task-specific subprocesses, defined in `agents/<name>.md`
 - **Rules** — Behavioral enforcement, symlinked into `.claude/rules/`
 - **Scripts** — Shell scripts for deterministic operations
-- **Hooks** — Pre/post tool-use hooks, declared in `plugin.json`
+- **Hooks** — Lifecycle and tool-use hooks (SessionStart, SessionEnd, PreCompact, PreToolUse), declared in `plugin.json`
 - **Preflight** — Artifact sync engine that installs rules and creates directories
 
 Skills and agents are auto-discovered from directory structure — they are NOT listed in `plugin.json`. Rules are declared in `preflight.json` and symlinked into the project. Scripts and hooks are referenced by path from skills, agents, and hook declarations.
