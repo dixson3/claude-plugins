@@ -1,19 +1,19 @@
 # Yoshiko Flow — Developer Guide
 
-This guide covers the architecture, conventions, and extension points for developing and contributing to the yf plugin.
+This guide covers the architecture, conventions, and extension points for the yf plugin.
 
 ## Plugin Architecture
 
 The yf plugin is composed of six artifact types:
 
-- **Skills** — Auto-invoked behaviors defined in `skills/<name>/SKILL.md`
-- **Agents** — Specialized agents defined in `agents/<name>.md`
-- **Rules** — Behavioral enforcement symlinked into `.claude/rules/`
+- **Skills** — Contextually invoked behaviors, defined in `skills/<name>/SKILL.md`
+- **Agents** — Task-specific subprocesses, defined in `agents/<name>.md`
+- **Rules** — Behavioral enforcement, symlinked into `.claude/rules/`
 - **Scripts** — Shell scripts for deterministic operations
-- **Hooks** — Pre/post tool-use hooks declared in `plugin.json`
+- **Hooks** — Pre/post tool-use hooks, declared in `plugin.json`
 - **Preflight** — Artifact sync engine that installs rules and creates directories
 
-Skills and agents are auto-discovered from directory structure — they are NOT listed in `plugin.json`.
+Skills and agents are auto-discovered from directory structure — they are NOT listed in `plugin.json`. Rules are declared in `preflight.json` and symlinked into the project. Scripts and hooks are referenced by path from skills, agents, and hook declarations.
 
 ## Naming & Namespacing Convention
 
@@ -85,7 +85,7 @@ Current capabilities:
 
 2. **Add plugin manifest**: `.claude-plugin/plugin.json`
 
-   Skills and agents are auto-discovered from directory structure — do NOT list them in the manifest. Only include official Claude Code schema fields (name, version, description, author, license, hooks, etc.). Custom fields like `dependencies` and `artifacts` go in `preflight.json` (see step 2b).
+   Only include official Claude Code schema fields (name, version, description, author, license, hooks). Skills and agents are auto-discovered from directory structure — do not list them in the manifest.
 
    ```json
    {
@@ -110,9 +110,9 @@ Current capabilities:
    }
    ```
 
-2b. **Add preflight config** (optional): `.claude-plugin/preflight.json`
+3. **Add preflight config** (optional): `.claude-plugin/preflight.json`
 
-   Artifact declarations, dependencies, and setup commands go here — separate from `plugin.json` to avoid Claude Code's strict schema validation.
+   Artifact declarations, dependencies, and setup commands live here — separate from `plugin.json` to comply with Claude Code's strict manifest schema.
 
    ```json
    {
@@ -129,54 +129,38 @@ Current capabilities:
    }
    ```
 
-3. **Add skills** (optional): `skills/<skill_name>/SKILL.md`
+4. **Add skills** (optional): `skills/<skill_name>/SKILL.md`
    - Frontmatter `name` MUST be `plugin:skill_name` (namespaced)
    - Include `description` and `arguments` in frontmatter
    - Behavior guidelines and instructions in body
 
-4. **Add agents** (optional): `agents/<plugin_agentname>.md`
+5. **Add agents** (optional): `agents/<plugin_agentname>.md`
    - Frontmatter `name` MUST be prefixed with plugin name (e.g., `yf_chronicle_recall`)
    - Include `description` and optional `on-start` in frontmatter
    - Role, personality, and interaction guidelines in body
 
-5. **Add rules** (optional): `rules/<descriptive-name>.md`
+6. **Add rules** (optional): `rules/<descriptive-name>.md`
    - Behavioral enforcement installed to `.claude/rules/`
    - Use plugin-prefixed names (e.g., `yf-beads.md`)
 
-6. **Register in marketplace**: Update `.claude-plugin/marketplace.json`
+7. **Register in marketplace**: Update `.claude-plugin/marketplace.json`
 
-7. **Document**: Add `README.md` to the plugin directory
-
-## Plugin Components
-
-### Skills
-Automatic behaviors Claude can invoke contextually. Defined in `skills/<name>/SKILL.md` — the directory name determines the skill identifier. Auto-discovered by the plugin system (not listed in `plugin.json`).
-
-### Agents
-Specialized agents for specific tasks. Defined in `agents/<name>.md`. Auto-discovered by the plugin system (not listed in `plugin.json`).
-
-### Rules
-Behavioral rules declared in `preflight.json` under `artifacts.rules`. Source files live in `rules/` within the plugin; they are symlinked into `.claude/rules/` in the project by the preflight system.
-
-### Scripts
-Shell scripts for deterministic operations (e.g., state transitions). Referenced via `${CLAUDE_PLUGIN_ROOT}/scripts/` in hooks and skills.
-
-### Hooks
-Pre/post tool-use hooks declared in `plugin.json` under the `hooks` key. Hook commands use `${CLAUDE_PLUGIN_ROOT}` to reference the plugin directory.
+8. **Document**: Add `README.md` to the plugin directory
 
 ## Preflight System
 
-Plugins declare their artifacts (rules, directories, setup commands) in `.claude-plugin/preflight.json` (separate from `plugin.json` to comply with Claude Code's strict manifest schema). A preflight script (`scripts/plugin-preflight.sh`) runs automatically on SessionStart and syncs artifacts to the project using **symlinks** (not copies):
+Plugins declare their artifacts (rules, directories, setup commands) in `.claude-plugin/preflight.json`. This file is separate from `plugin.json` to comply with Claude Code's strict manifest schema.
+
+A preflight script (`scripts/plugin-preflight.sh`) runs on SessionStart and syncs artifacts to the project using **symlinks**, not copies:
 
 - **Install**: Missing rules are created as symlinks pointing to the plugin source files
 - **Update**: Broken or incorrect symlinks are recreated; regular files (from older versions) are migrated to symlinks
 - **Remove**: Symlinks for rules no longer in the manifest are deleted
 - **Fast path**: Checks `readlink` targets and symlink count — skips sync when all symlinks are correct
 
-Configuration:
-- **`.claude/yf.json`** — Gitignored config + preflight lock state (`enabled`, `config`, `updated`, `preflight`).
+Lock state is stored in `.claude/yf.json` under the `preflight` key.
 
-Rules in `.claude/rules/yf-*.md` are gitignored symlinks pointing to `plugins/yf/rules/`. Edits to plugin source rules are immediately active — no re-sync needed.
+Because rules are symlinks, edits to plugin source files are immediately active — no re-sync needed.
 
 ## Configuration Model
 
