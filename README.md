@@ -1,14 +1,18 @@
 # Yoshiko Studios Claude Marketplace
 
-A marketplace for Claude plugins, providing a collection of skills, agents, and rules to extend Claude's capabilities.
+A plugin marketplace for Claude Code. The plugins here automate the organizational discipline that keeps software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
-## Installation
-
-To use plugins from this marketplace, point Claude to the marketplace directory:
+## Quick Start
 
 ```bash
+# Load the marketplace
 claude --plugin-dir /path/to/yoshiko-studios-marketplace
+
+# Or from the repo root
+claude --plugin-dir .
 ```
+
+On first session start, the preflight system automatically installs rules and creates artifact directories. Run `/yf:setup` to configure capabilities.
 
 ## Available Plugins
 
@@ -20,9 +24,9 @@ claude --plugin-dir /path/to/yoshiko-studios-marketplace
 
 ### yf (Yoshiko Flow)
 
-Yoshiko Flow enhances Claude Code with structured workflows that freeze the context making software maintainable — breaking plans into tracked task graphs, capturing the evolutionary path of changes as diary entries, and preserving research and decisions as permanent documentation.
+Yoshiko Flow freezes the context that makes software maintainable. It breaks plans into tracked task graphs, captures observations as diary entries that trace how and why changes were made, and preserves research and decisions as permanent documentation.
 
-**Plan Lifecycle** — Breaks plans into a dependency graph of tracked tasks with automatic decomposition, scheduling, and dispatch.
+**Plan Lifecycle** — Converts plans into a dependency graph of tracked tasks with automatic decomposition, scheduling, and dispatch.
 
 | Skill | Description |
 |-------|-------------|
@@ -35,7 +39,7 @@ Yoshiko Flow enhances Claude Code with structured workflows that freeze the cont
 | `/yf:plan_select_agent` | Auto-discover agents and match to tasks |
 | `/yf:plan_dismiss_gate` | Escape hatch to abandon plan gate |
 
-**Chronicler (Context Persistence)** — Captures observations and context as work progresses, then composes diary entries recording how changes came into being.
+**Chronicler (Context Persistence)** — Captures observations and context as work progresses, then composes diary entries that trace how and why changes were made.
 
 | Skill | Description |
 |-------|-------------|
@@ -44,7 +48,7 @@ Yoshiko Flow enhances Claude Code with structured workflows that freeze the cont
 | `/yf:chronicle_diary` | Generate diary entries from chronicles |
 | `/yf:chronicle_disable` | Close chronicles without diary generation |
 
-**Archivist (Research & Decision Records)** — Preserves research findings and design decisions as permanent documentation for PRDs and ERDs.
+**Archivist (Research & Decision Records)** — Flags research findings and design decisions during work, then processes them into permanent indexed documentation for PRDs and ERDs.
 
 | Skill | Description |
 |-------|-------------|
@@ -58,15 +62,6 @@ Yoshiko Flow enhances Claude Code with structured workflows that freeze the cont
 | Skill | Description |
 |-------|-------------|
 | `/yf:setup` | Configure Yoshiko Flow for a project |
-
-## Quick Start
-
-```bash
-# Load the marketplace (from repo root)
-claude --plugin-dir .
-```
-
-The preflight system automatically installs rules, creates directories, and initializes beads on first session start. Run `/yf:setup` to configure capabilities.
 
 ## Plugin Structure
 
