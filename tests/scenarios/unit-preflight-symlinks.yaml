@@ -130,7 +130,7 @@ steps:
       echo "# dummy" > "$WORK_DIR/.claude/rules/yf-beads.md"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
-      if echo "$OUTPUT" | grep -q "up to date"; then
+      if echo "$OUTPUT" | grep -q "^preflight: up to date"; then
         echo "FAIL: fast path should have detected non-symlink"
         exit 1
       fi

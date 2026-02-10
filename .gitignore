@@ -1,20 +1,18 @@
-# Beads issue tracker (local-only, not committed)
+# Test harness binary
+tests/bin/
+
+# >>> yf-managed >>>
+# Beads issue tracker (local-only)
 .beads/
 
-# Claude Code - local/personal files
+# Claude Code local files
 .claude/settings.local.json
 .claude/CLAUDE.local.md
 
-# yf plugin - ephemeral session state
+# yf plugin config & state
+.claude/yf.json
+.claude/rules/yf-*.md
 .claude/.task-pump.json
 .claude/.plan-gate
 .claude/.plan-intake-ok
-
-# Plugin config & preflight lock state (NOT committed)
-.claude/yf.json
-
-# Plugin-managed rules (symlinked by preflight)
-.claude/rules/yf-*.md
-
-# Test harness binary
-tests/bin/
+# <<< yf-managed <<<

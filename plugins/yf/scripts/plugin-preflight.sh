@@ -214,6 +214,15 @@ if $FAST_PATH && [ -f "$PPRE" ]; then
 fi
 
 if $FAST_PATH; then
+  # Check gitignore sentinel
+  if [ -f "$PROJECT_DIR/.gitignore" ]; then
+    grep -qF "# >>> yf-managed >>>" "$PROJECT_DIR/.gitignore" || FAST_PATH=false
+  else
+    FAST_PATH=false
+  fi
+fi
+
+if $FAST_PATH; then
   echo "preflight: up to date"
   exit 0
 fi
@@ -281,6 +290,9 @@ j=0; while [ $j -lt "$SETUP_COUNT" ]; do
 
   PLUGIN_LOCK=$(echo "$PLUGIN_LOCK" | jq ".artifacts.setup += [{\"name\": \"$SETUP_NAME\", \"completed\": $COMPLETED}]")
 j=$((j + 1)); done
+
+# --- Project setup (gitignore + AGENTS.md cleanup) ---
+bash "$SCRIPT_DIR/setup-project.sh" all 2>&1 || true
 
 # --- Rules: create symlinks ---
 RULE_COUNT=0

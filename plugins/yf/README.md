@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.9.0
+# Yoshiko Flow (yf) Plugin — v2.10.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -27,6 +27,7 @@ It does this through three capabilities:
    ```
    /yf:setup
    ```
+   Setup automatically adds `.gitignore` entries for yf ephemeral files and cleans up any conflicting `bd init` content from AGENTS.md.
 
 4. **Start planning** — Enter plan mode, write your plan, exit. Yoshiko Flow takes it from there — saving the plan, creating tracked tasks, and beginning execution. See [Plan Lifecycle](#plan-lifecycle) for details.
 
@@ -185,7 +186,7 @@ All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignore
 | `yf-watch-for-archive-worthiness.md` | Monitors for archive-worthy research and decisions |
 | `yf-plan-transition-archive.md` | Archives research and decisions during plan transitions |
 
-### Scripts (7)
+### Scripts (8)
 
 | Script | Description |
 |--------|-------------|
@@ -196,6 +197,7 @@ All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignore
 | `archive-suggest.sh` | Scans git commits for research/decision archive candidates |
 | `chronicle-check.sh` | Auto-creates draft chronicle beads from significant git activity |
 | `session-recall.sh` | Outputs open chronicle summaries on SessionStart for context recovery |
+| `setup-project.sh` | Manages `.gitignore` sentinel block and AGENTS.md cleanup |
 
 ### Hooks (7)
 

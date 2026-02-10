@@ -18,7 +18,7 @@ On first session start, the preflight system automatically installs rules and cr
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, context persistence, and research/decision archiving | 2.8.0 |
+| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, context persistence, and research/decision archiving | 2.10.0 |
 
 ## Plugin Overview
 

@@ -162,6 +162,29 @@ Lock state is stored in `.claude/yf.json` under the `preflight` key.
 
 Because rules are symlinks, edits to plugin source files are immediately active — no re-sync needed.
 
+### Project Environment Setup
+
+Preflight also calls `setup-project.sh` after setup commands to manage two project-level files:
+
+**`.gitignore` sentinel block** — A bracketed block of entries for yf ephemeral files:
+
+```
+# >>> yf-managed >>>
+.beads/
+.claude/settings.local.json
+.claude/CLAUDE.local.md
+.claude/yf.json
+.claude/rules/yf-*.md
+.claude/.task-pump.json
+.claude/.plan-gate
+.claude/.plan-intake-ok
+# <<< yf-managed <<<
+```
+
+The sentinel markers (`# >>> yf-managed >>>` / `# <<< yf-managed <<<`) make the block identifiable for idempotent updates. User entries outside the block are preserved. Block replacement uses awk for bash 3.2 / macOS compatibility.
+
+**AGENTS.md cleanup** — `bd init --skip-hooks` creates an AGENTS.md with `bd sync`, mandatory `git push`, and push-enforcement language that conflicts with yf's local-only beads model. The script detects and removes this content, preserving any non-bd sections.
+
 ## Configuration Model
 
 All config lives in `.claude/yf.json` (gitignored). This single file holds both user settings and preflight lock state.

@@ -91,6 +91,14 @@ CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}" bash "${CLAUDE_PLUGIN_ROOT}/script
 
 This will install/remove rules based on the new settings.
 
+### 4b. Project environment
+
+The preflight script automatically:
+- Ensures `.gitignore` has entries for yf ephemeral files (sentinel-bracketed block)
+- Removes conflicting `bd init` / `bd onboard` content from AGENTS.md
+
+No manual action needed — handled by the preflight pipeline.
+
 ### 5. Report results
 
 Show what changed. Examples:

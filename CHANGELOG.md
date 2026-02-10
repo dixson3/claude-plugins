@@ -5,6 +5,25 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] - 2026-02-09
+
+### Added
+
+- **Setup-managed `.gitignore` and AGENTS.md cleanup**: Preflight now manages project environment for external installations
+  - `setup-project.sh` script — maintains a sentinel-bracketed block of `.gitignore` entries for yf ephemeral files (`.beads/`, `.claude/yf.json`, `.claude/rules/yf-*.md`, etc.)
+  - AGENTS.md cleanup — detects and removes conflicting `bd init` / `bd onboard` content (mandatory sync/push language) that conflicts with yf's local-only beads model
+  - Idempotent: creates, updates, or skips `.gitignore` block as needed; preserves user entries outside the sentinel block
+  - Called from `plugin-preflight.sh` after setup commands, catching drift on every session
+  - Fast path extended with gitignore sentinel check
+  - Respects `enabled` guard (no-op when yf is disabled), always exits 0 (fail-open)
+- Test scenarios: `unit-setup-project.yaml` (10 cases)
+
+### Changed
+
+- `plugin-preflight.sh`: Calls `setup-project.sh all` after setup commands; fast path checks for gitignore sentinel
+- `setup` SKILL.md: Documents automatic project environment behavior
+- Plugin version bumped: 2.9.0 → 2.10.0
+
 ## [2.9.0] - 2026-02-09
 
 ### Added

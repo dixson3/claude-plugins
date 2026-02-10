@@ -1,0 +1,177 @@
+name: "Unit: setup-project.sh — gitignore and AGENTS.md management"
+
+setup:
+  - "mkdir -p .claude"
+  - 'echo ''{"enabled": true}'' > .claude/yf.json'
+
+steps:
+  # Case 1: Creates .gitignore when none exists
+  - name: "creates_gitignore_when_missing"
+    run: |
+      rm -f "$WORK_DIR/.gitignore"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" gitignore 2>&1
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "created .gitignore"
+
+  # Case 2: Sentinel markers present after creation
+  - name: "sentinel_markers_present"
+    run: |
+      grep -c ">>> yf-managed >>>" "$WORK_DIR/.gitignore"
+      grep -c "<<< yf-managed <<<" "$WORK_DIR/.gitignore"
+      echo "OK: both sentinels present"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: All required entries present
+  - name: "all_entries_present"
+    run: |
+      FAIL=false
+      for entry in ".beads/" ".claude/settings.local.json" ".claude/CLAUDE.local.md" ".claude/yf.json" ".claude/.task-pump.json" ".claude/.plan-gate" ".claude/.plan-intake-ok"; do
+        if ! grep -qF "$entry" "$WORK_DIR/.gitignore"; then
+          echo "FAIL: missing entry: $entry"
+          FAIL=true
+        fi
+      done
+      if ! grep -q 'yf-\*\.md' "$WORK_DIR/.gitignore"; then
+        echo "FAIL: missing entry: .claude/rules/yf-*.md"
+        FAIL=true
+      fi
+      if $FAIL; then exit 1; fi
+      echo "OK: all entries present"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Idempotent — second run reports "up to date"
+  - name: "idempotent_up_to_date"
+    run: |
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" gitignore 2>&1
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "up to date"
+
+  # Case 5: Appends to existing .gitignore without destroying content
+  - name: "appends_to_existing_gitignore"
+    run: |
+      printf 'node_modules/\n*.log\n' > "$WORK_DIR/.gitignore"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" gitignore 2>&1
+      if grep -q "node_modules/" "$WORK_DIR/.gitignore" && grep -q ">>> yf-managed >>>" "$WORK_DIR/.gitignore"; then
+        echo "OK: existing content preserved and block appended"
+      else
+        echo "FAIL: content missing"
+        cat "$WORK_DIR/.gitignore"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "appended"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: Removes bd-only AGENTS.md entirely
+  - name: "removes_bd_only_agents_md"
+    run: |
+      printf '# Agent Instructions\n\nThis project uses **bd** (beads) for issue tracking.\n\n## Quick Reference\n\nbd ready\nbd close\n\n## Landing the Plane (Session Completion)\n\n1. bd sync\n2. git push\n' > "$WORK_DIR/AGENTS.md"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" agents 2>&1
+      if [ -f "$WORK_DIR/AGENTS.md" ]; then
+        echo "FAIL: AGENTS.md still exists"
+        exit 1
+      fi
+      echo "OK: AGENTS.md removed"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "removed AGENTS.md"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: Preserves non-bd content in mixed AGENTS.md
+  - name: "preserves_non_bd_content"
+    run: |
+      printf '# Agent Instructions\n\nThis project uses **bd** (beads) for issue tracking.\n\n## Quick Reference\n\nbd ready\n\n## My Custom Section\n\nCustom content that should survive.\n\n## Landing the Plane (Session Completion)\n\n1. bd sync\n' > "$WORK_DIR/AGENTS.md"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" agents 2>&1
+      if ! grep -q "My Custom Section" "$WORK_DIR/AGENTS.md"; then
+        echo "FAIL: custom content lost"
+        exit 1
+      fi
+      if grep -q "Quick Reference" "$WORK_DIR/AGENTS.md"; then
+        echo "FAIL: bd content not removed"
+        exit 1
+      fi
+      echo "OK: custom content preserved, bd content removed"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "cleaned bd sections"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: No AGENTS.md → no error
+  - name: "no_agents_md_is_noop"
+    run: |
+      rm -f "$WORK_DIR/AGENTS.md"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" agents 2>&1
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "no AGENTS.md"
+
+  # Case 9: Disabled yf → no changes
+  - name: "disabled_yf_no_changes"
+    run: |
+      echo '{"enabled": false}' > "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.gitignore"
+      printf '# Agent Instructions\nbd stuff\n' > "$WORK_DIR/AGENTS.md"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" all 2>&1
+      if [ -f "$WORK_DIR/.gitignore" ]; then
+        echo "FAIL: gitignore created when disabled"
+        exit 1
+      fi
+      if ! [ -f "$WORK_DIR/AGENTS.md" ]; then
+        echo "FAIL: AGENTS.md removed when disabled"
+        exit 1
+      fi
+      echo "OK: no changes when disabled"
+      echo '{"enabled": true}' > "$WORK_DIR/.claude/yf.json"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: Preflight full run creates gitignore
+  - name: "preflight_creates_gitignore"
+    run: |
+      rm -f "$WORK_DIR/.gitignore" "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.claude/rules/yf-"*.md
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if [ -f "$WORK_DIR/.gitignore" ] && grep -qF ">>> yf-managed >>>" "$WORK_DIR/.gitignore"; then
+        echo "OK: preflight created gitignore with sentinel"
+      else
+        echo "FAIL: gitignore missing or no sentinel"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .claude/yf.json .gitignore AGENTS.md"
