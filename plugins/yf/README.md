@@ -1,24 +1,22 @@
 # Yoshiko Flow (yf) Plugin — v2.8.0
 
-Yoshiko Flow enhances Claude Code with structured plan lifecycle management, persistent context capture, and research/decision archiving — freezing the context that makes software maintainable.
-
-> **Note:** Beads (`.beads/`) is local-only — not committed to git.
+Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
 ## Why Yoshiko Flow
 
-The natural state of software is _maintenance_. How hard or easy that maintenance is depends on how well teams share knowledge and transfer information — to each other now, and to people in the future they'll never meet. Projects have design docs, PRDs, issue trackers, and code comments — all methods of "freezing context" to constrain work and investigations to the most appropriate areas.
+The natural state of software is _maintenance_. How hard or easy that maintenance is depends on how well teams share knowledge — with each other now, and with people in the future they'll never meet. Design docs, PRDs, issue trackers, and code comments are all methods of "freezing context" so that work and investigations stay focused in the right areas.
 
-Traditionally, producing this content is a chore requiring real organizational discipline to maintain consistency. The real challenge in making agentic coding scalable is moving it toward a workflow that supports multiple collaborators, all with potentially different agentic interaction preferences.
+Traditionally, producing this content is a chore that requires real organizational discipline. Agentic coding makes the problem worse: agents generate context faster than humans can catalog it, and each session starts with a blank slate. Yoshiko Flow automates the discipline — capturing plans, observations, and decisions as structured artifacts without requiring the operator to remember to do it.
 
-Yoshiko Flow does three things to enhance an engineering workflow:
+It does this through three capabilities:
 
 1. **Plan Lifecycle** — Breaks plans into a dependency graph of tracked tasks, with automatic decomposition, scheduling, and dispatch
-2. **Chronicler** — Captures observations and context as work progresses, then composes diary entries that record the evolutionary path of how changes came into being
-3. **Archivist** — Preserves research findings and design decisions as permanent documentation that helps justify features and design in PRDs and ERDs
+2. **Chronicler** — Captures observations and context as work progresses, then composes diary entries that trace how and why changes were made
+3. **Archivist** — Preserves research findings and design decisions as permanent documentation that supports PRDs and ERDs
 
 ## Getting Started
 
-1. **Install beads-cli** — Beads is a git-backed issue tracker that provides the task DAG underlying yf's plan tracking. See [beads-cli](https://github.com/dixson3/beads-cli) for installation.
+1. **Install beads-cli** — Beads is a git-backed issue tracker that yf uses for plan tracking. See [beads-cli](https://github.com/dixson3/beads-cli) for installation.
 
 2. **Load the marketplace:**
    ```bash
@@ -30,13 +28,15 @@ Yoshiko Flow does three things to enhance an engineering workflow:
    /yf:setup
    ```
 
-4. **Start planning** — Enter plan mode, write a plan, exit. The auto-chain handles the rest: saving the plan, creating beads, resolving the gate, and dispatching work.
+4. **Start planning** — Enter plan mode, write your plan, exit. Yoshiko Flow takes it from there — saving the plan, creating tracked tasks, and beginning execution. See [Plan Lifecycle](#plan-lifecycle) for details.
+
+> **Note:** Beads state (`.beads/`) is local-only and not committed to git.
 
 ## Plan Lifecycle
 
 ### Why
 
-Plans written in Claude sessions evaporate on context compaction. Without structure, there's no way to track what was done, what remains, or what depends on what. Breaking plans into beads with dependencies gives control structures beyond native Claude TaskLists — additional reasoning is applied to each task, including discovering and creating new tasks. The breakdown and scheduling is automatic and implicit: hooks and skills trigger the decomposition and work through to completion.
+Plans written in a Claude session disappear when the context window compresses or the session ends. Without external state, there's no way to track what was done, what remains, or what depends on what. Yoshiko Flow converts plans into a dependency graph of beads — tracked issues that persist across sessions. Each task is assessed for scope and decomposed further when needed, so the graph grows to reflect the actual shape of the work.
 
 ### How It Works
 
@@ -52,7 +52,7 @@ Draft ───► Ready ───► Executing ◄──► Paused ───►
 | **Paused** | "pause the plan" | New gate. Pending tasks deferred. In-flight work finishes. |
 | **Completed** | Automatic | All tasks closed. Plan status updated. Diary generated. |
 
-The auto-chain on ExitPlanMode drives the full lifecycle without manual intervention: format the plan, create the beads hierarchy, resolve the gate, and begin dispatch.
+In the typical flow, the auto-chain on ExitPlanMode handles all of this without manual intervention: it formats the plan, creates the beads hierarchy, resolves the gate, and begins dispatch. The manual triggers exist for cases where you need finer control.
 
 ### Enforcement
 
@@ -60,7 +60,7 @@ Three layers prevent out-of-state operations:
 
 1. **Beads-native** — Gates control execution state. Deferred tasks are hidden from `bd ready`.
 2. **Scripts** — `plan-exec.sh` handles atomic state transitions.
-3. **Hooks** — `plan-exec-guard.sh` blocks task operations on non-executing plans. `code-gate.sh` blocks implementation edits until the plan reaches Executing.
+3. **Hooks** — `code-gate.sh` blocks implementation edits and `plan-exec-guard.sh` blocks task operations until the plan reaches Executing.
 
 ### Artifacts
 
@@ -85,7 +85,7 @@ Three layers prevent out-of-state operations:
 
 ### Why
 
-Claude sessions lose context on compaction, clear, or new session start. The insights, rationale, and working state accumulated during a session disappear. The chronicler captures this context: rules and hooks evaluate the conversation and changes, recording observations as chronicle beads. At plan completion or on demand, the chronicler composes diary entries — capturing the evolutionary path of how changes came into being. Since chronicles are captured in the context of a plan, they correlate to a bigger picture.
+Claude sessions lose context on compaction, clear, or new session start. The insights, rationale, and working state accumulated during a session vanish. The chronicler captures this context as chronicle beads — lightweight snapshots of observations, progress, and reasoning. At plan completion or on demand, these chronicles are composed into diary entries: a readable narrative of how changes came into being. Because chronicles are tagged to the active plan, the diary entries tell a coherent story rather than a disconnected log.
 
 ### How It Works
 
@@ -114,12 +114,12 @@ Claude sessions lose context on compaction, clear, or new session start. The ins
 
 ### Why
 
-Research findings and decision rationale discussed in sessions are lost once the conversation ends. The archivist automatically captures research into topics and key decisions based on that research. These decision and research records help justify features and design in PRDs and ERDs.
+Research findings and decision rationale discussed in sessions are lost once the conversation ends. The archivist flags research and decisions as they arise, prompting the operator to capture them. Captured items are processed into indexed summaries — providing permanent records that support PRDs and ERDs long after the original conversation is gone.
 
 ### How It Works
 
 - **Capture**: `/yf:archive_capture` for research findings or design decisions
-- **Advisory**: Rules suggest archiving during work (not auto-capture)
+- **Advisory**: Rules suggest archiving during work (the operator decides when to capture)
 - **Transitions**: Plan transitions check for archive-worthy content
 - **Processing**: `/yf:archive_process` converts archive beads to indexed `SUMMARY.md` files
 - **Discovery**: `/yf:archive_suggest` scans git history for candidates
