@@ -1,4 +1,4 @@
-# Yoshiko Studios Claude Marketplace
+# Claude Marketplace
 
 A plugin marketplace for Claude Code. The plugins here automate the organizational discipline that keeps software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
