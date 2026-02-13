@@ -1,11 +1,11 @@
 {
-  "name": "yoshiko-claude-marketplace",
+  "name": "ys-claude-marketplace",
   "owner": {
     "name": "James Dixson",
     "email": "dixson3@gmail.com"
   },
   "metadata": {
-    "description": "Yoshiko Studios Claude Marketplace - A collection of Claude plugins",
+    "description": "Yoshiko Studios Claude Marketplace - A collection of Claude plugins (by dixson3)",
     "version": "2.10.0",
     "license": "MIT",
     "organization": "Yoshiko Studios LLC",
