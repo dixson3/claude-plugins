@@ -1,17 +1,18 @@
 name: "Unit: plugin-preflight.sh — disabled mode"
 
 setup:
-  - "mkdir -p .claude/rules docs/plans docs/diary"
+  - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
 
 steps:
   # Case 1: Setup — install rules first
   - name: "setup_install_rules"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
-      rm -f "$WORK_DIR/.claude/rules/"*.md
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json" "$WORK_DIR/.claude/yf.local.json"
+      rm -rf "$WORK_DIR/.claude/rules/yf"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       COUNT=0
-      for f in "$WORK_DIR/.claude/rules"/yf-*.md; do
+      for f in "$WORK_DIR/.claude/rules/yf"/*.md; do
         [ -L "$f" ] && COUNT=$((COUNT + 1))
       done
       echo "OK: $COUNT symlinks installed"
@@ -25,12 +26,12 @@ steps:
   - name: "disable_via_local_removes_symlinks"
     run: |
       # Add disabled override to existing local
-      jq '. + {enabled: false}' "$WORK_DIR/.claude/yf.json" > "$WORK_DIR/.claude/yf.json.tmp"
-      mv "$WORK_DIR/.claude/yf.json.tmp" "$WORK_DIR/.claude/yf.json"
+      jq '. + {enabled: false}' "$WORK_DIR/.yoshiko-flow/config.json" > "$WORK_DIR/.yoshiko-flow/config.json.tmp"
+      mv "$WORK_DIR/.yoshiko-flow/config.json.tmp" "$WORK_DIR/.yoshiko-flow/config.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       COUNT=0
-      for f in "$WORK_DIR/.claude/rules"/yf-*.md; do
+      for f in "$WORK_DIR/.claude/rules/yf"/*.md; do
         [ -e "$f" ] || [ -L "$f" ] && COUNT=$((COUNT + 1))
       done
       if [ "$COUNT" -eq 0 ]; then
@@ -52,8 +53,8 @@ steps:
     run: |
       # Create a plan gate to ensure the hook would normally block
       mkdir -p "$WORK_DIR/.claude"
-      echo '{"plan_idx":"99"}' > "$WORK_DIR/.claude/.plan-gate"
-      echo '{"enabled":false}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"plan_idx":"99"}' > "$WORK_DIR/.yoshiko-flow/plan-gate"
+      echo '{"enabled":false}' > "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"tool_input":{"file_path":"/some/code/file.py"}}' | \
         CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh"
       echo "OK: code-gate exited 0"
@@ -100,12 +101,12 @@ steps:
   # Case 7: Re-enable → symlinks reinstalled
   - name: "reenable_reinstalls_symlinks"
     run: |
-      jq '. + {enabled: true}' "$WORK_DIR/.claude/yf.json" > "$WORK_DIR/.claude/yf.json.tmp"
-      mv "$WORK_DIR/.claude/yf.json.tmp" "$WORK_DIR/.claude/yf.json"
+      jq '. + {enabled: true}' "$WORK_DIR/.yoshiko-flow/config.json" > "$WORK_DIR/.yoshiko-flow/config.json.tmp"
+      mv "$WORK_DIR/.yoshiko-flow/config.json.tmp" "$WORK_DIR/.yoshiko-flow/config.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       COUNT=0
-      for f in "$WORK_DIR/.claude/rules"/yf-*.md; do
+      for f in "$WORK_DIR/.claude/rules/yf"/*.md; do
         [ -L "$f" ] && COUNT=$((COUNT + 1))
       done
       if [ "$COUNT" -gt 0 ]; then
@@ -123,5 +124,5 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .claude/yf.json .claude/yf.local.json"
-  - "rm -f .claude/.plan-gate"
+  - "rm -f .yoshiko-flow/config.json .yoshiko-flow/lock.json .claude/yf.local.json"
+  - "rm -f .yoshiko-flow/plan-gate"

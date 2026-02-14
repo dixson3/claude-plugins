@@ -12,10 +12,10 @@ Idempotent setup skill. Works for both first-run and reconfiguration.
 
 ### 1. Read existing config
 
-Check if `.claude/yf.json` exists. Load config:
+Check if `.yoshiko-flow/config.json` exists. Load config:
 
 ```bash
-cat .claude/yf.json 2>/dev/null || echo "{}"
+cat .yoshiko-flow/config.json 2>/dev/null || echo "{}"
 ```
 
 Extract current values (defaults shown):
@@ -55,13 +55,13 @@ Use AskUserQuestion with these questions (pre-populate descriptions with current
 
 ### 3. Write config
 
-All config goes to `.claude/yf.json` (gitignored, local-only):
+All config goes to `.yoshiko-flow/config.json` (committed to git):
 
 ```bash
-YF_CONFIG="${CLAUDE_PROJECT_DIR:-.}/.claude/yf.json"
-mkdir -p "$(dirname "$YF_CONFIG")"
+YF_CONFIG="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/config.json"
+mkdir -p "${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow"
 
-# Write config to local file, preserving preflight
+# Write config
 if [ -f "$YF_CONFIG" ]; then
   jq --argjson enabled ENABLED_BOOL \
      --arg artifact_dir "ARTIFACT_DIR" \
@@ -110,7 +110,7 @@ Initial setup complete.
   Artifact directory: docs
   Chronicler: enabled
   Archivist: enabled
-  Config: local (.claude/yf.json)
+  Config: .yoshiko-flow/config.json
   Rules installed: 11
 ```
 
@@ -120,7 +120,7 @@ Configuration updated.
   Enabled: true → false
   Chronicler: enabled → disabled
   Archivist: enabled → disabled
-  Config: local (.claude/yf.json)
+  Config: .yoshiko-flow/config.json
   Rules removed: 11
 ```
 

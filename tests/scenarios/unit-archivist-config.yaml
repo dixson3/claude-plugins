@@ -1,16 +1,16 @@
 name: "Unit: yf-config.sh — archivist toggle"
 
 setup:
-  - "mkdir -p .claude"
+  - "mkdir -p .yoshiko-flow"
 
 steps:
   # Case 1: Missing config defaults to enabled (true)
   - name: "archivist_default_enabled"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       export _YF_PROJECT_DIR="$WORK_DIR"
-      export _YF_JSON="$WORK_DIR/.claude/yf.json"
+      export _YF_JSON="$WORK_DIR/.yoshiko-flow/config.json"
       if yf_is_archivist_on; then
         echo "OK: defaults to enabled"
       else
@@ -26,10 +26,10 @@ steps:
   # Case 2: Explicit true returns enabled
   - name: "archivist_explicit_true"
     run: |
-      echo '{"config":{"archivist_enabled":true}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"config":{"archivist_enabled":true}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       export _YF_PROJECT_DIR="$WORK_DIR"
-      export _YF_JSON="$WORK_DIR/.claude/yf.json"
+      export _YF_JSON="$WORK_DIR/.yoshiko-flow/config.json"
       if yf_is_archivist_on; then
         echo "OK: explicit true is enabled"
       else
@@ -45,10 +45,10 @@ steps:
   # Case 3: Explicit false returns disabled
   - name: "archivist_explicit_false"
     run: |
-      echo '{"config":{"archivist_enabled":false}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"config":{"archivist_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       export _YF_PROJECT_DIR="$WORK_DIR"
-      export _YF_JSON="$WORK_DIR/.claude/yf.json"
+      export _YF_JSON="$WORK_DIR/.yoshiko-flow/config.json"
       if yf_is_archivist_on; then
         echo "FAIL: explicit false should be disabled"
         exit 1
@@ -64,10 +64,10 @@ steps:
   # Case 4: Malformed config (no archivist key) defaults to enabled
   - name: "archivist_missing_key"
     run: |
-      echo '{"config":{"chronicler_enabled":true}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"config":{"chronicler_enabled":true}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       export _YF_PROJECT_DIR="$WORK_DIR"
-      export _YF_JSON="$WORK_DIR/.claude/yf.json"
+      export _YF_JSON="$WORK_DIR/.yoshiko-flow/config.json"
       if yf_is_archivist_on; then
         echo "OK: missing key defaults to enabled"
       else
@@ -81,4 +81,4 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .claude/yf.json"
+  - "rm -f .yoshiko-flow/config.json"

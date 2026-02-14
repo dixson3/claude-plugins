@@ -1,7 +1,7 @@
 name: "Unit: pre-compact.sh — PreCompact auto-draft"
 
 setup:
-  - "mkdir -p .claude .beads"
+  - "mkdir -p .yoshiko-flow .beads"
   - "git init . >/dev/null 2>&1 || true"
   - "git config user.email 'test@test.com' && git config user.name 'Test'"
 
@@ -9,7 +9,7 @@ steps:
   # Case 1: Exits silently when yf disabled
   - name: "exits_when_yf_disabled"
     run: |
-      echo '{"enabled":false}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"enabled":false}' > "$WORK_DIR/.yoshiko-flow/config.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" 2>&1)
       EXIT_CODE=$?
       if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ]; then
@@ -27,7 +27,7 @@ steps:
   # Case 2: Exits silently when chronicler disabled
   - name: "exits_when_chronicler_disabled"
     run: |
-      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" 2>&1)
       EXIT_CODE=$?
       if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ]; then
@@ -45,7 +45,7 @@ steps:
   # Case 3: Runs chronicle-check.sh (calls bd)
   - name: "runs_chronicle_check"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       mkdir -p "$WORK_DIR/mock-bin"
       # Create a bd mock that logs calls
       cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
@@ -84,7 +84,7 @@ steps:
   # Case 4: Always exits 0 even when bd missing
   - name: "always_exits_zero_bd_missing"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       # Use a PATH with no bd
       OUTPUT=$(PATH="/usr/bin:/bin" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" 2>&1)
       EXIT_CODE=$?
@@ -103,7 +103,7 @@ steps:
   # Case 5: Always exits 0 even when chronicle-check fails
   - name: "always_exits_zero_on_failure"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
       #!/bin/bash
       exit 1
@@ -118,7 +118,7 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .claude/yf.json"
+  - "rm -f .yoshiko-flow/config.json"
   - "rm -f .beads/bd-calls.txt"
   - "rm -rf mock-bin"
   - "rm -f compact-test.txt"

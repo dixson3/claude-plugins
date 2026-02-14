@@ -5,6 +5,28 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0] - 2026-02-13
+
+### Changed
+
+- **State directory migration: `.claude/` → `.yoshiko-flow/`**: All yf config and state files moved to a dedicated `.yoshiko-flow/` directory
+  - Config (`yf.json`) is now committable to git — team members share the same configuration
+  - Lock state split into separate `lock.json` (gitignored) — clean separation of config vs ephemeral state
+  - State files renamed: `.task-pump.json` → `task-pump.json`, `.plan-gate` → `plan-gate`, `.plan-intake-ok` → `plan-intake-ok`
+  - `.yoshiko-flow/.gitignore` auto-created to ignore everything except `yf.json`
+  - Automatic migration on first preflight run: splits old `.claude/yf.json` into config + lock, moves state files
+  - `.gitignore` managed block simplified (removed yf-specific entries from `.claude/`)
+- All scripts updated: `yf-config.sh`, `plugin-preflight.sh`, `pump-state.sh`, `plan-exec.sh`, `setup-project.sh`
+- All hooks updated: `code-gate.sh` (added `.yoshiko-flow/` exempt pattern), `exit-plan-gate.sh`
+- All skills updated: `setup`, `plan_intake`, `plan_engage`, `plan_dismiss_gate`
+- Rule updated: `yf-auto-chain-plan.md` (gate path reference)
+- `preflight.json`: Added `.yoshiko-flow` to directories array
+- Plugin version bumped: 2.10.0 → 2.11.0
+
+### Added
+
+- Test scenario: `unit-migration.yaml` — validates config/lock split, state file migration, `.gitignore` creation, cleanup, and idempotent re-run
+
 ## [2.10.0] - 2026-02-09
 
 ### Added

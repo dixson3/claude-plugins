@@ -24,4 +24,7 @@ fi
 # --- Run chronicle-check to create drafts from git activity ---
 bash "$SCRIPT_DIR/scripts/chronicle-check.sh" check 2>/dev/null || true
 
+# --- Run staleness check with shorter threshold (compaction = urgent) ---
+bash "$SCRIPT_DIR/scripts/chronicle-staleness.sh" --threshold 1 2>/dev/null || true
+
 exit 0

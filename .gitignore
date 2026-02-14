@@ -8,11 +8,5 @@ tests/bin/
 # Claude Code local files
 .claude/settings.local.json
 .claude/CLAUDE.local.md
-
-# yf plugin config & state
-.claude/yf.json
 .claude/rules/yf-*.md
-.claude/.task-pump.json
-.claude/.plan-gate
-.claude/.plan-intake-ok
 # <<< yf-managed <<<

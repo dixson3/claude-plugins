@@ -16,7 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 yf_is_enabled || exit 0
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-GATE_FILE="$PROJECT_DIR/.claude/.plan-gate"
+GATE_FILE="$PROJECT_DIR/.yoshiko-flow/plan-gate"
 PLANS_DIR="$PROJECT_DIR/docs/plans"
 CLAUDE_PLANS_DIR="$PROJECT_DIR/.claude/plans"
 
@@ -63,6 +63,7 @@ DEST="$PLANS_DIR/plan-${NEXT_PAD}.md"
 cp "$PLAN_FILE" "$DEST"
 
 # Create the gate file
+mkdir -p "$PROJECT_DIR/.yoshiko-flow"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 printf '{"plan_idx":"%s","plan_file":"docs/plans/plan-%s.md","created":"%s"}\n' \
     "$NEXT_PAD" "$NEXT_PAD" "$TIMESTAMP" > "$GATE_FILE"

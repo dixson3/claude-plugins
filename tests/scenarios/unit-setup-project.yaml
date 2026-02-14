@@ -1,8 +1,8 @@
 name: "Unit: setup-project.sh — gitignore and AGENTS.md management"
 
 setup:
-  - "mkdir -p .claude"
-  - 'echo ''{"enabled": true}'' > .claude/yf.json'
+  - "mkdir -p .claude .yoshiko-flow"
+  - 'echo ''{"enabled": true}'' > .yoshiko-flow/config.json'
 
 steps:
   # Case 1: Creates .gitignore when none exists
@@ -32,14 +32,14 @@ steps:
   - name: "all_entries_present"
     run: |
       FAIL=false
-      for entry in ".beads/" ".claude/settings.local.json" ".claude/CLAUDE.local.md" ".claude/yf.json" ".claude/.task-pump.json" ".claude/.plan-gate" ".claude/.plan-intake-ok"; do
+      for entry in ".beads/"; do
         if ! grep -qF "$entry" "$WORK_DIR/.gitignore"; then
           echo "FAIL: missing entry: $entry"
           FAIL=true
         fi
       done
-      if ! grep -q 'yf-\*\.md' "$WORK_DIR/.gitignore"; then
-        echo "FAIL: missing entry: .claude/rules/yf-*.md"
+      if ! grep -q '.claude/rules/yf/' "$WORK_DIR/.gitignore"; then
+        echo "FAIL: missing entry: .claude/rules/yf/"
         FAIL=true
       fi
       if $FAIL; then exit 1; fi
@@ -134,7 +134,7 @@ steps:
   # Case 9: Disabled yf → no changes
   - name: "disabled_yf_no_changes"
     run: |
-      echo '{"enabled": false}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"enabled": false}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.gitignore"
       printf '# Agent Instructions\nbd stuff\n' > "$WORK_DIR/AGENTS.md"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" all 2>&1
@@ -147,7 +147,7 @@ steps:
         exit 1
       fi
       echo "OK: no changes when disabled"
-      echo '{"enabled": true}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"enabled": true}' > "$WORK_DIR/.yoshiko-flow/config.json"
     assertions:
       - type: exit_code
         value: "0"
@@ -157,8 +157,8 @@ steps:
   # Case 10: Preflight full run creates gitignore
   - name: "preflight_creates_gitignore"
     run: |
-      rm -f "$WORK_DIR/.gitignore" "$WORK_DIR/.claude/yf.json"
-      rm -f "$WORK_DIR/.claude/rules/yf-"*.md
+      rm -f "$WORK_DIR/.gitignore" "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      rm -rf "$WORK_DIR/.claude/rules/yf"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       if [ -f "$WORK_DIR/.gitignore" ] && grep -qF ">>> yf-managed >>>" "$WORK_DIR/.gitignore"; then
@@ -174,4 +174,4 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .claude/yf.json .gitignore AGENTS.md"
+  - "rm -f .yoshiko-flow/config.json .yoshiko-flow/lock.json .gitignore AGENTS.md"

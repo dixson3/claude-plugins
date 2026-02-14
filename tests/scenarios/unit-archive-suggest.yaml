@@ -1,14 +1,14 @@
 name: "Unit: archive-suggest.sh — commit scanner"
 
 setup:
-  - "mkdir -p .claude"
+  - "mkdir -p .yoshiko-flow"
   - "git init . >/dev/null 2>&1 || true"
 
 steps:
   # Case 1: Exits cleanly when archivist disabled
   - name: "exits_when_disabled"
     run: |
-      echo '{"config":{"archivist_enabled":false}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"config":{"archivist_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/archive-suggest.sh" 2>&1)
       EXIT_CODE=$?
       echo "$OUTPUT"
@@ -27,7 +27,7 @@ steps:
   # Case 2: No commits found
   - name: "no_commits"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/archive-suggest.sh" --since "1 second ago" 2>&1)
       echo "$OUTPUT"
       if echo "$OUTPUT" | grep -q "No commits found"; then
@@ -45,7 +45,7 @@ steps:
   # Case 3: Detects research keywords
   - name: "detects_research_keywords"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       # Create a commit with research keywords
       echo "test" > "$WORK_DIR/research-test.txt"
       cd "$WORK_DIR" && git add research-test.txt && git commit -m "Researched authentication libraries for Go" --allow-empty >/dev/null 2>&1
@@ -66,7 +66,7 @@ steps:
   # Case 4: Detects decision keywords
   - name: "detects_decision_keywords"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo "test2" > "$WORK_DIR/decision-test.txt"
       cd "$WORK_DIR" && git add decision-test.txt && git commit -m "Chose Redis for caching layer architecture" --allow-empty >/dev/null 2>&1
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/archive-suggest.sh" --since "5 minutes ago" 2>&1)
@@ -86,7 +86,7 @@ steps:
   # Case 5: Script always exits 0
   - name: "always_exits_zero"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/archive-suggest.sh" --since "5 minutes ago" >/dev/null 2>&1
       echo "OK: exit code $?"
     assertions:
@@ -96,4 +96,4 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .claude/yf.json research-test.txt decision-test.txt"
+  - "rm -f .yoshiko-flow/config.json research-test.txt decision-test.txt"

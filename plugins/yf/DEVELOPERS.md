@@ -158,7 +158,7 @@ A preflight script (`scripts/plugin-preflight.sh`) runs on SessionStart and sync
 - **Remove**: Symlinks for rules no longer in the manifest are deleted
 - **Fast path**: Checks `readlink` targets and symlink count — skips sync when all symlinks are correct
 
-Lock state is stored in `.claude/yf.json` under the `preflight` key.
+Lock state is stored in `.yoshiko-flow/lock.json` under the `preflight` key.
 
 Because rules are symlinks, edits to plugin source files are immediately active — no re-sync needed.
 
@@ -173,11 +173,7 @@ Preflight also calls `setup-project.sh` after setup commands to manage two proje
 .beads/
 .claude/settings.local.json
 .claude/CLAUDE.local.md
-.claude/yf.json
-.claude/rules/yf-*.md
-.claude/.task-pump.json
-.claude/.plan-gate
-.claude/.plan-intake-ok
+.claude/rules/yf/
 # <<< yf-managed <<<
 ```
 
@@ -187,21 +183,35 @@ The sentinel markers (`# >>> yf-managed >>>` / `# <<< yf-managed <<<`) make the 
 
 ## Configuration Model
 
-All config lives in `.claude/yf.json` (gitignored). This single file holds both user settings and preflight lock state.
+Config is split across two files in `.yoshiko-flow/`:
+
+- **`config.json`** — User config (committed to git): `{enabled, config}`
+- **`lock.json`** — Preflight lock state (gitignored): `{updated, preflight}`
+
+`.yoshiko-flow/.gitignore` ignores everything except `config.json`, so config is committable while state remains ephemeral.
 
 ```json
+// .yoshiko-flow/config.json (committed)
 {
   "enabled": true,
   "config": {
     "artifact_dir": "docs",
     "chronicler_enabled": true,
     "archivist_enabled": true
-  },
-  "updated": "2026-02-08T...",
+  }
+}
+
+// .yoshiko-flow/lock.json (gitignored)
+{
+  "updated": "2026-02-13T...",
   "preflight": {
-    "version": "2.8.0",
-    "mode": "symlink",
-    "rules": { "..." }
+    "plugins": {
+      "yf": {
+        "version": "2.11.0",
+        "mode": "symlink",
+        "artifacts": { "..." }
+      }
+    }
   }
 }
 ```

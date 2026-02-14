@@ -1,7 +1,7 @@
 #!/bin/bash
 # pump-state.sh — Track which beads have been dispatched to agents
 #
-# Manages the ephemeral dispatch state in .claude/.task-pump.json
+# Manages the ephemeral dispatch state in .yoshiko-flow/task-pump.json
 # to prevent double-dispatch when the pump runs multiple times.
 #
 # Usage:
@@ -20,9 +20,9 @@ set -euo pipefail
 COMMAND="${1:-}"
 BEAD_ID="${2:-}"
 
-STATE_FILE="${CLAUDE_PROJECT_DIR:-.}/.claude/.task-pump.json"
+STATE_FILE="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/task-pump.json"
 
-# Ensure .claude directory exists
+# Ensure .yoshiko-flow directory exists
 mkdir -p "$(dirname "$STATE_FILE")"
 
 # Initialize empty state if file doesn't exist

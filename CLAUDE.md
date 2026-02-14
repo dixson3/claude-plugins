@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Yoshiko Studios Claude Marketplace - A marketplace for Claude plugins, hosting a collection of skills, agents, rules, scripts, and hooks.
+D3 Claude Plugins — A plugin marketplace for Claude Code, hosting a collection of skills, agents, rules, scripts, and hooks.
 
 ## Repository Structure
 
@@ -13,7 +13,7 @@ marketplace/
 ├── .claude-plugin/
 │   └── marketplace.json    # Marketplace catalog with plugin registry
 ├── plugins/
-│   └── yf/                 # Yoshiko Flow — unified plugin
+│   └── yf/                 # Yoshiko Flow plugin
 │       ├── .claude-plugin/
 │       │   ├── plugin.json     # Plugin manifest
 │       │   └── preflight.json  # Artifact declarations
@@ -31,6 +31,7 @@ marketplace/
 │   ├── scenarios/          # YAML test scenarios (unit-*.yaml)
 │   └── run-tests.sh        # Test runner script
 ├── CLAUDE.md               # This file
+├── DEVELOPERS.md           # Developer guide
 ├── README.md               # Marketplace overview
 ├── LICENSE                 # MIT License
 └── CHANGELOG.md            # Version history
@@ -52,7 +53,7 @@ bash tests/run-tests.sh --unit-only
 ## Naming Convention
 
 Skills use `yf:<capability>_<action>`, agents use `yf_<capability>_<role>`.
-See [DEVELOPERS.md](plugins/yf/DEVELOPERS.md) for the full naming convention and capability table.
+See [DEVELOPERS.md](DEVELOPERS.md) for marketplace conventions and [plugins/yf/DEVELOPERS.md](plugins/yf/DEVELOPERS.md) for the full yf capability table.
 
 ## README Maintenance
 
@@ -62,8 +63,8 @@ When implementing a new major capability for the yf plugin:
 3. Update the capability table in `plugins/yf/DEVELOPERS.md`
 4. If there is insufficient narrative or rationale for the new capability, ask the operator for context to ground the documentation
 
-See `plugins/yf/DEVELOPERS.md` for the full developer guide including naming conventions, plugin architecture, and the preflight system.
+See [DEVELOPERS.md](DEVELOPERS.md) for the marketplace developer guide and [plugins/yf/DEVELOPERS.md](plugins/yf/DEVELOPERS.md) for yf-specific internals.
 
 ## Current Plugins
 
-- **yf** (v2.10.0) - Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation
+- **yf** (v2.11.0) — Yoshiko Flow — plan lifecycle, execution orchestration, context persistence, and diary generation

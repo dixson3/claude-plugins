@@ -1,7 +1,7 @@
 name: "Integration: Dismiss Gate"
 setup:
   - "git init"
-  - "mkdir -p .claude/rules docs/plans src"
+  - "mkdir -p .claude/rules .yoshiko-flow docs/plans src"
   - "echo '# Test' > CLAUDE.md"
   - |
     cat > docs/plans/plan-01.md <<'EOF'
@@ -14,10 +14,10 @@ setup:
 steps:
   - name: "create_gate"
     run: |
-      echo '{"plan_idx":"01","plan_file":"docs/plans/plan-01.md"}' > .claude/.plan-gate
+      echo '{"plan_idx":"01","plan_file":"docs/plans/plan-01.md"}' > .yoshiko-flow/plan-gate
     assertions:
       - type: file_exists
-        path: ".claude/.plan-gate"
+        path: ".yoshiko-flow/plan-gate"
 
   - name: "verify_blocked"
     prompt: "Create src/test.py with print('test'). Use the Write tool."
@@ -33,7 +33,7 @@ steps:
     allowed_tools: ["Bash", "Read", "Edit", "Write"]
     assertions:
       - type: file_not_exists
-        path: ".claude/.plan-gate"
+        path: ".yoshiko-flow/plan-gate"
 
   - name: "verify_unblocked"
     prompt: "Now create src/test.py with print('test'). Use the Write tool."

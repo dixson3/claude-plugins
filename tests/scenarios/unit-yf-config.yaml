@@ -1,13 +1,13 @@
 name: "Unit: yf-config.sh — config reading"
 
 setup:
-  - "mkdir -p .claude/rules docs/plans docs/diary"
+  - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
 
 steps:
   # Case 1: Missing config → defaults to enabled
   - name: "missing_defaults_enabled"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       if yf_is_enabled; then
@@ -26,7 +26,7 @@ steps:
   - name: "reads_config"
     run: |
       mkdir -p "$WORK_DIR/.claude"
-      echo '{"enabled":true,"config":{"artifact_dir":"docs","chronicler_enabled":true}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"enabled":true,"config":{"artifact_dir":"docs","chronicler_enabled":true}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       MERGED=$(yf_merged_config)
@@ -48,7 +48,7 @@ steps:
   - name: "disabled_detected"
     run: |
       mkdir -p "$WORK_DIR/.claude"
-      echo '{"enabled":false,"config":{"artifact_dir":"docs","chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"enabled":false,"config":{"artifact_dir":"docs","chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       if yf_is_enabled; then
@@ -66,7 +66,7 @@ steps:
   - name: "chronicler_disabled"
     run: |
       mkdir -p "$WORK_DIR/.claude"
-      echo '{"enabled":true,"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"enabled":true,"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       if yf_is_chronicler_on; then
@@ -84,7 +84,7 @@ steps:
   - name: "malformed_failopen"
     run: |
       mkdir -p "$WORK_DIR/.claude"
-      echo 'NOT VALID JSON!!!' > "$WORK_DIR/.claude/yf.json"
+      echo 'NOT VALID JSON!!!' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       if yf_is_enabled; then
@@ -103,7 +103,7 @@ steps:
   - name: "read_field"
     run: |
       mkdir -p "$WORK_DIR/.claude"
-      echo '{"enabled":true,"config":{"artifact_dir":"output"}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"enabled":true,"config":{"artifact_dir":"output"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       VAL=$(yf_read_field '.config.artifact_dir')
@@ -122,14 +122,14 @@ steps:
   # Case 7: yf_config_exists
   - name: "config_exists_check"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       if yf_config_exists; then
         echo "FAIL: should not exist when missing"
         exit 1
       fi
-      echo '{}' > "$WORK_DIR/.claude/yf.json"
+      echo '{}' > "$WORK_DIR/.yoshiko-flow/config.json"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       if yf_config_exists; then
         echo "OK: exists when yf.json present"
@@ -144,4 +144,4 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .claude/yf.json"
+  - "rm -f .yoshiko-flow/config.json"

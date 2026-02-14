@@ -1,6 +1,6 @@
 name: "Unit: chronicle gate in plan-exec.sh"
 setup:
-  - "mkdir -p .claude .beads docs/plans"
+  - "mkdir -p .claude .yoshiko-flow .beads docs/plans"
 
 steps:
   # Case 1: plan-exec.sh status closes chronicle gates when plan is completed
@@ -55,4 +55,4 @@ steps:
         value: "0"
 
 teardown:
-  - "rm -f .claude/.plan-gate"
+  - "rm -f .yoshiko-flow/plan-gate"

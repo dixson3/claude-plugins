@@ -3,19 +3,20 @@
   "dependencies": [],
   "artifacts": {
     "rules": [
-      { "source": "rules/yf-beads.md", "target": ".claude/rules/yf-beads.md" },
-      { "source": "rules/yf-engage-the-plan.md", "target": ".claude/rules/yf-engage-the-plan.md" },
-      { "source": "rules/yf-plan-to-beads.md", "target": ".claude/rules/yf-plan-to-beads.md" },
-      { "source": "rules/yf-breakdown-the-work.md", "target": ".claude/rules/yf-breakdown-the-work.md" },
-      { "source": "rules/yf-auto-chain-plan.md", "target": ".claude/rules/yf-auto-chain-plan.md" },
-      { "source": "rules/yf-beads-drive-tasks.md", "target": ".claude/rules/yf-beads-drive-tasks.md" },
-      { "source": "rules/yf-plan-intake.md", "target": ".claude/rules/yf-plan-intake.md" },
-      { "source": "rules/yf-watch-for-chronicle-worthiness.md", "target": ".claude/rules/yf-watch-for-chronicle-worthiness.md" },
-      { "source": "rules/yf-plan-transition-chronicle.md", "target": ".claude/rules/yf-plan-transition-chronicle.md" },
-      { "source": "rules/yf-watch-for-archive-worthiness.md", "target": ".claude/rules/yf-watch-for-archive-worthiness.md" },
-      { "source": "rules/yf-plan-transition-archive.md", "target": ".claude/rules/yf-plan-transition-archive.md" }
+      { "source": "rules/beads.md", "target": ".claude/rules/yf/beads.md" },
+      { "source": "rules/engage-the-plan.md", "target": ".claude/rules/yf/engage-the-plan.md" },
+      { "source": "rules/plan-to-beads.md", "target": ".claude/rules/yf/plan-to-beads.md" },
+      { "source": "rules/breakdown-the-work.md", "target": ".claude/rules/yf/breakdown-the-work.md" },
+      { "source": "rules/auto-chain-plan.md", "target": ".claude/rules/yf/auto-chain-plan.md" },
+      { "source": "rules/beads-drive-tasks.md", "target": ".claude/rules/yf/beads-drive-tasks.md" },
+      { "source": "rules/plan-intake.md", "target": ".claude/rules/yf/plan-intake.md" },
+      { "source": "rules/watch-for-chronicle-worthiness.md", "target": ".claude/rules/yf/watch-for-chronicle-worthiness.md" },
+      { "source": "rules/plan-transition-chronicle.md", "target": ".claude/rules/yf/plan-transition-chronicle.md" },
+      { "source": "rules/watch-for-archive-worthiness.md", "target": ".claude/rules/yf/watch-for-archive-worthiness.md" },
+      { "source": "rules/plan-transition-archive.md", "target": ".claude/rules/yf/plan-transition-archive.md" },
+      { "source": "rules/plan-completion-report.md", "target": ".claude/rules/yf/plan-completion-report.md" }
     ],
-    "directories": ["docs/plans", "docs/diary", "docs/research", "docs/decisions"],
+    "directories": ["docs/plans", "docs/diary", "docs/research", "docs/decisions", ".yoshiko-flow"],
     "setup": [
       { "name": "beads", "check": "test -d .beads", "run": "bd init --skip-hooks" }
     ]

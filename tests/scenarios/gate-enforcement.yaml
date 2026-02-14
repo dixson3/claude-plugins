@@ -1,7 +1,7 @@
 name: "Integration: Gate Enforcement"
 setup:
   - "git init"
-  - "mkdir -p .claude/rules docs/plans src"
+  - "mkdir -p .claude/rules .yoshiko-flow docs/plans src"
   - "echo '# Test Project' > CLAUDE.md"
   - "echo 'print(\"hello\")' > src/main.py"
   - "echo '{}' > .claude/settings.json"
@@ -20,10 +20,10 @@ steps:
   # Step 2: Create gate (shell step, no claude)
   - name: "create_gate"
     run: |
-      echo '{"plan_idx":"01","plan_file":"docs/plans/plan-01.md"}' > .claude/.plan-gate
+      echo '{"plan_idx":"01","plan_file":"docs/plans/plan-01.md"}' > .yoshiko-flow/plan-gate
     assertions:
       - type: file_exists
-        path: ".claude/.plan-gate"
+        path: ".yoshiko-flow/plan-gate"
 
   # Step 3: Try to edit (should be blocked — session continues)
   - name: "edit_blocked"
@@ -50,10 +50,10 @@ steps:
 
   # Step 5: Remove gate (shell step)
   - name: "remove_gate"
-    run: "rm .claude/.plan-gate"
+    run: "rm .yoshiko-flow/plan-gate"
     assertions:
       - type: file_not_exists
-        path: ".claude/.plan-gate"
+        path: ".yoshiko-flow/plan-gate"
 
   # Step 6: Edit now works (session remembers previous context)
   - name: "edit_allowed_after_gate_removal"

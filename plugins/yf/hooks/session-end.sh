@@ -33,6 +33,9 @@ BEADS_DIR="$PROJECT_DIR/.beads"
 # --- Run chronicle-check to create drafts from git activity ---
 bash "$SCRIPT_DIR/scripts/chronicle-check.sh" check 2>/dev/null || true
 
+# --- Run staleness check for long sessions with no recent chronicles ---
+bash "$SCRIPT_DIR/scripts/chronicle-staleness.sh" 2>/dev/null || true
+
 # --- Query open chronicles ---
 CHRONICLES=$( (set +e; bd list --label=ys:chronicle --status=open --format=json 2>/dev/null) || echo "[]")
 COUNT=$(echo "$CHRONICLES" | jq 'length' 2>/dev/null || echo "0")
@@ -42,7 +45,8 @@ if [ "$COUNT" -gt 0 ]; then
   mkdir -p "$BEADS_DIR" 2>/dev/null || true
   DRAFT_CREATED=false
   # Check if chronicle-check created any new drafts (exit code was 0 and output was "1")
-  if [ -f "$BEADS_DIR/.chronicle-drafted-$(date +%Y%m%d)" ]; then
+  YF_DIR="$PROJECT_DIR/.yoshiko-flow"
+  if [ -f "$YF_DIR/.chronicle-drafted-$(date +%Y%m%d)" ]; then
     DRAFT_CREATED=true
   fi
   cat > "$BEADS_DIR/.pending-diary" <<MARKER

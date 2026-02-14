@@ -1,19 +1,19 @@
 name: "Unit: plugin-preflight.sh — stale artifact removal"
 
 setup:
-  - "mkdir -p .claude/rules docs/plans docs/diary"
+  - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
 
 steps:
   # Case 1: Stale symlink gets removed
   - name: "stale_symlink_removed"
     run: |
       # First, do a clean preflight to get lock files
-      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json" "$WORK_DIR/.claude/yf.local.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       # Inject a fake stale entry into the local lock
-      LOCAL=$(cat "$WORK_DIR/.claude/yf.json")
-      echo "$LOCAL" | jq '.preflight.plugins.yf.artifacts.rules += [{"target": ".claude/rules/deprecated-rule.md", "link": "../../plugins/yf/rules/deprecated-rule.md"}]' > "$WORK_DIR/.claude/yf.json"
+      LOCAL=$(cat "$WORK_DIR/.yoshiko-flow/lock.json")
+      echo "$LOCAL" | jq '.preflight.plugins.yf.artifacts.rules += [{"target": ".claude/rules/deprecated-rule.md", "link": "../../plugins/yf/rules/deprecated-rule.md"}]' > "$WORK_DIR/.yoshiko-flow/lock.json"
       # Create the stale symlink
       ln -sf "../../plugins/yf/rules/deprecated-rule.md" "$WORK_DIR/.claude/rules/deprecated-rule.md"
       # Run preflight
@@ -37,7 +37,7 @@ steps:
   # Case 2: Stale entry no longer in lock after cleanup
   - name: "stale_entry_gone_from_lock"
     run: |
-      TARGETS=$(jq -r '.preflight.plugins.yf.artifacts.rules[].target' "$WORK_DIR/.claude/yf.json")
+      TARGETS=$(jq -r '.preflight.plugins.yf.artifacts.rules[].target' "$WORK_DIR/.yoshiko-flow/lock.json")
       if echo "$TARGETS" | grep -q 'deprecated-rule.md'; then
         echo "FAIL: deprecated-rule.md still in lock"
         exit 1
@@ -52,7 +52,7 @@ steps:
   # Case 3: Lock only contains yf plugin after sync
   - name: "lock_only_has_yf"
     run: |
-      PLUGINS=$(jq -r '.preflight.plugins | keys[]' "$WORK_DIR/.claude/yf.json")
+      PLUGINS=$(jq -r '.preflight.plugins | keys[]' "$WORK_DIR/.yoshiko-flow/lock.json")
       if [ "$PLUGINS" = "yf" ]; then
         echo "OK: only yf in lock"
       else
@@ -68,8 +68,8 @@ steps:
   # Case 4: Multiple stale symlinks removed in one pass
   - name: "multiple_stale_removed"
     run: |
-      LOCAL=$(cat "$WORK_DIR/.claude/yf.json")
-      echo "$LOCAL" | jq '.preflight.plugins.yf.artifacts.rules += [{"target": ".claude/rules/old-a.md", "link": "../../plugins/yf/rules/old-a.md"}, {"target": ".claude/rules/old-b.md", "link": "../../plugins/yf/rules/old-b.md"}]' > "$WORK_DIR/.claude/yf.json"
+      LOCAL=$(cat "$WORK_DIR/.yoshiko-flow/lock.json")
+      echo "$LOCAL" | jq '.preflight.plugins.yf.artifacts.rules += [{"target": ".claude/rules/old-a.md", "link": "../../plugins/yf/rules/old-a.md"}, {"target": ".claude/rules/old-b.md", "link": "../../plugins/yf/rules/old-b.md"}]' > "$WORK_DIR/.yoshiko-flow/lock.json"
       ln -sf "../../plugins/yf/rules/old-a.md" "$WORK_DIR/.claude/rules/old-a.md"
       ln -sf "../../plugins/yf/rules/old-b.md" "$WORK_DIR/.claude/rules/old-b.md"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
@@ -91,5 +91,5 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .claude/yf.json .claude/yf.local.json"
+  - "rm -f .yoshiko-flow/config.json .yoshiko-flow/lock.json .claude/yf.local.json"
   - "rm -f .claude/rules/deprecated-rule.md .claude/rules/old-a.md .claude/rules/old-b.md"

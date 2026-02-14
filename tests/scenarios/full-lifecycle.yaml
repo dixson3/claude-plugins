@@ -1,7 +1,7 @@
 name: "Integration: Full Plan Lifecycle"
 setup:
   - "git init"
-  - "mkdir -p .claude/rules .claude/plans docs/plans src"
+  - "mkdir -p .claude/rules .claude/plans .yoshiko-flow docs/plans src"
   - "echo '# Test Project' > CLAUDE.md"
   - "echo '{}' > .claude/settings.json"
   - "git add -A && git commit -m 'init'"
@@ -29,10 +29,10 @@ steps:
   # Phase 2: Simulate engage_plan (creates gate)
   - name: "engage_plan_gate"
     run: |
-      echo '{"plan_idx":"01","plan_file":"docs/plans/plan-01.md","created":"2026-02-07T00:00:00Z"}' > .claude/.plan-gate
+      echo '{"plan_idx":"01","plan_file":"docs/plans/plan-01.md","created":"2026-02-07T00:00:00Z"}' > .yoshiko-flow/plan-gate
     assertions:
       - type: file_exists
-        path: ".claude/.plan-gate"
+        path: ".yoshiko-flow/plan-gate"
 
   # Phase 3: Verify Write is blocked
   - name: "write_blocked_by_gate"
@@ -61,7 +61,7 @@ steps:
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT" 2>&1
     assertions:
       - type: file_not_exists
-        path: ".claude/.plan-gate"
+        path: ".yoshiko-flow/plan-gate"
       - type: output_contains
         value: "executing"
 

@@ -1,7 +1,7 @@
 name: "Unit: plan-exec.sh gate removal"
 setup:
   - "git init"
-  - "mkdir -p .claude docs/plans"
+  - "mkdir -p .claude .yoshiko-flow docs/plans"
   - "echo '# test' > CLAUDE.md"
   - "git add -A && git commit -m 'init'"
   - "bd init 2>/dev/null || true"
@@ -13,12 +13,12 @@ steps:
   # Case 1: .plan-gate removed during start
   - name: "gate_removed_on_start"
     run: |
-      echo '{"plan_idx":"99"}' > .claude/.plan-gate
+      echo '{"plan_idx":"99"}' > .yoshiko-flow/plan-gate
       ROOT=$(cat .test-epic-id)
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT"
     assertions:
       - type: file_not_exists
-        path: ".claude/.plan-gate"
+        path: ".yoshiko-flow/plan-gate"
 
   # Case 2: No gate → no error
   - name: "no_gate_no_error"
@@ -32,7 +32,7 @@ steps:
   # Case 3: Gate removal message in stdout
   - name: "gate_removal_message"
     run: |
-      echo '{"plan_idx":"99"}' > .claude/.plan-gate
+      echo '{"plan_idx":"99"}' > .yoshiko-flow/plan-gate
       ROOT=$(cat .test-epic-id)
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT" 2>&1
     assertions:
@@ -40,5 +40,5 @@ steps:
         value: "Plan gate removed"
 
 teardown:
-  - "rm -f .claude/.plan-gate"
+  - "rm -f .yoshiko-flow/plan-gate"
   - "rm -f .test-epic-id"

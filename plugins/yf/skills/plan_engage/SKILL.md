@@ -53,10 +53,10 @@ When the user says "engage the plan" during plan mode:
 - [ ] Criterion 2
 ```
 
-3. **Create plan gate**: Write `.claude/.plan-gate` with plan metadata:
+3. **Create plan gate**: Write `.yoshiko-flow/plan-gate` with plan metadata:
    ```bash
-   mkdir -p .claude
-   cat > .claude/.plan-gate <<GATE_EOF
+   mkdir -p .yoshiko-flow
+   cat > .yoshiko-flow/plan-gate <<GATE_EOF
    {"plan_idx":"<idx>","plan_file":"docs/plans/plan-<idx>.md","created":"<ISO-8601 timestamp>"}
    GATE_EOF
    ```

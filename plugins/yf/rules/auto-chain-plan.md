@@ -37,7 +37,7 @@ When ExitPlanMode completes and you see "Auto-chaining plan lifecycle..." in the
      | jq -r '.[0].id // empty')
    bash plugins/yf/scripts/plan-exec.sh start "$ROOT_EPIC"
    ```
-   This resolves the gate, undefers tasks, and removes `.claude/.plan-gate`.
+   This resolves the gate, undefers tasks, and removes `.yoshiko-flow/plan-gate`.
 
 5. **Begin dispatch**: Invoke `/yf:plan_execute` to start the task pump and dispatch work.
 

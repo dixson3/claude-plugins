@@ -1,12 +1,12 @@
 name: "Unit: pump-state.sh"
 setup:
-  - "mkdir -p .claude"
+  - "mkdir -p .yoshiko-flow"
 
 steps:
   # Case 1: Missing file — is-dispatched returns not-dispatched
   - name: "missing_file_not_dispatched"
     run: |
-      rm -f .claude/.task-pump.json
+      rm -f .yoshiko-flow/task-pump.json
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" is-dispatched marketplace-abc 2>/dev/null || true
     assertions:
       - type: output_contains
@@ -15,7 +15,7 @@ steps:
   # Case 2: Mark dispatched then check
   - name: "mark_then_check_dispatched"
     run: |
-      rm -f .claude/.task-pump.json
+      rm -f .yoshiko-flow/task-pump.json
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" is-dispatched marketplace-abc
     assertions:
@@ -27,7 +27,7 @@ steps:
   # Case 3: Duplicate mark is idempotent
   - name: "duplicate_mark_idempotent"
     run: |
-      rm -f .claude/.task-pump.json
+      rm -f .yoshiko-flow/task-pump.json
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" is-dispatched marketplace-abc
@@ -38,7 +38,7 @@ steps:
   # Case 4: Mark done removes from dispatched
   - name: "mark_done_removes_dispatched"
     run: |
-      rm -f .claude/.task-pump.json
+      rm -f .yoshiko-flow/task-pump.json
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-done marketplace-abc
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" is-dispatched marketplace-abc 2>/dev/null || true
@@ -49,7 +49,7 @@ steps:
   # Case 5: Pending lists dispatched but not done
   - name: "pending_lists_dispatched"
     run: |
-      rm -f .claude/.task-pump.json
+      rm -f .yoshiko-flow/task-pump.json
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-def
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-done marketplace-abc
@@ -61,7 +61,7 @@ steps:
   # Case 6: Clear resets all state
   - name: "clear_resets_all"
     run: |
-      rm -f .claude/.task-pump.json
+      rm -f .yoshiko-flow/task-pump.json
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" clear
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" pending
@@ -72,7 +72,7 @@ steps:
   # Case 7: Clear output is empty pending
   - name: "clear_empty_pending"
     run: |
-      rm -f .claude/.task-pump.json
+      rm -f .yoshiko-flow/task-pump.json
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" clear
       RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" pending)
@@ -82,4 +82,4 @@ steps:
         value: "empty"
 
 teardown:
-  - "rm -f .claude/.task-pump.json"
+  - "rm -f .yoshiko-flow/task-pump.json"

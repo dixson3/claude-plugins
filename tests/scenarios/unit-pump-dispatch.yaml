@@ -1,12 +1,12 @@
 name: "Unit: pump dispatch tracking"
 setup:
-  - "mkdir -p .claude"
+  - "mkdir -p .yoshiko-flow"
 
 steps:
   # Case 1: No double-dispatch — dispatched bead stays dispatched on re-check
   - name: "no_double_dispatch"
     run: |
-      rm -f .claude/.task-pump.json
+      rm -f .yoshiko-flow/task-pump.json
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" is-dispatched marketplace-abc
     assertions:
@@ -18,7 +18,7 @@ steps:
   # Case 2: Multiple beads tracked independently
   - name: "multiple_beads_independent"
     run: |
-      rm -f .claude/.task-pump.json
+      rm -f .yoshiko-flow/task-pump.json
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-def
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-done marketplace-abc
@@ -31,7 +31,7 @@ steps:
   # Case 3: Done bead no longer in pending
   - name: "done_not_in_pending"
     run: |
-      rm -f .claude/.task-pump.json
+      rm -f .yoshiko-flow/task-pump.json
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-def
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-done marketplace-abc
@@ -44,7 +44,7 @@ steps:
   # Case 4: Clear between pump cycles prevents stale state
   - name: "clear_between_cycles"
     run: |
-      rm -f .claude/.task-pump.json
+      rm -f .yoshiko-flow/task-pump.json
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" clear
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" is-dispatched marketplace-abc 2>/dev/null || true
@@ -53,4 +53,4 @@ steps:
         value: "not-dispatched"
 
 teardown:
-  - "rm -f .claude/.task-pump.json"
+  - "rm -f .yoshiko-flow/task-pump.json"

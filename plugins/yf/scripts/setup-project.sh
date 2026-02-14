@@ -35,16 +35,8 @@ SENTINEL_END="# <<< yf-managed <<<"
 MANAGED_BLOCK='# Beads issue tracker (local-only)
 .beads/
 
-# Claude Code local files
-.claude/settings.local.json
-.claude/CLAUDE.local.md
-
-# yf plugin config & state
-.claude/yf.json
-.claude/rules/yf-*.md
-.claude/.task-pump.json
-.claude/.plan-gate
-.claude/.plan-intake-ok'
+# Plugin-managed rule symlinks
+.claude/rules/yf/'
 
 # Full block with sentinels
 FULL_BLOCK="$SENTINEL_START

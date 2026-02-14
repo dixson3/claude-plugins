@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.10.0
+# Yoshiko Flow (yf) Plugin — v2.11.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -66,7 +66,7 @@ Three layers prevent out-of-state operations:
 ### Artifacts
 
 - **Plan files**: `docs/plans/plan-NN.md`
-- **Plan gate**: `.claude/.plan-gate` (temporary, blocks edits until Executing)
+- **Plan gate**: `.yoshiko-flow/plan-gate` (temporary, blocks edits until Executing)
 - **Beads hierarchy**: Epics, tasks, and dependencies in `.beads/`
 
 ### Skills (8)
@@ -144,7 +144,7 @@ Research findings and decision rationale discussed in sessions are lost once the
 
 ## Configuration
 
-All config lives in `.claude/yf.json` (gitignored). This single file holds both user settings and preflight lock state.
+Config lives in `.yoshiko-flow/config.json` (committed to git), while lock state lives in `.yoshiko-flow/lock.json` (gitignored).
 
 ```json
 {
@@ -153,8 +153,7 @@ All config lives in `.claude/yf.json` (gitignored). This single file holds both 
     "artifact_dir": "docs",
     "chronicler_enabled": true,
     "archivist_enabled": true
-  },
-  "preflight": { "..." }
+  }
 }
 ```
 
@@ -162,29 +161,31 @@ All config lives in `.claude/yf.json` (gitignored). This single file holds both 
 - **`config.artifact_dir`** — Base directory for plans and diary (default: `docs`).
 - **`config.chronicler_enabled`** — When `false`, chronicle rules are not installed.
 - **`config.archivist_enabled`** — When `false`, archivist rules are not installed.
-- **`preflight`** — Lock state managed by `plugin-preflight.sh` (do not edit manually).
+
+Lock state (`lock.json`) is managed by `plugin-preflight.sh` — do not edit manually.
 
 Run `/yf:setup` to create or reconfigure this file interactively.
 
 ## Internals
 
-### Rules (11)
+### Rules (12)
 
-All rules are prefixed with `yf-` and symlinked into `.claude/rules/` (gitignored, pointing to `plugins/yf/rules/`):
+All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to `plugins/yf/rules/`):
 
 | Rule | Purpose |
 |------|---------|
-| `yf-beads.md` | Agent instructions for beads workflow and session close protocol |
-| `yf-engage-the-plan.md` | Maps trigger phrases to plan lifecycle transitions |
-| `yf-plan-to-beads.md` | Enforces beads must exist before implementing a plan |
-| `yf-breakdown-the-work.md` | Enforces task decomposition before coding non-trivial tasks |
-| `yf-auto-chain-plan.md` | Drives automatic lifecycle after ExitPlanMode |
-| `yf-beads-drive-tasks.md` | Enforces beads as source of truth for plan work |
-| `yf-plan-intake.md` | Catches manual/pasted plans for lifecycle processing |
-| `yf-watch-for-chronicle-worthiness.md` | Monitors for chronicle-worthy events |
-| `yf-plan-transition-chronicle.md` | Captures planning context during transitions |
-| `yf-watch-for-archive-worthiness.md` | Monitors for archive-worthy research and decisions |
-| `yf-plan-transition-archive.md` | Archives research and decisions during plan transitions |
+| `beads.md` | Agent instructions for beads workflow and session close protocol |
+| `engage-the-plan.md` | Maps trigger phrases to plan lifecycle transitions |
+| `plan-to-beads.md` | Enforces beads must exist before implementing a plan |
+| `breakdown-the-work.md` | Enforces task decomposition before coding non-trivial tasks |
+| `auto-chain-plan.md` | Drives automatic lifecycle after ExitPlanMode |
+| `beads-drive-tasks.md` | Enforces beads as source of truth for plan work |
+| `plan-intake.md` | Catches manual/pasted plans for lifecycle processing |
+| `watch-for-chronicle-worthiness.md` | Monitors for chronicle-worthy events |
+| `plan-transition-chronicle.md` | Captures planning context during transitions |
+| `watch-for-archive-worthiness.md` | Monitors for archive-worthy research and decisions |
+| `plan-transition-archive.md` | Archives research and decisions during plan transitions |
+| `plan-completion-report.md` | Enforces structured completion report with chronicle/diary/archive summary |
 
 ### Scripts (8)
 

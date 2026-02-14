@@ -35,7 +35,7 @@ steps:
   - name: "rule_files_exist"
     run: |
       MISSING=""
-      for rule in yf-beads.md yf-engage-the-plan.md yf-plan-intake.md yf-watch-for-chronicle-worthiness.md; do
+      for rule in beads.md engage-the-plan.md plan-intake.md watch-for-chronicle-worthiness.md; do
         if [ ! -f "$PLUGIN_DIR/plugins/yf/rules/$rule" ]; then
           MISSING="$MISSING $rule"
         fi

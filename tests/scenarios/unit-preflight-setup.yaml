@@ -1,14 +1,14 @@
 name: "Unit: plugin-preflight.sh — setup signal"
 
 setup:
-  - "mkdir -p .claude/rules docs/plans docs/diary"
+  - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
 
 steps:
   # Case 1: YF_SETUP_NEEDED when no config exists
   - name: "setup_needed_signal"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
-      rm -f "$WORK_DIR/.claude/rules/"*.md
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      rm -rf "$WORK_DIR/.claude/rules/yf"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
     assertions:
@@ -20,7 +20,8 @@ steps:
   # Case 2: No signal when yf.json exists
   - name: "no_signal_when_config_exists"
     run: |
-      # yf.json was created by previous step's preflight run
+      # Create yf.json explicitly (preflight only writes lock.json, not yf.json)
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       if echo "$OUTPUT" | grep -q "YF_SETUP_NEEDED"; then
@@ -37,11 +38,11 @@ steps:
   # Case 3: Artifacts still installed even with YF_SETUP_NEEDED
   - name: "artifacts_installed_on_first_run"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
-      rm -f "$WORK_DIR/.claude/rules/"*.md
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      rm -rf "$WORK_DIR/.claude/rules/yf"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       COUNT=0
-      for f in "$WORK_DIR/.claude/rules"/yf-*.md; do
+      for f in "$WORK_DIR/.claude/rules/yf"/*.md; do
         [ -L "$f" ] && COUNT=$((COUNT + 1))
       done
       if [ "$COUNT" -gt 0 ]; then
@@ -59,13 +60,13 @@ steps:
   # Case 4: Config defaults in yf.json after first run
   - name: "config_defaults_in_yf_json"
     run: |
-      if [ ! -f "$WORK_DIR/.claude/yf.json" ]; then
-        echo "FAIL: yf.json not created"
+      if [ ! -f "$WORK_DIR/.yoshiko-flow/lock.json" ]; then
+        echo "FAIL: lock.json not created"
         exit 1
       fi
-      MODE=$(jq -r '.preflight.plugins.yf.mode' "$WORK_DIR/.claude/yf.json")
+      MODE=$(jq -r '.preflight.plugins.yf.mode' "$WORK_DIR/.yoshiko-flow/lock.json")
       if [ "$MODE" = "symlink" ]; then
-        echo "OK: mode=symlink in yf.json"
+        echo "OK: mode=symlink in lock.json"
       else
         echo "FAIL: expected mode=symlink, got $MODE"
         exit 1
@@ -79,13 +80,13 @@ steps:
   # Case 5: Copy-to-symlink migration
   - name: "copy_to_symlink_migration"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
-      rm -f "$WORK_DIR/.claude/rules/"*.md
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      rm -rf "$WORK_DIR/.claude/rules/yf"
       # Create a regular file (simulating old copy mode)
-      cp "$PLUGIN_DIR/plugins/yf/rules/yf-beads.md" "$WORK_DIR/.claude/rules/yf-beads.md"
+      mkdir -p "$WORK_DIR/.claude/rules/yf" && cp "$PLUGIN_DIR/plugins/yf/rules/beads.md" "$WORK_DIR/.claude/rules/yf/beads.md"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
-      if [ -L "$WORK_DIR/.claude/rules/yf-beads.md" ]; then
+      if [ -L "$WORK_DIR/.claude/rules/yf/beads.md" ]; then
         echo "OK: regular file migrated to symlink"
       else
         echo "FAIL: not a symlink after migration"
@@ -100,4 +101,4 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .claude/yf.json"
+  - "rm -f .yoshiko-flow/config.json .yoshiko-flow/lock.json"

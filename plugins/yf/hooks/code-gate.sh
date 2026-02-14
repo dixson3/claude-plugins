@@ -2,7 +2,7 @@
 # code-gate.sh — Pre-tool-use hook for Edit and Write tool calls
 #
 # Enforces a plan gate that blocks code edits when a plan has been saved
-# but not yet reached Executing state. If .claude/.plan-gate does not
+# but not yet reached Executing state. If .yoshiko-flow/plan-gate does not
 # exist, the hook exits immediately with zero overhead.
 #
 # Matches: Edit(*), Write(*)
@@ -19,11 +19,52 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 yf_is_enabled || exit 0
 
 # ── Fast path: no gate file means no enforcement ──────────────────────
-GATE_FILE="${CLAUDE_PROJECT_DIR:-.}/.claude/.plan-gate"
+GATE_FILE="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/plan-gate"
 if [[ ! -f "$GATE_FILE" ]]; then
+  # ── Chronicle staleness nudge (subshell, fail-open) ────────────────
+  (
+    set +e
+    # Guard: chronicler must be on
+    yf_is_chronicler_on 2>/dev/null || exit 0
+    command -v bd >/dev/null 2>&1 || exit 0
+    command -v jq >/dev/null 2>&1 || exit 0
+
+    NUDGE_FILE="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/.chronicle-nudge"
+    NUDGE_INTERVAL=1800  # 30 minutes
+
+    # Time gate: check last nudge
+    if [ -f "$NUDGE_FILE" ]; then
+      LAST_EPOCH=$(cat "$NUDGE_FILE" 2>/dev/null || echo "0")
+      NOW_EPOCH=$(date "+%s")
+      ELAPSED=$((NOW_EPOCH - LAST_EPOCH))
+      [ "$ELAPSED" -lt "$NUDGE_INTERVAL" ] && exit 0
+    fi
+
+    # Check for in-progress beads
+    IP_COUNT=$(bd list --status=in_progress --type=task --limit=1 --json 2>/dev/null \
+      | jq 'length' 2>/dev/null) || IP_COUNT=0
+    [ "$IP_COUNT" -eq 0 ] && exit 0
+
+    # Check for recent chronicle (within 1 hour)
+    LATEST=$(bd list --label=ys:chronicle --status=open --limit=1 --json 2>/dev/null || echo "[]")
+    LATEST_CREATED=$(echo "$LATEST" | jq -r '.[0].created // empty' 2>/dev/null || true)
+    if [ -n "$LATEST_CREATED" ]; then
+      CHRON_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%S" "${LATEST_CREATED%%.*}" "+%s" 2>/dev/null \
+        || date -d "${LATEST_CREATED}" "+%s" 2>/dev/null \
+        || echo "0")
+      NOW_EPOCH=$(date "+%s")
+      [ $((NOW_EPOCH - CHRON_EPOCH)) -lt 3600 ] && exit 0
+    fi
+
+    # Emit nudge and update timestamp
+    echo "NOTE: ${IP_COUNT} task(s) in progress with no recent chronicle. Consider running /yf:chronicle_capture to preserve context."
+    mkdir -p "$(dirname "$NUDGE_FILE")" 2>/dev/null || true
+    date "+%s" > "$NUDGE_FILE" 2>/dev/null || true
+  ) || true
+
   # ── Beads safety net: warn if active plan has no beads ──────────────
   # Fail-open: entire check runs in a subshell so errors never block edits
-  INTAKE_MARKER="${CLAUDE_PROJECT_DIR:-.}/.claude/.plan-intake-ok"
+  INTAKE_MARKER="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/plan-intake-ok"
   PLANS_DIR="${CLAUDE_PROJECT_DIR:-.}/docs/plans"
   if [[ ! -f "$INTAKE_MARKER" ]] && [[ -d "$PLANS_DIR" ]] && ls "$PLANS_DIR"/plan-*.md >/dev/null 2>&1; then
     (
@@ -58,6 +99,7 @@ case "$FILE_PATH" in
     */docs/research/*)       exit 0 ;; # Archivist research docs
     */docs/decisions/*)      exit 0 ;; # Archivist decision docs
     */.claude/*)             exit 0 ;; # Config, rules, settings
+    */.yoshiko-flow/*)       exit 0 ;; # yf state files
     */CHANGELOG.md)          exit 0 ;; # Documentation during transitions
     */MEMORY.md)             exit 0 ;; # Session context always editable
     */.claude-plugin/*.json) exit 0 ;; # Plugin manifest updates

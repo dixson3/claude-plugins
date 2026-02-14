@@ -1,7 +1,7 @@
 name: "Unit: session-end.sh — SessionEnd auto-draft + pending marker"
 
 setup:
-  - "mkdir -p .claude .beads"
+  - "mkdir -p .yoshiko-flow .beads"
   - "git init . >/dev/null 2>&1 || true"
   - "git config user.email 'test@test.com' && git config user.name 'Test'"
 
@@ -9,7 +9,7 @@ steps:
   # Case 1: Exits silently when yf disabled
   - name: "exits_when_yf_disabled"
     run: |
-      echo '{"enabled":false}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"enabled":false}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/.pending-diary"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
       EXIT_CODE=$?
@@ -28,7 +28,7 @@ steps:
   # Case 2: Exits silently when chronicler disabled
   - name: "exits_when_chronicler_disabled"
     run: |
-      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/.pending-diary"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
       EXIT_CODE=$?
@@ -47,7 +47,7 @@ steps:
   # Case 3: Writes pending-diary marker when open chronicles exist
   - name: "writes_pending_marker"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/.pending-diary"
       mkdir -p "$WORK_DIR/mock-bin"
       cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
@@ -85,7 +85,7 @@ steps:
   # Case 4: No marker when no open chronicles
   - name: "no_marker_when_no_chronicles"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/.pending-diary"
       cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
       #!/bin/bash
@@ -113,7 +113,7 @@ steps:
   # Case 5: Always exits 0 even when bd fails
   - name: "always_exits_zero"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
       #!/bin/bash
       exit 1
@@ -128,6 +128,6 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .claude/yf.json"
+  - "rm -f .yoshiko-flow/config.json"
   - "rm -f .beads/.pending-diary"
   - "rm -rf mock-bin"

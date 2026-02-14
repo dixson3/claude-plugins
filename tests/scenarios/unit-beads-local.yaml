@@ -32,13 +32,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: yf-beads.md Quick Reference does NOT list "bd sync" as a command
+  # Case 3: beads.md Quick Reference does NOT list "bd sync" as a command
   - name: "no_bd_sync_in_rule"
     run: |
       # The Quick Reference code block should not contain "bd sync" as a listed command
       # Informational mentions like "no bd sync step" and "Do NOT run bd sync" are fine
-      if grep -A10 '## Quick Reference' "$PLUGIN_DIR/plugins/yf/rules/yf-beads.md" | grep -q 'bd sync'; then
-        echo "FAIL: yf-beads.md Quick Reference still lists 'bd sync'"
+      if grep -A10 '## Quick Reference' "$PLUGIN_DIR/plugins/yf/rules/beads.md" | grep -q 'bd sync'; then
+        echo "FAIL: beads.md Quick Reference still lists 'bd sync'"
         exit 1
       fi
       echo "OK: no 'bd sync' in Quick Reference"
@@ -48,27 +48,27 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: yf-beads.md does NOT contain "Work is NOT complete until"
+  # Case 4: beads.md does NOT contain "Work is NOT complete until"
   - name: "no_mandatory_push"
     run: |
-      if grep -q 'Work is NOT complete until' "$PLUGIN_DIR/plugins/yf/rules/yf-beads.md"; then
-        echo "FAIL: yf-beads.md still contains mandatory push language"
+      if grep -q 'Work is NOT complete until' "$PLUGIN_DIR/plugins/yf/rules/beads.md"; then
+        echo "FAIL: beads.md still contains mandatory push language"
         exit 1
       fi
-      echo "OK: no mandatory push language in yf-beads.md"
+      echo "OK: no mandatory push language in beads.md"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 5: yf-beads.md contains "Beads Are Local"
+  # Case 5: beads.md contains "Beads Are Local"
   - name: "beads_local_section"
     run: |
-      if grep -q 'Beads Are Local' "$PLUGIN_DIR/plugins/yf/rules/yf-beads.md"; then
-        echo "OK: yf-beads.md contains 'Beads Are Local' section"
+      if grep -q 'Beads Are Local' "$PLUGIN_DIR/plugins/yf/rules/beads.md"; then
+        echo "OK: beads.md contains 'Beads Are Local' section"
       else
-        echo "FAIL: yf-beads.md missing 'Beads Are Local' section"
+        echo "FAIL: beads.md missing 'Beads Are Local' section"
         exit 1
       fi
     assertions:
@@ -77,14 +77,14 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: yf-beads.md does NOT contain "NEVER stop before pushing"
+  # Case 6: beads.md does NOT contain "NEVER stop before pushing"
   - name: "no_never_stop_pushing"
     run: |
-      if grep -q 'NEVER stop before pushing' "$PLUGIN_DIR/plugins/yf/rules/yf-beads.md"; then
-        echo "FAIL: yf-beads.md still contains 'NEVER stop before pushing'"
+      if grep -q 'NEVER stop before pushing' "$PLUGIN_DIR/plugins/yf/rules/beads.md"; then
+        echo "FAIL: beads.md still contains 'NEVER stop before pushing'"
         exit 1
       fi
-      echo "OK: no 'NEVER stop before pushing' in yf-beads.md"
+      echo "OK: no 'NEVER stop before pushing' in beads.md"
     assertions:
       - type: exit_code
         value: "0"

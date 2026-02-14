@@ -1,32 +1,52 @@
-# Claude Marketplace
+# D3 Claude Plugins
 
-A plugin marketplace for Claude Code. The plugins here automate the organizational discipline that keeps software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
+A plugin marketplace for [Claude Code](https://claude.ai/code). The plugins here automate the organizational discipline that keeps software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
-## Quick Start
+## Installation
 
 ```bash
-# Load the marketplace
-claude --plugin-dir /path/to/yoshiko-studios-marketplace
-
-# Or from the repo root
-claude --plugin-dir .
+# Install the marketplace as a plugin directory
+claude --plugin-dir /path/to/d3-claude-plugins
 ```
 
-On first session start, the preflight system automatically installs rules and creates artifact directories. Run `/yf:setup` to configure capabilities.
+On first session start, the preflight system automatically installs rules and creates artifact directories.
 
 ## Available Plugins
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, context persistence, and research/decision archiving | 2.10.0 |
+| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, context persistence, and research/decision archiving | 2.11.0 |
 
-## Plugin Overview
-
-### yf (Yoshiko Flow)
+## Yoshiko Flow (yf)
 
 Yoshiko Flow freezes the context that makes software maintainable. It breaks plans into tracked task graphs, captures observations as diary entries that trace how and why changes were made, and preserves research and decisions as permanent documentation.
 
-**Plan Lifecycle** — Converts plans into a dependency graph of tracked tasks with automatic decomposition, scheduling, and dispatch.
+### Getting Started
+
+1. **Install [beads-cli](https://github.com/dixson3/beads-cli)** (>= 0.44.0) — a git-backed issue tracker used for plan tracking.
+
+2. **Install [jq](https://jqlang.github.io/jq/)** — JSON processor used by internal scripts.
+
+3. **Load the marketplace** and run setup:
+   ```bash
+   claude --plugin-dir /path/to/d3-claude-plugins
+   ```
+   Then inside your Claude session:
+   ```
+   /yf:setup
+   ```
+
+4. **Start planning** — Enter plan mode, write your plan, exit. Yoshiko Flow takes it from there: saving the plan, creating tracked tasks, and beginning execution.
+
+### Plan Lifecycle
+
+Converts plans into a dependency graph of tracked tasks with automatic decomposition, scheduling, and dispatch.
+
+```
+Draft ───> Ready ───> Executing <──> Paused ───> Completed
+```
+
+The auto-chain on ExitPlanMode handles the full lifecycle without manual intervention: it formats the plan, creates the beads hierarchy, resolves the gate, and begins dispatch. Manual triggers exist for finer control.
 
 | Skill | Description |
 |-------|-------------|
@@ -39,7 +59,9 @@ Yoshiko Flow freezes the context that makes software maintainable. It breaks pla
 | `/yf:plan_select_agent` | Auto-discover agents and match to tasks |
 | `/yf:plan_dismiss_gate` | Escape hatch to abandon plan gate |
 
-**Chronicler (Context Persistence)** — Captures observations and context as work progresses, then composes diary entries that trace how and why changes were made.
+### Chronicler (Context Persistence)
+
+Captures observations and context as work progresses, then composes diary entries that trace how and why changes were made. Sessions lose context on compaction, clear, or new session start — the chronicler preserves it.
 
 | Skill | Description |
 |-------|-------------|
@@ -48,7 +70,9 @@ Yoshiko Flow freezes the context that makes software maintainable. It breaks pla
 | `/yf:chronicle_diary` | Generate diary entries from chronicles |
 | `/yf:chronicle_disable` | Close chronicles without diary generation |
 
-**Archivist (Research & Decision Records)** — Flags research findings and design decisions during work, then processes them into permanent indexed documentation for PRDs and ERDs.
+### Archivist (Research & Decision Records)
+
+Flags research findings and design decisions during work, then processes them into indexed permanent documentation for PRDs and ERDs.
 
 | Skill | Description |
 |-------|-------------|
@@ -57,73 +81,25 @@ Yoshiko Flow freezes the context that makes software maintainable. It breaks pla
 | `/yf:archive_disable` | Close archive beads without generating docs |
 | `/yf:archive_suggest` | Scan git history for archive candidates |
 
-**Configuration**
+### Configuration
 
-| Skill | Description |
-|-------|-------------|
-| `/yf:setup` | Configure Yoshiko Flow for a project |
+Run `/yf:setup` to configure Yoshiko Flow interactively. Config lives in `.yoshiko-flow/config.json` (committed to git).
 
-## Plugin Structure
+| Setting | Description |
+|---------|-------------|
+| `enabled` | Master switch — when `false`, all rule symlinks are removed |
+| `chronicler_enabled` | Enable/disable the chronicler capability |
+| `archivist_enabled` | Enable/disable the archivist capability |
+| `artifact_dir` | Base directory for plans and diary (default: `docs`) |
 
-Each plugin in this marketplace follows a standard structure:
+## Contributing
 
-```
-plugin-name/
-├── .claude-plugin/
-│   ├── plugin.json       # Plugin manifest (required)
-│   └── preflight.json    # Artifact declarations (optional)
-├── skills/               # Automatic skills
-│   └── skill-name/
-│       └── SKILL.md
-├── agents/               # Specialized agents
-│   └── *.md
-├── rules/                # Behavioral rules
-│   └── *.md
-├── scripts/              # Shell scripts
-│   └── *.sh
-├── hooks/                # Pre/post tool-use hooks
-│   └── *.sh
-└── README.md             # Plugin documentation
-```
-
-## Creating a New Plugin
-
-1. Create a new directory under `plugins/`
-2. Add a `.claude-plugin/plugin.json` manifest
-3. Add your skills, agents, rules, scripts, and/or hooks
-4. Register your plugin in `.claude-plugin/marketplace.json`
-5. Add documentation in a README.md
-
-See the [yf](plugins/yf/) plugin for a full-featured example, and [DEVELOPERS.md](plugins/yf/DEVELOPERS.md) for the developer guide.
-
-## Repository Structure
-
-```
-marketplace/
-├── .claude-plugin/
-│   └── marketplace.json    # Marketplace catalog
-├── plugins/
-│   └── yf/                 # Yoshiko Flow — unified plugin
-├── docs/
-│   ├── plans/              # Plan documentation
-│   └── diary/              # Generated diary entries
-├── tests/
-│   ├── harness/            # Go test harness source
-│   ├── scenarios/          # YAML test scenarios (unit-*.yaml)
-│   └── run-tests.sh        # Test runner script
-├── CLAUDE.md               # Claude Code guidance
-├── README.md               # This file
-├── LICENSE                 # MIT License
-└── CHANGELOG.md            # Version history
-```
+See [DEVELOPERS.md](DEVELOPERS.md) for the plugin structure, naming conventions, and how to create new plugins. The [yf developer guide](plugins/yf/DEVELOPERS.md) covers yf-specific internals.
 
 ## Author
 
-- **Name**: James Dixson
-- **Email**: dixson3@gmail.com
-- **Organization**: Yoshiko Studios LLC
-- **GitHub**: [dixson3](https://github.com/dixson3)
+James Dixson — [dixson3](https://github.com/dixson3)
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) for details.
+MIT License — See [LICENSE](LICENSE) for details.

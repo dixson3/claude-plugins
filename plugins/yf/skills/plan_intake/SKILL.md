@@ -62,7 +62,7 @@ bd list -l plan:<idx> --type=epic
 Check if the plan is in Executing state:
 
 ```bash
-test -f .claude/.plan-gate && echo "gate exists" || echo "no gate"
+test -f .yoshiko-flow/plan-gate && echo "gate exists" || echo "no gate"
 ```
 
 - **If gate exists** (plan is Draft/Ready, not yet Executing):
@@ -88,11 +88,11 @@ Invoke `/yf:plan_execute` to begin structured dispatch via the task pump.
 Create the intake marker to suppress the code-gate warning:
 
 ```bash
-touch "${CLAUDE_PROJECT_DIR:-.}/.claude/.plan-intake-ok"
+touch "${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/plan-intake-ok"
 ```
 
 ## Important
 
 - This skill is **idempotent** — each step checks whether it's already been done before acting.
 - If any step fails, report the error. The user can re-run `/yf:plan_intake` to retry.
-- The marker file (`.claude/.plan-intake-ok`) is ephemeral session state — it prevents the code-gate hook from warning repeatedly.
+- The marker file (`.yoshiko-flow/plan-intake-ok`) is ephemeral session state — it prevents the code-gate hook from warning repeatedly.

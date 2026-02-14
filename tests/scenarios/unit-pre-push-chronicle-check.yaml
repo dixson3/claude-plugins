@@ -1,13 +1,13 @@
 name: "Unit: pre-push-diary.sh — chronicle-check integration"
 
 setup:
-  - "mkdir -p .claude .beads"
+  - "mkdir -p .yoshiko-flow .beads"
 
 steps:
   # Case 1: Chronicle-check runs before advisory
   - name: "chronicle_check_runs"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       # The hook should call chronicle-check.sh and not fail even if bd is missing
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-diary.sh" 2>&1)
       EXIT_CODE=$?
@@ -26,7 +26,7 @@ steps:
   # Case 2: Non-blocking (exit 0 always)
   - name: "non_blocking"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-diary.sh" >/dev/null 2>&1
       EXIT_CODE=$?
       if [ "$EXIT_CODE" -eq 0 ]; then
@@ -44,7 +44,7 @@ steps:
   # Case 3: Chronicle-check skipped when chronicler disabled
   - name: "skipped_when_chronicler_disabled"
     run: |
-      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.claude/yf.json"
+      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-diary.sh" 2>&1)
       EXIT_CODE=$?
       echo "$OUTPUT"
@@ -65,4 +65,4 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .claude/yf.json"
+  - "rm -f .yoshiko-flow/config.json"

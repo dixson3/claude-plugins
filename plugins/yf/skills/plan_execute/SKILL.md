@@ -119,22 +119,47 @@ After dispatching a batch:
 
 When `plan-exec.sh status` returns `completed` (which also closes any chronicle gates):
 
-1. Capture completion context: Invoke `/yf:chronicle_capture topic:completion` to preserve the execution summary as a chronicle bead before closing everything out.
-2. Generate diary: Invoke `/yf:chronicle_diary plan:<idx>` to process all plan chronicles into diary entries. This is scoped to the plan so it only processes chronicles tagged with that plan label.
-3. Process archives: Invoke `/yf:archive_process plan:<idx>` to process plan-scoped archive beads into permanent documentation (research summaries and decision records).
-4. Update plan file status to "Completed"
-5. Close root epic if not already closed
-6. Report completion summary (include diary file paths in the report)
+1. **Capture completion context**: Invoke `/yf:chronicle_capture topic:completion` to preserve the execution summary as a chronicle bead before closing everything out.
+2. **Generate diary**: Invoke `/yf:chronicle_diary plan:<idx>` to process all plan chronicles into diary entries. Note the output — capture generated file paths and chronicle counts.
+3. **Process archives**: Invoke `/yf:archive_process plan:<idx>` to process plan-scoped archive beads into permanent documentation. Note the output — capture generated file paths.
+4. **Update plan file** status to "Completed"
+5. **Close root epic** if not already closed
+6. **Collect summary data** for the completion report:
+
+```bash
+PLAN_LABEL="plan:<idx>"
+# Task counts
+CLOSED=$(bd count -l "$PLAN_LABEL" --status=closed --type=task 2>/dev/null || echo "0")
+TOTAL=$(bd list -l "$PLAN_LABEL" --type=task --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+# Chronicle counts
+ALL_CHRON=$(bd list -l ys:chronicle,"$PLAN_LABEL" --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+OPEN_CHRON=$(bd list -l ys:chronicle,"$PLAN_LABEL" --status=open --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+# Archive counts
+ALL_ARCH=$(bd list -l ys:archive,"$PLAN_LABEL" --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+OPEN_ARCH=$(bd list -l ys:archive,"$PLAN_LABEL" --status=open --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+```
+
+7. **Report structured completion** (see `yf-plan-completion-report` rule):
 
 ```
 Plan Execution Complete
 =======================
 Plan: plan-07 — <Title>
-Tasks completed: 12/12
-Duration: <time from first claim to last close>
+Tasks: 12/12 completed
 
-Diary entries generated for plan:07.
+Chronicles: 5 captured, 4 processed into diary, 1 still open
+Diary entries:
+  - docs/diary/26-02-13.14-30.authentication.md
+  - docs/diary/26-02-13.16-00.api-layer.md
+
+Archives: 2 captured, 2 processed
+  - docs/research/oauth-providers/SUMMARY.md
+  - docs/decisions/DEC-003-session-storage/SUMMARY.md
+
+⚠ 1 chronicle bead still open — run /yf:chronicle_diary to process
 ```
+
+Omit sections with zero items (e.g., if no archives were captured, omit the Archives section entirely). Always include the Tasks line.
 
 ## Parallel Dispatch Rules
 

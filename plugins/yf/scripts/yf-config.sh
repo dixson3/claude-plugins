@@ -2,7 +2,7 @@
 # yf-config.sh — Shared config library for Yoshiko Flow
 #
 # Sourceable shell library (bash 3.2 compatible) providing config access.
-# Config: .claude/yf.json (gitignored, local-only).
+# Config: .yoshiko-flow/config.json (committed to git).
 #
 # Usage:
 #   . "$SCRIPT_DIR/yf-config.sh"
@@ -12,7 +12,7 @@
 #   CLAUDE_PROJECT_DIR — project root (defaults to ".")
 
 _YF_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-_YF_JSON="$_YF_PROJECT_DIR/.claude/yf.json"
+_YF_JSON="$_YF_PROJECT_DIR/.yoshiko-flow/config.json"
 
 # yf_config_exists — returns 0 if config file exists
 yf_config_exists() {

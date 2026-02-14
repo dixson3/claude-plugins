@@ -1,0 +1,91 @@
+# Rule: Plan Completion Report
+
+**Applies:** When `plan-exec.sh status` returns "completed" or you detect that all plan tasks are closed
+
+When reporting plan completion, the report MUST include a structured summary of what the plan produced — not just task counts. This is the mirror of plan intake: intake ensures everything is set up before work begins; completion ensures everything is wrapped up and visible.
+
+## Required Report Sections
+
+### 1. Task Summary
+
+Query the plan's task breakdown:
+
+```bash
+PLAN_LABEL="plan:<idx>"
+CLOSED=$(bd count -l "$PLAN_LABEL" --status=closed --type=task 2>/dev/null || echo "0")
+TOTAL=$(bd list -l "$PLAN_LABEL" --type=task --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+```
+
+### 2. Chronicle Summary
+
+Query chronicle beads created during this plan:
+
+```bash
+# All chronicles for this plan
+ALL_CHRON=$(bd list -l ys:chronicle,"$PLAN_LABEL" --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+# Open (not yet processed into diary)
+OPEN_CHRON=$(bd list -l ys:chronicle,"$PLAN_LABEL" --status=open --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+# Closed (processed)
+CLOSED_CHRON=$((ALL_CHRON - OPEN_CHRON))
+```
+
+### 3. Diary Entries
+
+List diary files generated for this plan. Check `docs/diary/` (or the configured artifact directory) for files created during this session or referenced by chronicle beads.
+
+### 4. Archive Summary
+
+Query archive beads for this plan:
+
+```bash
+ALL_ARCH=$(bd list -l ys:archive,"$PLAN_LABEL" --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+OPEN_ARCH=$(bd list -l ys:archive,"$PLAN_LABEL" --status=open --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+CLOSED_ARCH=$((ALL_ARCH - OPEN_ARCH))
+```
+
+List generated files in `docs/research/` and `docs/decisions/` if any were produced.
+
+### 5. Open Items Warning
+
+If any chronicles or archives remain open after the completion steps have run, warn:
+
+```
+⚠ N chronicle beads still open — run /yf:chronicle_diary to process
+⚠ N archive beads still open — run /yf:archive_process to process
+```
+
+## Report Format
+
+```
+Plan Execution Complete
+=======================
+Plan: plan-<idx> — <Title>
+Tasks: <closed>/<total> completed
+
+Chronicles: <total> captured, <closed> processed into diary, <open> still open
+Diary entries:
+  - docs/diary/<file1>.md
+  - docs/diary/<file2>.md
+  (or: No diary entries generated)
+
+Archives: <total> captured, <closed> processed, <open> still open
+  - docs/research/<topic>/SUMMARY.md
+  - docs/decisions/<slug>/SUMMARY.md
+  (or: No archive docs generated)
+
+[If open items remain:]
+⚠ <N> chronicle beads still open — run /yf:chronicle_diary to process
+⚠ <N> archive beads still open — run /yf:archive_process to process
+```
+
+## When This Rule Fires
+
+- After `plan-exec.sh status` returns `completed`
+- After the `/yf:plan_execute` Step 4 completion sequence runs (chronicle_diary, archive_process, plan file update)
+- When the agent is about to report "plan complete" or "done" to the user
+
+## When This Rule Does NOT Fire
+
+- Session-end / "landing the plane" — that's a different protocol (see `yf-beads.md`)
+- Mid-execution progress reports
+- Individual task completion

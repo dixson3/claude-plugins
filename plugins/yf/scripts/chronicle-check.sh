@@ -70,8 +70,8 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# --- Dedup file (daily, inside .beads/ which is gitignored) ---
-DEDUP_DIR="${PROJECT_DIR}/.beads"
+# --- Dedup file (daily, inside .yoshiko-flow/ which is gitignored) ---
+DEDUP_DIR="${PROJECT_DIR}/.yoshiko-flow"
 DEDUP_FILE="${DEDUP_DIR}/.chronicle-drafted-$(date +%Y%m%d)"
 
 # Ensure dedup directory exists
@@ -105,29 +105,27 @@ KEYWORDS='decided|chose|realized|discovered|learned|important|architecture|patte
 # --- Get commits in range ---
 COMMITS=$(git log --oneline --since="$SINCE" 2>/dev/null || true)
 
-if [ -z "$COMMITS" ]; then
-  if [ "$MODE" = "pre-push" ]; then
-    echo "chronicle-check: no recent commits"
-  fi
-  exit 0
-fi
-
-COMMIT_COUNT=$(echo "$COMMITS" | wc -l | tr -d ' ')
-
-# --- Analyze: keyword matches ---
-KEYWORD_HITS=$(echo "$COMMITS" | grep -iE "$KEYWORDS" || true)
+COMMIT_COUNT=0
+KEYWORD_HITS=""
 KEYWORD_COUNT=0
-if [ -n "$KEYWORD_HITS" ]; then
-  KEYWORD_COUNT=$(echo "$KEYWORD_HITS" | wc -l | tr -d ' ')
-fi
-
-# --- Analyze: significant file changes ---
-CHANGED_FILES=$(git diff --name-only HEAD~"${COMMIT_COUNT}"..HEAD 2>/dev/null || git diff --name-only --since="$SINCE" 2>/dev/null || true)
 SIGNIFICANT_FILES=""
-if [ -n "$CHANGED_FILES" ]; then
-  SIGNIFICANT_FILES=$(echo "$CHANGED_FILES" | grep -E "$SIGNIFICANT_PATTERNS" || true)
-fi
 SIGNIFICANT_COUNT=0
+
+if [ -n "$COMMITS" ]; then
+  COMMIT_COUNT=$(echo "$COMMITS" | wc -l | tr -d ' ')
+
+  # --- Analyze: keyword matches ---
+  KEYWORD_HITS=$(echo "$COMMITS" | grep -iE "$KEYWORDS" || true)
+  if [ -n "$KEYWORD_HITS" ]; then
+    KEYWORD_COUNT=$(echo "$KEYWORD_HITS" | wc -l | tr -d ' ')
+  fi
+
+  # --- Analyze: significant file changes ---
+  CHANGED_FILES=$(git diff --name-only HEAD~"${COMMIT_COUNT}"..HEAD 2>/dev/null || git diff --name-only --since="$SINCE" 2>/dev/null || true)
+  if [ -n "$CHANGED_FILES" ]; then
+    SIGNIFICANT_FILES=$(echo "$CHANGED_FILES" | grep -E "$SIGNIFICANT_PATTERNS" || true)
+  fi
+fi
 if [ -n "$SIGNIFICANT_FILES" ]; then
   SIGNIFICANT_COUNT=$(echo "$SIGNIFICANT_FILES" | wc -l | tr -d ' ')
 fi
@@ -156,6 +154,17 @@ fi
 if $VOLUME_HIT; then
   CANDIDATES=$((CANDIDATES + 1))
   CANDIDATE_REASONS="${CANDIDATE_REASONS}high-volume:${COMMIT_COUNT}-commits "
+fi
+
+# --- Analyze: in-progress beads (work without commits) ---
+IN_PROGRESS_BEADS=""
+IN_PROGRESS_COUNT=0
+IN_PROGRESS_BEADS=$(bd list --status=in_progress --type=task --limit=0 --json 2>/dev/null || echo "[]")
+IN_PROGRESS_COUNT=$(echo "$IN_PROGRESS_BEADS" | jq 'length' 2>/dev/null || echo "0")
+
+if [ "$IN_PROGRESS_COUNT" -gt 0 ]; then
+  CANDIDATES=$((CANDIDATES + 1))
+  CANDIDATE_REASONS="${CANDIDATE_REASONS}in-progress-beads:${IN_PROGRESS_COUNT} "
 fi
 
 if [ "$CANDIDATES" -eq 0 ]; then
@@ -199,6 +208,8 @@ elif [ "$SIGNIFICANT_COUNT" -gt 0 ]; then
   TITLE="${TITLE}Significant changes to $(echo "$SIGNIFICANT_FILES" | head -1)"
 elif $VOLUME_HIT; then
   TITLE="${TITLE}High activity session (${COMMIT_COUNT} commits)"
+elif [ "$IN_PROGRESS_COUNT" -gt 0 ]; then
+  TITLE="${TITLE}In-progress work (${IN_PROGRESS_COUNT} tasks)"
 fi
 
 # Truncate title to reasonable length
@@ -234,10 +245,20 @@ $(echo "$COMMITS" | head -5)
 ..."
 fi
 
-DESCRIPTION="${DESCRIPTION}
+if [ "$IN_PROGRESS_COUNT" -gt 0 ]; then
+  IN_PROGRESS_TITLES=$(echo "$IN_PROGRESS_BEADS" | jq -r '.[0:5] | .[].title' 2>/dev/null || true)
+  DESCRIPTION="${DESCRIPTION}
+## In-Progress Work
+${IN_PROGRESS_COUNT} tasks currently in progress:
+${IN_PROGRESS_TITLES}"
+fi
+
+if [ -n "$COMMITS" ]; then
+  DESCRIPTION="${DESCRIPTION}
 
 ## Recent Commits
 $(echo "$COMMITS" | head -10)"
+fi
 
 # Build labels
 LABELS="ys:chronicle,ys:chronicle:draft"

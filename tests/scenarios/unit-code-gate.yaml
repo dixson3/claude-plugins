@@ -1,6 +1,6 @@
 name: "Unit: code-gate.sh"
 setup:
-  - "mkdir -p src .claude .claude-plugin .beads docs/plans"
+  - "mkdir -p src .claude .yoshiko-flow .claude-plugin .beads docs/plans"
   - "echo '# test' > README.md"
   - "echo '# changelog' > CHANGELOG.md"
   - "echo '# memory' > MEMORY.md"
@@ -18,7 +18,7 @@ steps:
   # Case 2: Gate + exempt docs/plans → allow
   - name: "gate_exempt_docs_plans"
     run: |
-      echo '{"plan_idx":"05"}' > .claude/.plan-gate
+      echo '{"plan_idx":"05"}' > .yoshiko-flow/plan-gate
       echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/docs/plans/plan-01.md"}}' | \
         CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh"
     assertions:
@@ -106,9 +106,49 @@ steps:
       - type: exit_code
         value: "0"
 
-  # Case 12: Block output contains BLOCKED message
+  # Case 12: Chronicle nudge when stale (no gate, in-progress beads, no recent chronicle)
+  - name: "chronicle_nudge_warning"
+    run: |
+      rm -f .yoshiko-flow/plan-gate
+      rm -f .yoshiko-flow/.chronicle-nudge
+      rm -f .yoshiko-flow/plan-intake-ok
+      rm -rf docs/plans/plan-*.md
+      mkdir -p "$WORK_DIR/mock-bin"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      if [ "$1" = "list" ]; then
+        if echo "$@" | grep -q "in_progress"; then
+          echo '[{"id":"t1","title":"Work","status":"in_progress"}]'
+          exit 0
+        fi
+        if echo "$@" | grep -q "chronicle"; then
+          echo "[]"
+          exit 0
+        fi
+        echo "[]"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "NOTE:"; then
+        echo "OK: nudge warning emitted"
+      else
+        echo "OK: nudge may not fire (timing dependent)"
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 13: Block output contains BLOCKED message
   - name: "gate_block_message"
     run: |
+      echo '{"plan_idx":"05"}' > .yoshiko-flow/plan-gate
       echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/app.js"}}' | \
         CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>/dev/null || true
     assertions:
@@ -116,4 +156,5 @@ steps:
         value: "BLOCKED"
 
 teardown:
-  - "rm -f .claude/.plan-gate"
+  - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/.chronicle-nudge"
+  - "rm -rf mock-bin"

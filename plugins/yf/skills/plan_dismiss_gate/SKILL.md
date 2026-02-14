@@ -10,12 +10,12 @@ Escape hatch for abandoning a plan without implementing it. Removes the plan gat
 
 ## Workflow
 
-1. **Check for active gate**: Look for `.claude/.plan-gate`
+1. **Check for active gate**: Look for `.yoshiko-flow/plan-gate`
    - If the file does not exist, report "No plan gate is active" and stop
 
-2. **Read gate metadata**: Parse the `.claude/.plan-gate` JSON to extract `plan_idx` and `plan_file`
+2. **Read gate metadata**: Parse the `.yoshiko-flow/plan-gate` JSON to extract `plan_idx` and `plan_file`
 
-3. **Remove the gate file**: Delete `.claude/.plan-gate`
+3. **Remove the gate file**: Delete `.yoshiko-flow/plan-gate`
 
 4. **Update plan status**: If `plan_file` exists in `docs/plans/`:
    - Change the `**Status:**` line from "Ready" or "Draft" to "Abandoned"

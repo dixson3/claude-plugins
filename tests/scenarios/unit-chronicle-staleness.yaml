@@ -1,0 +1,252 @@
+name: "Unit: chronicle-staleness.sh — checkpoint chronicles for stale sessions"
+
+setup:
+  - "mkdir -p .yoshiko-flow .beads"
+
+steps:
+  # Case 1: Exits cleanly when yf disabled
+  - name: "exits_when_yf_disabled"
+    run: |
+      echo '{"enabled":false}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-staleness.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ]; then
+        echo "OK: exits silently when yf disabled"
+      else
+        echo "FAIL: should exit 0 silently (exit=$EXIT_CODE, output=$OUTPUT)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Exits cleanly when chronicler disabled
+  - name: "exits_when_chronicler_disabled"
+    run: |
+      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-staleness.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ]; then
+        echo "OK: exits silently when chronicler disabled"
+      else
+        echo "FAIL: should exit 0 silently (exit=$EXIT_CODE, output=$OUTPUT)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: No in-progress beads — no checkpoint created
+  - name: "no_in_progress_beads"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-staleness-"*
+      mkdir -p "$WORK_DIR/mock-bin"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      if [ "$1" = "list" ]; then
+        echo "[]"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-staleness.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ]; then
+        echo "OK: no checkpoint when no in-progress beads"
+      else
+        echo "FAIL: should exit silently (exit=$EXIT_CODE, output=$OUTPUT)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Stale detection — in-progress beads + no chronicle creates checkpoint
+  - name: "stale_creates_checkpoint"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-staleness-"*
+      rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
+      mkdir -p "$WORK_DIR/mock-bin"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      if [ "$1" = "list" ]; then
+        if echo "$@" | grep -q "in_progress"; then
+          echo '[{"id":"test-1","title":"Test task","status":"in_progress"}]'
+          exit 0
+        fi
+        if echo "$@" | grep -q "chronicle"; then
+          echo "[]"
+          exit 0
+        fi
+        echo "[]"
+        exit 0
+      fi
+      if [ "$1" = "create" ]; then
+        echo "$@" >> "$WORK_DIR/.beads/bd-create-calls.txt"
+        echo "mock-checkpoint-id"
+        exit 0
+      fi
+      if [ "$1" = "label" ]; then
+        echo "[]"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-staleness.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ -f "$WORK_DIR/.beads/bd-create-calls.txt" ]; then
+        CALL=$(cat "$WORK_DIR/.beads/bd-create-calls.txt")
+        if echo "$CALL" | grep -q "ys:chronicle:checkpoint"; then
+          echo "OK: checkpoint bead created with correct labels"
+        else
+          echo "FAIL: bd create called but labels wrong: $CALL"
+          exit 1
+        fi
+      else
+        echo "FAIL: bd create was not called"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Recent chronicle — no checkpoint created
+  - name: "recent_chronicle_skips"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-staleness-"*
+      rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
+      NOW=$(date -u +%Y-%m-%dT%H:%M:%S)
+      mkdir -p "$WORK_DIR/mock-bin"
+      cat > "$WORK_DIR/mock-bin/bd" << MOCK
+      #!/bin/bash
+      if [ "\$1" = "list" ]; then
+        if echo "\$@" | grep -q "in_progress"; then
+          echo '[{"id":"test-1","title":"Test task","status":"in_progress"}]'
+          exit 0
+        fi
+        if echo "\$@" | grep -q "chronicle"; then
+          echo '[{"id":"chron-1","title":"Recent chronicle","created":"${NOW}"}]'
+          exit 0
+        fi
+        echo "[]"
+        exit 0
+      fi
+      if [ "\$1" = "create" ]; then
+        echo "\$@" >> "$WORK_DIR/.beads/bd-create-calls.txt"
+        echo "mock-id"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-staleness.sh" 2>&1)
+      if [ ! -f "$WORK_DIR/.beads/bd-create-calls.txt" ]; then
+        echo "OK: no checkpoint when recent chronicle exists"
+      else
+        echo "FAIL: should not create checkpoint with recent chronicle"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: Dedup prevents duplicate checkpoints in same hour
+  - name: "dedup_prevents_duplicates"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
+      # Dedup file from case 4 should exist — write the current hour key
+      DEDUP_FILE="$WORK_DIR/.yoshiko-flow/.chronicle-staleness-$(date +%Y%m%d)"
+      echo "staleness-check-$(date +%H)" > "$DEDUP_FILE"
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-staleness.sh" 2>&1)
+      if [ ! -f "$WORK_DIR/.beads/bd-create-calls.txt" ]; then
+        echo "OK: dedup prevented duplicate checkpoint"
+      else
+        echo "FAIL: should not create duplicate"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: Custom threshold via --threshold flag
+  - name: "custom_threshold"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-staleness-"*
+      rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
+      # Restore mock that returns in-progress beads + no chronicles
+      mkdir -p "$WORK_DIR/mock-bin"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      if [ "$1" = "list" ]; then
+        if echo "$@" | grep -q "in_progress"; then
+          echo '[{"id":"test-1","title":"Test task","status":"in_progress"}]'
+          exit 0
+        fi
+        if echo "$@" | grep -q "chronicle"; then
+          echo "[]"
+          exit 0
+        fi
+        echo "[]"
+        exit 0
+      fi
+      if [ "$1" = "create" ]; then
+        echo "$@" >> "$WORK_DIR/.beads/bd-create-calls.txt"
+        echo "mock-checkpoint-id"
+        exit 0
+      fi
+      if [ "$1" = "label" ]; then
+        echo "[]"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      # Use threshold of 0 hours — should always trigger with no chronicle
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-staleness.sh" --threshold 0 2>&1)
+      if [ -f "$WORK_DIR/.beads/bd-create-calls.txt" ]; then
+        echo "OK: custom threshold works"
+      else
+        echo "FAIL: custom threshold should trigger checkpoint"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: Always exits 0 (fail-open)
+  - name: "always_exits_zero"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      # Run with no mock bd at all — should still exit 0
+      PATH="/usr/bin:/bin" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-staleness.sh" 2>/dev/null
+      echo "OK: exit code $?"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .yoshiko-flow/config.json"
+  - "rm -rf .yoshiko-flow/.chronicle-staleness-* .beads/bd-create-calls.txt mock-bin"

@@ -1,14 +1,14 @@
 name: "Unit: plugin-preflight.sh — core symlink sync"
 
 setup:
-  - "mkdir -p .claude/rules docs/plans docs/diary"
+  - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
 
 steps:
   # Case 1: No config → installs all rules as symlinks
   - name: "fresh_install_creates_symlinks"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json" "$WORK_DIR/.claude/yf.local.json"
-      rm -f "$WORK_DIR/.claude/rules/yf-"*.md
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json" "$WORK_DIR/.claude/yf.local.json"
+      rm -rf "$WORK_DIR/.claude/rules/yf"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
     assertions:
       - type: exit_code
@@ -20,7 +20,7 @@ steps:
   - name: "rules_are_symlinks"
     run: |
       FAIL=false
-      for f in "$WORK_DIR/.claude/rules"/yf-*.md; do
+      for f in "$WORK_DIR/.claude/rules/yf"/*.md; do
         [ -e "$f" ] || continue
         if [ ! -L "$f" ]; then
           echo "FAIL: $(basename "$f") is not a symlink"
@@ -38,8 +38,8 @@ steps:
   # Case 3: Symlinks point to plugin source (relative when in-tree, absolute otherwise)
   - name: "symlinks_point_to_plugin_source"
     run: |
-      LINK=$(readlink "$WORK_DIR/.claude/rules/yf-beads.md")
-      if echo "$LINK" | grep -q "plugins/yf/rules/yf-beads.md"; then
+      LINK=$(readlink "$WORK_DIR/.claude/rules/yf/beads.md")
+      if echo "$LINK" | grep -q "plugins/yf/rules/beads.md"; then
         echo "OK: symlink target correct: $LINK"
       else
         echo "FAIL: unexpected target: $LINK"
@@ -54,13 +54,13 @@ steps:
   # Case 4: Lock has mode:symlink and link fields (not checksums)
   - name: "lock_has_symlink_mode"
     run: |
-      if [ ! -f "$WORK_DIR/.claude/yf.json" ]; then
-        echo "FAIL: yf.json not created"
+      if [ ! -f "$WORK_DIR/.yoshiko-flow/lock.json" ]; then
+        echo "FAIL: lock.json not created"
         exit 1
       fi
-      MODE=$(jq -r '.preflight.plugins.yf.mode' "$WORK_DIR/.claude/yf.json")
-      LINK=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].link' "$WORK_DIR/.claude/yf.json")
-      CHECKSUM=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].checksum // "absent"' "$WORK_DIR/.claude/yf.json" 2>/dev/null)
+      MODE=$(jq -r '.preflight.plugins.yf.mode' "$WORK_DIR/.yoshiko-flow/lock.json")
+      LINK=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].link' "$WORK_DIR/.yoshiko-flow/lock.json")
+      CHECKSUM=$(jq -r '.preflight.plugins.yf.artifacts.rules[0].checksum // "absent"' "$WORK_DIR/.yoshiko-flow/lock.json" 2>/dev/null)
       if [ "$MODE" = "symlink" ] && echo "$LINK" | grep -q "plugins/yf/rules/" && [ "$CHECKSUM" = "absent" ]; then
         echo "OK: mode=symlink, link field present, no checksum"
       else
@@ -86,18 +86,18 @@ steps:
   # Case 6: Missing symlink gets reinstalled
   - name: "reinstall_missing_symlink"
     run: |
-      rm -f "$WORK_DIR/.claude/rules/yf-beads.md"
+      rm -f "$WORK_DIR/.claude/rules/yf/beads.md"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
-        value: "installed .claude/rules/yf-beads.md"
+        value: "installed .claude/rules/yf/beads.md"
 
   # Case 7: Directories created when missing
   - name: "creates_missing_directories"
     run: |
-      rm -f "$WORK_DIR/.claude/yf.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
       rm -rf "$WORK_DIR/docs/plans" "$WORK_DIR/docs/diary"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
@@ -124,4 +124,4 @@ steps:
         value: "warn"
 
 teardown:
-  - "rm -f .claude/yf.json .claude/yf.local.json"
+  - "rm -f .yoshiko-flow/config.json .yoshiko-flow/lock.json .claude/yf.local.json"

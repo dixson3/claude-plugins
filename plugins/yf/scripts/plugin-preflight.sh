@@ -5,7 +5,8 @@
 # Single source of truth: edits to plugin rules are immediately active.
 #
 # Config model:
-#   .claude/yf.json — gitignored config + preflight lock state
+#   .yoshiko-flow/config.json — committed config (enabled, artifact_dir, etc.)
+#   .yoshiko-flow/lock.json — gitignored preflight lock state
 #
 # Config-aware: reads config via yf-config.sh library.
 # Outputs YF_SETUP_NEEDED signal when no config file exists.
@@ -28,7 +29,9 @@ if [ ! -d "$PROJECT_DIR" ]; then
   exit 0
 fi
 
-CONFIG_FILE="$PROJECT_DIR/.claude/yf.json"
+YF_DIR="$PROJECT_DIR/.yoshiko-flow"
+CONFIG_FILE="$YF_DIR/config.json"
+LOCK_FILE="$YF_DIR/lock.json"
 
 PLUGIN_NAME="yf"
 PJSON="$PLUGIN_ROOT/.claude-plugin/plugin.json"
@@ -43,6 +46,67 @@ fi
 if ! command -v jq >/dev/null 2>&1; then
   echo "preflight: warn: jq not found, skipping preflight" >&2
   exit 0
+fi
+
+# --- Migration: yf.json → config.json within .yoshiko-flow/ ---
+if [ ! -d "$YF_DIR" ]; then
+  mkdir -p "$YF_DIR"
+fi
+OLD_YF_JSON="$YF_DIR/yf.json"
+if [ -f "$OLD_YF_JSON" ] && [ ! -f "$CONFIG_FILE" ]; then
+  mv "$OLD_YF_JSON" "$CONFIG_FILE"
+  echo "preflight: renamed .yoshiko-flow/yf.json → config.json"
+elif [ -f "$OLD_YF_JSON" ] && [ -f "$CONFIG_FILE" ]; then
+  rm -f "$OLD_YF_JSON"
+  echo "preflight: removed stale .yoshiko-flow/yf.json"
+fi
+# --- Ensure .yoshiko-flow/.gitignore has correct content ---
+EXPECTED_GI_MARKER='!config.json'
+if [ ! -f "$YF_DIR/.gitignore" ] || ! grep -qF "$EXPECTED_GI_MARKER" "$YF_DIR/.gitignore"; then
+  cat > "$YF_DIR/.gitignore" <<'GITIGNORE_EOF'
+# Ignore everything except config.json
+*
+!.gitignore
+!config.json
+GITIGNORE_EOF
+fi
+# --- Migration: .claude/ → .yoshiko-flow/ ---
+OLD_CONFIG="$PROJECT_DIR/.claude/yf.json"
+# Migrate old .claude/yf.json → split config + lock
+if [ -f "$OLD_CONFIG" ] && [ ! -f "$CONFIG_FILE" ]; then
+  # Extract config-only keys → yf.json
+  jq '{enabled, config}' "$OLD_CONFIG" > "$CONFIG_FILE" 2>/dev/null || cp "$OLD_CONFIG" "$CONFIG_FILE"
+  # Extract lock keys → lock.json
+  jq '{updated, preflight}' "$OLD_CONFIG" > "$LOCK_FILE" 2>/dev/null || echo '{}' > "$LOCK_FILE"
+  rm -f "$OLD_CONFIG"
+  echo "preflight: migrated .claude/yf.json → .yoshiko-flow/"
+elif [ -f "$OLD_CONFIG" ] && [ -f "$CONFIG_FILE" ]; then
+  # Destination already exists — just remove the orphaned old config
+  rm -f "$OLD_CONFIG"
+  echo "preflight: removed orphaned .claude/yf.json"
+fi
+# Migrate state files (move if destination missing, delete if destination exists)
+for OLD_STATE in .task-pump.json .plan-gate .plan-intake-ok; do
+  OLD_PATH="$PROJECT_DIR/.claude/$OLD_STATE"
+  NEW_NAME="${OLD_STATE#.}"
+  NEW_PATH="$YF_DIR/$NEW_NAME"
+  if [ -e "$OLD_PATH" ] && [ ! -e "$NEW_PATH" ]; then
+    mv "$OLD_PATH" "$NEW_PATH"
+    echo "preflight: migrated .claude/$OLD_STATE → .yoshiko-flow/$NEW_NAME"
+  elif [ -e "$OLD_PATH" ] && [ -e "$NEW_PATH" ]; then
+    rm -f "$OLD_PATH"
+    echo "preflight: removed orphaned .claude/$OLD_STATE"
+  fi
+done
+# Clean up .claude/.gitignore if it only contains yf-era entries
+OLD_CLAUDE_GI="$PROJECT_DIR/.claude/.gitignore"
+if [ -f "$OLD_CLAUDE_GI" ]; then
+  # Check if every non-empty, non-comment line is a known yf artifact
+  NON_YF_LINES=$(grep -v '^$' "$OLD_CLAUDE_GI" | grep -v '^#' | grep -vE '^(yf\.local\.json|yf\.json)$' || true)
+  if [ -z "$NON_YF_LINES" ]; then
+    rm -f "$OLD_CLAUDE_GI"
+    echo "preflight: removed stale .claude/.gitignore"
+  fi
 fi
 
 # --- Source the config library ---
@@ -72,26 +136,29 @@ fi
 # --- Disabled: remove all yf symlinks/files ---
 if [ "$YF_ENABLED" = "false" ]; then
   REMOVED=0
-  # Remove any yf-* rules (symlinks or regular files)
+  # Remove rules from yf/ subdirectory
+  for F in "$PROJECT_DIR/.claude/rules/yf"/*.md; do
+    [ -e "$F" ] || [ -L "$F" ] || continue
+    rm -f "$F"
+    REMOVED=$((REMOVED + 1))
+    echo "preflight: yf — removed (disabled) .claude/rules/yf/$(basename "$F")"
+  done
+  # Also remove legacy flat yf-* rules from pre-subdirectory era
   for F in "$PROJECT_DIR/.claude/rules"/yf-*.md; do
     [ -e "$F" ] || [ -L "$F" ] || continue
     rm -f "$F"
     REMOVED=$((REMOVED + 1))
     echo "preflight: yf — removed (disabled) .claude/rules/$(basename "$F")"
   done
-  # Write minimal preflight state to local file
+  rmdir "$PROJECT_DIR/.claude/rules/yf" 2>/dev/null || true
+  # Write minimal preflight state to lock file
   CUR_VER=$(jq -r '.version' "$PJSON" 2>/dev/null)
-  NEW_LOCAL_DISABLED=$(jq -n --arg ver "$CUR_VER" '{
+  NEW_LOCK_DISABLED=$(jq -n --arg ver "$CUR_VER" '{
     updated: (now | strftime("%Y-%m-%dT%H:%M:%SZ")),
     preflight: {plugins: {yf: {version: $ver, mode: "symlink", artifacts: {rules: [], directories: [], setup: []}}}}
   }')
-  if [ -f "$CONFIG_FILE" ]; then
-    cat "$CONFIG_FILE" | jq --argjson new "$NEW_LOCAL_DISABLED" '. * $new' > "$CONFIG_FILE.tmp"
-  else
-    mkdir -p "$(dirname "$CONFIG_FILE")"
-    echo "$NEW_LOCAL_DISABLED" | jq '.' > "$CONFIG_FILE.tmp"
-  fi
-  mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+  mkdir -p "$YF_DIR"
+  echo "$NEW_LOCK_DISABLED" | jq '.' > "$LOCK_FILE"
   if [ "$REMOVED" -gt 0 ]; then
     echo "preflight: disabled — removed $REMOVED rules"
   else
@@ -101,8 +168,8 @@ if [ "$YF_ENABLED" = "false" ]; then
 fi
 
 # --- Feature-specific rules to conditionally skip ---
-CHRONICLE_RULES="yf-watch-for-chronicle-worthiness.md yf-plan-transition-chronicle.md"
-ARCHIVIST_RULES="yf-watch-for-archive-worthiness.md yf-plan-transition-archive.md"
+CHRONICLE_RULES="watch-for-chronicle-worthiness.md plan-transition-chronicle.md"
+ARCHIVIST_RULES="watch-for-archive-worthiness.md plan-transition-archive.md"
 
 is_feature_rule() {
   local ruleset="$1" target="$2"
@@ -121,11 +188,20 @@ is_archivist_rule() { is_feature_rule "$ARCHIVIST_RULES" "$1"; }
 # Uses relative path when plugin is inside the project tree, absolute otherwise
 compute_link_target() {
   local source_rel="$1"
+  local target_rel="$2"
   case "$PLUGIN_ROOT" in
     "$PROJECT_DIR"/*)
-      # Plugin is in project tree — relative symlink (from .claude/rules/)
+      # Plugin is in project tree — relative symlink
       local plugin_rel="${PLUGIN_ROOT#$PROJECT_DIR/}"
-      echo "../../$plugin_rel/$source_rel"
+      # Compute depth: count directories in target path
+      local target_dir depth=""
+      target_dir=$(dirname "$target_rel")
+      local d="$target_dir"
+      while [ "$d" != "." ] && [ -n "$d" ]; do
+        depth="../$depth"
+        d=$(dirname "$d")
+      done
+      echo "${depth}$plugin_rel/$source_rel"
       ;;
     *)
       # Plugin loaded from cache — absolute symlink
@@ -136,8 +212,8 @@ compute_link_target() {
 
 # --- Read lock for preflight section ---
 LOCK="{}"
-if [ -f "$CONFIG_FILE" ]; then
-  LOCK=$(jq '.preflight // {}' "$CONFIG_FILE" 2>/dev/null || echo "{}")
+if [ -f "$LOCK_FILE" ]; then
+  LOCK=$(jq '.preflight // {}' "$LOCK_FILE" 2>/dev/null || echo "{}")
 fi
 
 # --- Plugin version ---
@@ -200,7 +276,7 @@ if $FAST_PATH && [ -f "$PPRE" ]; then
     fi
 
     TARGET_ABS="$PROJECT_DIR/$TARGET_REL"
-    EXPECTED_LINK=$(compute_link_target "$SOURCE_REL")
+    EXPECTED_LINK=$(compute_link_target "$SOURCE_REL" "$TARGET_REL")
 
     # Check symlink exists and points to correct target
     if [ ! -L "$TARGET_ABS" ]; then
@@ -326,7 +402,7 @@ $TARGET_REL"
     j=$((j + 1)); continue
   fi
 
-  LINK_TARGET=$(compute_link_target "$SOURCE_REL")
+  LINK_TARGET=$(compute_link_target "$SOURCE_REL" "$TARGET_REL")
 
   if [ -L "$TARGET_ABS" ]; then
     # Existing symlink — check if it points to the right place
@@ -356,7 +432,7 @@ $TARGET_REL"
   PLUGIN_LOCK=$(echo "$PLUGIN_LOCK" | jq --arg t "$TARGET_REL" --arg l "$LINK_TARGET" '.artifacts.rules += [{"target": $t, "link": $l}]')
 j=$((j + 1)); done
 
-# --- Rules: remove stale (yf-* symlinks/files not in current manifest) ---
+# --- Rules: remove stale symlinks/files not in current manifest ---
 LOCK_RULE_TARGETS=$(echo "$LOCK" | jq -r ".plugins.\"$PLUGIN_NAME\".artifacts.rules[]?.target // empty" 2>/dev/null)
 for OLD_TARGET in $LOCK_RULE_TARGETS; do
   [ -z "$OLD_TARGET" ] && continue
@@ -376,7 +452,7 @@ done
 # --- Remove chronicle rules if chronicler disabled and they exist ---
 if [ "$CHRONICLER_ENABLED" = "false" ]; then
   for CHRON_RULE in $CHRONICLE_RULES; do
-    CHRON_TARGET=".claude/rules/$CHRON_RULE"
+    CHRON_TARGET=".claude/rules/yf/$CHRON_RULE"
     CHRON_ABS="$PROJECT_DIR/$CHRON_TARGET"
     if [ -e "$CHRON_ABS" ] || [ -L "$CHRON_ABS" ]; then
       rm -f "$CHRON_ABS"
@@ -389,7 +465,7 @@ fi
 # --- Remove archivist rules if archivist disabled and they exist ---
 if [ "$ARCHIVIST_ENABLED" = "false" ]; then
   for ARCH_RULE in $ARCHIVIST_RULES; do
-    ARCH_TARGET=".claude/rules/$ARCH_RULE"
+    ARCH_TARGET=".claude/rules/yf/$ARCH_RULE"
     ARCH_ABS="$PROJECT_DIR/$ARCH_TARGET"
     if [ -e "$ARCH_ABS" ] || [ -L "$ARCH_ABS" ]; then
       rm -f "$ARCH_ABS"
@@ -407,20 +483,14 @@ if [ -d "$PLUGIN_ROOT/hooks" ]; then
   find "$PLUGIN_ROOT/hooks" -name '*.sh' -exec chmod +x {} \; 2>/dev/null || true
 fi
 
-# --- Write lock to yf.json ---
-mkdir -p "$(dirname "$CONFIG_FILE")"
+# --- Write lock to lock.json ---
+mkdir -p "$YF_DIR"
 
-NEW_LOCAL=$(jq -n --argjson plugin "$PLUGIN_LOCK" '{
+NEW_LOCK=$(jq -n --argjson plugin "$PLUGIN_LOCK" '{
   updated: (now | strftime("%Y-%m-%dT%H:%M:%SZ")),
   preflight: {plugins: {yf: $plugin}}
 }')
-if [ -f "$CONFIG_FILE" ]; then
-  EXISTING_LOCAL=$(cat "$CONFIG_FILE")
-  echo "$EXISTING_LOCAL" | jq --argjson new "$NEW_LOCAL" '. * $new' > "$CONFIG_FILE.tmp"
-  mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
-else
-  echo "$NEW_LOCAL" | jq '.' > "$CONFIG_FILE"
-fi
+echo "$NEW_LOCK" | jq '.' > "$LOCK_FILE"
 
 # --- Summary ---
 TOTAL=$((SUMMARY_INSTALL + SUMMARY_UPDATE + SUMMARY_REMOVE + SUMMARY_DIR + SUMMARY_SETUP))
