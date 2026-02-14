@@ -14,7 +14,10 @@
       { "source": "rules/plan-transition-chronicle.md", "target": ".claude/rules/yf/plan-transition-chronicle.md" },
       { "source": "rules/watch-for-archive-worthiness.md", "target": ".claude/rules/yf/watch-for-archive-worthiness.md" },
       { "source": "rules/plan-transition-archive.md", "target": ".claude/rules/yf/plan-transition-archive.md" },
-      { "source": "rules/plan-completion-report.md", "target": ".claude/rules/yf/plan-completion-report.md" }
+      { "source": "rules/plan-completion-report.md", "target": ".claude/rules/yf/plan-completion-report.md" },
+      { "source": "rules/swarm-comment-protocol.md", "target": ".claude/rules/yf/swarm-comment-protocol.md" },
+      { "source": "rules/swarm-formula-dispatch.md", "target": ".claude/rules/yf/swarm-formula-dispatch.md" },
+      { "source": "rules/swarm-archive-bridge.md", "target": ".claude/rules/yf/swarm-archive-bridge.md" }
     ],
     "directories": ["docs/plans", "docs/diary", "docs/research", "docs/decisions", ".yoshiko-flow"],
     "setup": [

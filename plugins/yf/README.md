@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.12.0
+# Yoshiko Flow (yf) Plugin — v2.13.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -8,11 +8,12 @@ The natural state of software is _maintenance_. How hard or easy that maintenanc
 
 Traditionally, producing this content is a chore that requires real organizational discipline. Agentic coding makes the problem worse: agents generate context faster than humans can catalog it, and each session starts with a blank slate. Yoshiko Flow automates the discipline — capturing plans, observations, and decisions as structured artifacts without requiring the operator to remember to do it.
 
-It does this through three capabilities:
+It does this through four capabilities:
 
 1. **Plan Lifecycle** — Breaks plans into a dependency graph of tracked tasks, with automatic decomposition, scheduling, and dispatch
-2. **Chronicler** — Captures observations and context as work progresses, then composes diary entries that trace how and why changes were made
-3. **Archivist** — Preserves research findings and design decisions as permanent documentation that supports PRDs and ERDs
+2. **Swarm Execution** — Runs structured, parallel agent workflows using formula templates, wisps, and a dispatch loop
+3. **Chronicler** — Captures observations and context as work progresses, then composes diary entries that trace how and why changes were made
+4. **Archivist** — Preserves research findings and design decisions as permanent documentation that supports PRDs and ERDs
 
 ## Getting Started
 
@@ -81,6 +82,44 @@ Three layers prevent out-of-state operations:
 | `/yf:plan_breakdown` | Recursive decomposition of non-trivial tasks |
 | `/yf:plan_select_agent` | Auto-discover agents and match to tasks |
 | `/yf:plan_dismiss_gate` | Escape hatch to abandon the plan gate |
+
+## Swarm Execution
+
+### Why
+
+The plan lifecycle dispatches tasks one-at-a-time to agents. But many tasks have internal structure — a feature needs research before implementation, and review after. Running these as separate beads loses the tight coupling between steps. Swarm execution uses beads formulas to define reusable multi-agent workflows where research feeds implementation feeds review, all within a single tracked unit of work.
+
+### How It Works
+
+A formula defines a pipeline of steps with dependencies and agent annotations:
+
+```
+feature-build: research (Explore) → implement (general-purpose) → review (Explore)
+research-spike: investigate (Explore) → synthesize → archive
+bugfix: diagnose (Explore) → fix → verify
+```
+
+When invoked, the formula is instantiated as a **wisp** (ephemeral molecule). The dispatch loop identifies ready steps, parses agent annotations, and launches parallel Task calls. Agents communicate through structured comments (`FINDINGS:`, `CHANGES:`, `REVIEW:`, `TESTS:`) on the parent bead. On completion, the wisp is squashed into a digest and a chronicle is auto-created.
+
+Plan tasks labeled `formula:<name>` are automatically dispatched through the swarm system instead of bare agent dispatch.
+
+### Artifacts
+
+- **Formulas**: `plugins/yf/formulas/*.formula.json` (5 shipped)
+- **Dispatch state**: `.yoshiko-flow/swarm-state.json` (ephemeral)
+- **Comments**: Structured audit trail on parent beads (persists after squash)
+
+### Skills & Agents
+
+| Skill / Agent | Description |
+|---------------|-------------|
+| `/yf:swarm_run` | Full swarm lifecycle — instantiate, dispatch, squash |
+| `/yf:swarm_dispatch` | Core dispatch loop driving agents through molecule steps |
+| `/yf:swarm_status` | Show active swarm state and step progress |
+| `/yf:swarm_list_formulas` | List available formula templates |
+| Agent: `yf_swarm_researcher` | Read-only research agent (posts FINDINGS) |
+| Agent: `yf_swarm_reviewer` | Read-only review agent (posts REVIEW with PASS/BLOCK) |
+| Agent: `yf_swarm_tester` | Test-writing agent (posts TESTS with results) |
 
 ## Chronicler (Context Persistence)
 
@@ -168,7 +207,7 @@ Run `/yf:setup` to create or reconfigure this file interactively.
 
 ## Internals
 
-### Rules (12)
+### Rules (15)
 
 All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to `plugins/yf/rules/`):
 
@@ -186,8 +225,11 @@ All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to 
 | `watch-for-archive-worthiness.md` | Monitors for archive-worthy research and decisions |
 | `plan-transition-archive.md` | Archives research and decisions during plan transitions |
 | `plan-completion-report.md` | Enforces structured completion report with chronicle/diary/archive summary |
+| `swarm-comment-protocol.md` | Documents FINDINGS/CHANGES/REVIEW/TESTS comment protocol for swarm agents |
+| `swarm-formula-dispatch.md` | Routes plan tasks with `formula:<name>` label through swarm execution |
+| `swarm-archive-bridge.md` | Suggests archiving swarm output when research or decisions are detected |
 
-### Scripts (8)
+### Scripts (9)
 
 | Script | Description |
 |--------|-------------|
@@ -196,7 +238,8 @@ All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to 
 | `plan-exec.sh` | Deterministic state transitions for plan execution |
 | `pump-state.sh` | Tracks dispatched/done beads to prevent double-dispatch |
 | `archive-suggest.sh` | Scans git commits for research/decision archive candidates |
-| `chronicle-check.sh` | Auto-creates draft chronicle beads from significant git activity |
+| `chronicle-check.sh` | Auto-creates draft chronicle beads from significant git activity (detects wisp squashes) |
+| `swarm-state.sh` | Tracks dispatched/done swarm steps to prevent double-dispatch |
 | `session-recall.sh` | Outputs open chronicle summaries on SessionStart for context recovery |
 | `setup-project.sh` | Manages `.gitignore` sentinel block and AGENTS.md cleanup |
 

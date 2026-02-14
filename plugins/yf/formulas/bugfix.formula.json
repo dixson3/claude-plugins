@@ -1,0 +1,28 @@
+{
+  "name": "bugfix",
+  "description": "Diagnose a bug, implement a fix, and verify correctness.",
+  "vars": {
+    "feature": { "required": true, "description": "Bug description or symptom" },
+    "context": { "required": false, "description": "Reproduction steps or additional context" }
+  },
+  "steps": [
+    {
+      "id": "diagnose",
+      "title": "Diagnose: {{feature}}",
+      "description": "Investigate the root cause of the bug: {{feature}}. Trace through the code, identify the failure point, and understand why it occurs. SUBAGENT:Explore\n\nPost a FINDINGS: comment on the parent bead with:\n- Purpose: Bug being investigated\n- Sources: Files and code paths examined\n- Summary: Root cause identified\n- Recommendations: Proposed fix approach",
+      "needs": []
+    },
+    {
+      "id": "fix",
+      "title": "Fix: {{feature}}",
+      "description": "Implement the fix for {{feature}} based on the diagnosis. SUBAGENT:general-purpose\n\nPost a CHANGES: comment on the parent bead listing files modified and describing the fix.",
+      "needs": ["diagnose"]
+    },
+    {
+      "id": "verify",
+      "title": "Verify fix for {{feature}}",
+      "description": "Verify the fix is correct: run relevant tests, check edge cases, confirm the bug is resolved. SUBAGENT:general-purpose\n\nPost a TESTS: comment on the parent bead with pass/fail results and verification details.",
+      "needs": ["fix"]
+    }
+  ]
+}

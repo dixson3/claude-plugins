@@ -1,0 +1,28 @@
+{
+  "name": "research-spike",
+  "description": "Investigate a topic and synthesize findings into archivable research. Includes auto-archive step (E4).",
+  "vars": {
+    "feature": { "required": true, "description": "Topic to research" },
+    "context": { "required": false, "description": "Additional context or scope constraints" }
+  },
+  "steps": [
+    {
+      "id": "investigate",
+      "title": "Investigate {{feature}}",
+      "description": "Deep-dive into {{feature}}: scan the codebase, read documentation, identify patterns and integration points. SUBAGENT:Explore\n\nPost a FINDINGS: comment on the parent bead with:\n- Purpose: What was investigated\n- Sources: Files, docs, and references found\n- Summary: Key findings\n- Recommendations: Suggested next steps",
+      "needs": []
+    },
+    {
+      "id": "synthesize",
+      "title": "Synthesize findings on {{feature}}",
+      "description": "Consolidate research findings into a structured summary. SUBAGENT:general-purpose\n\nPost a CHANGES: comment summarizing the synthesized output.",
+      "needs": ["investigate"]
+    },
+    {
+      "id": "archive",
+      "title": "Archive research on {{feature}}",
+      "description": "Create an archive bead from the research findings. SUBAGENT:general-purpose\n\nUse bd create to create an archive bead:\nbd create --title \"Archive: Research on {{feature}}\" -l ys:archive,ys:archive:research --description \"<structured findings from FINDINGS comment>\"\n\nThis makes the research available for /yf:archive_process to generate permanent docs.",
+      "needs": ["synthesize"]
+    }
+  ]
+}

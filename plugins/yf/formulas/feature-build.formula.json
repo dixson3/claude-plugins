@@ -1,0 +1,28 @@
+{
+  "name": "feature-build",
+  "description": "Research, implement, and review a feature. The workhorse formula for most development work.",
+  "vars": {
+    "feature": { "required": true, "description": "Feature to build" },
+    "context": { "required": false, "description": "Additional context or constraints" }
+  },
+  "steps": [
+    {
+      "id": "research",
+      "title": "Research {{feature}}",
+      "description": "Investigate the codebase to understand integration points, existing patterns, and dependencies for {{feature}}. SUBAGENT:Explore\n\nPost a FINDINGS: comment on the parent bead with:\n- Purpose: What was investigated\n- Sources: Files and patterns found\n- Summary: Key findings\n- Recommendations: Suggested approach",
+      "needs": []
+    },
+    {
+      "id": "implement",
+      "title": "Implement {{feature}}",
+      "description": "Implement {{feature}} based on research findings. SUBAGENT:general-purpose\n\nPost a CHANGES: comment on the parent bead listing files created/modified and a brief summary of the implementation.",
+      "needs": ["research"]
+    },
+    {
+      "id": "review",
+      "title": "Review {{feature}}",
+      "description": "Review the implementation of {{feature}} for correctness, style, and edge cases. SUBAGENT:Explore\n\nPost a REVIEW: comment on the parent bead with verdict (REVIEW:PASS or REVIEW:BLOCK) and details.",
+      "needs": ["implement"]
+    }
+  ]
+}

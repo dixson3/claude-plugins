@@ -156,6 +156,18 @@ if $VOLUME_HIT; then
   CANDIDATE_REASONS="${CANDIDATE_REASONS}high-volume:${COMMIT_COUNT}-commits "
 fi
 
+# --- Analyze: wisp squashes (swarm activity) ---
+WISP_SQUASH_COUNT=0
+WISP_LIST=$(bd mol wisp list --json 2>/dev/null || echo "[]")
+if [ "$WISP_LIST" != "[]" ] && [ -n "$WISP_LIST" ]; then
+  WISP_SQUASH_COUNT=$(echo "$WISP_LIST" | jq '[.[] | select(.status == "squashed")] | length' 2>/dev/null || echo "0")
+fi
+
+if [ "$WISP_SQUASH_COUNT" -gt 0 ]; then
+  CANDIDATES=$((CANDIDATES + 1))
+  CANDIDATE_REASONS="${CANDIDATE_REASONS}wisp-squashes:${WISP_SQUASH_COUNT} "
+fi
+
 # --- Analyze: in-progress beads (work without commits) ---
 IN_PROGRESS_BEADS=""
 IN_PROGRESS_COUNT=0

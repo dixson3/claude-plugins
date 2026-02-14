@@ -1,0 +1,22 @@
+{
+  "name": "code-review",
+  "description": "Analyze code and produce a structured review report. Read-only — no modifications.",
+  "vars": {
+    "feature": { "required": true, "description": "Code area or feature to review" },
+    "context": { "required": false, "description": "Specific concerns or focus areas" }
+  },
+  "steps": [
+    {
+      "id": "analyze",
+      "title": "Analyze {{feature}}",
+      "description": "Read and analyze the code for {{feature}}. Look for correctness, style, edge cases, security issues, and performance concerns. SUBAGENT:Explore\n\nPost a FINDINGS: comment on the parent bead with:\n- Purpose: What was analyzed\n- Sources: Files reviewed\n- Summary: Issues found, patterns observed\n- Recommendations: Suggested improvements",
+      "needs": []
+    },
+    {
+      "id": "report",
+      "title": "Report on {{feature}} review",
+      "description": "Produce a structured review report from the analysis. SUBAGENT:general-purpose\n\nPost a REVIEW: comment on the parent bead with verdict (REVIEW:PASS or REVIEW:BLOCK) and categorized findings (critical, suggestion, nit).",
+      "needs": ["analyze"]
+    }
+  ]
+}

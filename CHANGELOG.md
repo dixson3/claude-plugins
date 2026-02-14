@@ -5,6 +5,37 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.13.0] - 2026-02-13
+
+### Added
+
+- **Swarm execution capability**: Formula-driven parallel agent workflows using beads formulas, wisps, and molecules
+  - 5 formula templates: `feature-build` (research→implement→review), `research-spike` (investigate→synthesize→archive), `code-review` (analyze→report), `bugfix` (diagnose→fix→verify), `build-test` (implement→test→review)
+  - 3 swarm agents: `yf_swarm_researcher` (read-only, Explore-typed, posts FINDINGS), `yf_swarm_reviewer` (read-only, posts REVIEW with PASS/BLOCK verdict), `yf_swarm_tester` (test-writing, posts TESTS)
+  - 4 swarm skills: `/yf:swarm_run` (full lifecycle entry point), `/yf:swarm_dispatch` (core dispatch loop), `/yf:swarm_status` (active swarm state), `/yf:swarm_list_formulas` (list available formulas)
+  - `swarm-state.sh` script — tracks dispatched/done swarm steps to prevent double-dispatch
+  - Comment protocol: agents communicate via structured `FINDINGS:`, `CHANGES:`, `REVIEW:`, `TESTS:` comments on parent beads
+  - Plan integration: tasks labeled `formula:<name>` auto-dispatch through swarm system
+- **Chronicler/archivist integration enhancements**:
+  - E1: Swarm completion auto-creates chronicle bead with squash summary
+  - E2: Diary agent reads swarm comments (`ys:swarm`-tagged chronicles) for structured evidence
+  - E3: `chronicle-check.sh` detects wisp squashes as significant activity
+  - E4: `research-spike` formula auto-creates archive bead in final step
+  - E5: `swarm-archive-bridge.md` rule suggests archiving swarm output with external sources
+  - E6: Researcher agent FINDINGS format aligns with archivist research template
+- 3 new rules: `swarm-comment-protocol.md`, `swarm-formula-dispatch.md`, `swarm-archive-bridge.md`
+- Test scenario: `unit-swarm-state.yaml`
+
+### Changed
+
+- Plugin version bumped: 2.12.0 → 2.13.0
+- Plugin description updated to include swarm execution
+- `preflight.json`: Added 3 new rules to artifacts
+- `yf_chronicle_diary` agent: Added swarm-aware enrichment (reads step comments)
+- `chronicle-check.sh`: Added wisp-squash detection alongside git commit analysis
+- `README.md`: Added Swarm Execution section, updated rule/script counts
+- `DEVELOPERS.md`: Added swarm capability to capability table
+
 ## [2.12.0] - 2026-02-13
 
 ### Changed

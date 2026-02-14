@@ -32,6 +32,22 @@ For each bead, extract:
 - Body content
 - Creation date
 
+#### Swarm-Aware Enrichment (E2)
+
+If a chronicle has the `ys:swarm` label, it was auto-created by a swarm execution. Enrich the diary entry by reading the referenced parent bead's comments:
+
+```bash
+bd show <parent-bead-id> --comments
+```
+
+Look for structured comments (`FINDINGS:`, `CHANGES:`, `REVIEW:`, `TESTS:`) and incorporate their content into the diary entry:
+- **FINDINGS**: Include key research discoveries and recommendations
+- **CHANGES**: List files modified and implementation summary
+- **REVIEW**: Include the verdict and any issues raised
+- **TESTS**: Include pass/fail results and coverage notes
+
+This structured evidence from swarm steps makes the diary entry more specific and actionable than the chronicle summary alone.
+
 ### Step 3: Group by Theme
 
 Analyze chronicles and group by theme:
