@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.18.0
+# Yoshiko Flow (yf) Plugin — v2.18.1
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 

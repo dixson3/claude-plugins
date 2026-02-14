@@ -5,6 +5,13 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.18.1] - 2026-02-14
+
+### Fixed
+
+- **exit-plan-gate.sh**: Look for plan files in `~/.claude/plans/` (global) instead of `$PROJECT_DIR/.claude/plans/` (local). Claude Code stores all plan files globally, so the hook was silently exiting without emitting the auto-chain signal.
+- **plugin-preflight.sh**: Clean up legacy flat-format `yf-*.md` symlinks during full sync, not just during the disabled branch. When upgrading across a marketplace rename with no lock file, dangling symlinks would persist and block rule loading.
+
 ## [2.18.0] - 2026-02-14
 
 ### Added

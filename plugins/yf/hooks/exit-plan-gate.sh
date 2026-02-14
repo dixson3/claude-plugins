@@ -18,7 +18,7 @@ yf_is_enabled || exit 0
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 GATE_FILE="$PROJECT_DIR/.yoshiko-flow/plan-gate"
 PLANS_DIR="$PROJECT_DIR/docs/plans"
-CLAUDE_PLANS_DIR="$PROJECT_DIR/.claude/plans"
+CLAUDE_PLANS_DIR="${HOME}/.claude/plans"
 
 # Idempotent: if engage_plan already created the gate, nothing to do
 if [[ -f "$GATE_FILE" ]]; then

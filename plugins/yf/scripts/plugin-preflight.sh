@@ -451,6 +451,14 @@ for OLD_TARGET in $LOCK_RULE_TARGETS; do
   esac
 done
 
+# --- Remove legacy flat yf-* rules from pre-subdirectory era ---
+for F in "$PROJECT_DIR/.claude/rules"/yf-*.md; do
+    [ -e "$F" ] || [ -L "$F" ] || continue
+    rm -f "$F"
+    SUMMARY_REMOVE=$((SUMMARY_REMOVE + 1))
+    echo "preflight: $PLUGIN_NAME — removed legacy flat rule $(basename "$F")"
+done
+
 # --- Chmod scripts and hooks ---
 if [ -d "$PLUGIN_ROOT/scripts" ]; then
   find "$PLUGIN_ROOT/scripts" -name '*.sh' -exec chmod +x {} \; 2>/dev/null || true

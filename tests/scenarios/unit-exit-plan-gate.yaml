@@ -8,7 +8,7 @@ steps:
     run: |
       echo '{"plan_idx":"01"}' > .yoshiko-flow/plan-gate
       mkdir -p .claude/plans && echo '# plan' > .claude/plans/test.md
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
+      HOME="$WORK_DIR" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
     assertions:
       - type: exit_code
         value: "0"
@@ -18,7 +18,7 @@ steps:
     run: |
       rm -f .yoshiko-flow/plan-gate
       rm -rf .claude/plans
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
+      HOME="$WORK_DIR" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
     assertions:
       - type: exit_code
         value: "0"
@@ -29,7 +29,7 @@ steps:
   - name: "empty_plans_dir"
     run: |
       mkdir -p .claude/plans
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
+      HOME="$WORK_DIR" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
     assertions:
       - type: exit_code
         value: "0"
@@ -42,7 +42,7 @@ steps:
       rm -rf docs/plans
       rm -f .yoshiko-flow/plan-gate
       echo '# My Plan' > .claude/plans/test-plan.md
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
+      HOME="$WORK_DIR" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
     assertions:
       - type: exit_code
         value: "0"
@@ -61,7 +61,7 @@ steps:
       mkdir -p docs/plans
       touch docs/plans/plan-03.md
       echo '# Next Plan' > .claude/plans/another.md
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
+      HOME="$WORK_DIR" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
     assertions:
       - type: file_exists
         path: "docs/plans/plan-04.md"
@@ -101,7 +101,7 @@ steps:
       rm -f .yoshiko-flow/plan-gate
       rm -rf docs/plans
       echo '# Auto Plan' > .claude/plans/auto.md
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
+      HOME="$WORK_DIR" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
     assertions:
       - type: exit_code
         value: "0"

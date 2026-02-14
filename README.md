@@ -15,7 +15,7 @@ On first session start, the preflight system automatically installs rules and cr
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, swarm execution, context persistence, diary generation, specification artifacts, standards-driven code generation, and research/decision archiving | 2.18.0 |
+| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, swarm execution, context persistence, diary generation, specification artifacts, standards-driven code generation, and research/decision archiving | 2.18.1 |
 
 ## Yoshiko Flow (yf)
 
