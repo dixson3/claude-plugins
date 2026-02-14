@@ -1,6 +1,6 @@
 # Plan 24: Migrate yf state from `.claude/` to `.yoshiko-flow/`
 
-**Status:** Draft
+**Status:** Completed
 **Date:** 2026-02-13
 
 ## Overview

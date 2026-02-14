@@ -1,6 +1,6 @@
 # Plan 26: Rename `yf.json` to `config.json` + Stale-File Migration
 
-**Status:** Draft
+**Status:** Completed
 **Date:** 2026-02-13
 
 ## Context
