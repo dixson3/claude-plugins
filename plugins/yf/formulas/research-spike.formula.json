@@ -1,6 +1,7 @@
 {
   "name": "research-spike",
   "description": "Investigate a topic and synthesize findings into archivable research. Includes auto-archive step (E4).",
+  "planning_safe": true,
   "vars": {
     "feature": { "required": true, "description": "Topic to research" },
     "context": { "required": false, "description": "Additional context or scope constraints" }

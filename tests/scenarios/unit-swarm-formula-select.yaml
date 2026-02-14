@@ -1,0 +1,60 @@
+name: "Unit: swarm_select_formula skill"
+setup:
+  - "mkdir -p plugins/yf/skills/swarm_select_formula"
+
+steps:
+  # Case 1: Skill file exists with correct frontmatter
+  - name: "skill_file_exists"
+    run: |
+      test -f "$PLUGIN_DIR/plugins/yf/skills/swarm_select_formula/SKILL.md" && echo "exists"
+    assertions:
+      - type: output_contains
+        value: "exists"
+
+  # Case 2: Skill has correct name in frontmatter
+  - name: "skill_name_correct"
+    run: |
+      head -5 "$PLUGIN_DIR/plugins/yf/skills/swarm_select_formula/SKILL.md" | grep "name:"
+    assertions:
+      - type: output_contains
+        value: "yf:swarm_select_formula"
+
+  # Case 3: Rule file exists
+  - name: "rule_file_exists"
+    run: |
+      test -f "$PLUGIN_DIR/plugins/yf/rules/swarm-formula-select.md" && echo "exists"
+    assertions:
+      - type: output_contains
+        value: "exists"
+
+  # Case 4: Rule documents the heuristic table
+  - name: "rule_has_heuristic_table"
+    run: |
+      grep -c "feature-build\|bugfix\|research-spike\|code-review\|build-test" "$PLUGIN_DIR/plugins/yf/rules/swarm-formula-select.md"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 5: plan_create_beads has Step 8b
+  - name: "plan_create_beads_has_step_8b"
+    run: |
+      grep "Step 8b" "$PLUGIN_DIR/plugins/yf/skills/plan_create_beads/SKILL.md"
+    assertions:
+      - type: output_contains
+        value: "Formula Selection"
+
+  # Case 6: Skill references idempotency check
+  - name: "skill_idempotent"
+    run: |
+      grep -c "formula:\*" "$PLUGIN_DIR/plugins/yf/skills/swarm_select_formula/SKILL.md" || echo "0"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 7: preflight.json includes the new rule
+  - name: "preflight_has_rule"
+    run: |
+      grep "swarm-formula-select" "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json"
+    assertions:
+      - type: output_contains
+        value: "swarm-formula-select.md"

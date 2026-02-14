@@ -1,0 +1,84 @@
+name: "Unit: swarm qualification gate"
+setup:
+  - "mkdir -p .yoshiko-flow"
+
+steps:
+  # Case 1: swarm_qualify skill file exists
+  - name: "qualify_skill_exists"
+    run: |
+      test -f "$PLUGIN_DIR/plugins/yf/skills/swarm_qualify/SKILL.md" && echo "exists"
+    assertions:
+      - type: output_contains
+        value: "exists"
+
+  # Case 2: Skill has correct name
+  - name: "qualify_skill_name"
+    run: |
+      head -5 "$PLUGIN_DIR/plugins/yf/skills/swarm_qualify/SKILL.md" | grep "name:"
+    assertions:
+      - type: output_contains
+        value: "yf:swarm_qualify"
+
+  # Case 3: plan_create_beads has Step 9c
+  - name: "plan_create_beads_has_step_9c"
+    run: |
+      grep "Step 9c" "$PLUGIN_DIR/plugins/yf/skills/plan_create_beads/SKILL.md"
+    assertions:
+      - type: output_contains
+        value: "Qualification"
+
+  # Case 4: plan_execute has qualification check
+  - name: "plan_execute_has_qualification"
+    run: |
+      grep "swarm_qualify\|qualification\|Step 3e" "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md" | head -3
+    assertions:
+      - type: output_contains
+        value: "Qualification"
+
+  # Case 5: plan-exec.sh records start SHA
+  - name: "plan_exec_records_start_sha"
+    run: |
+      grep "start-sha" "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" | head -3
+    assertions:
+      - type: output_contains
+        value: "start-sha"
+
+  # Case 6: plan-exec.sh has qualifying status
+  - name: "plan_exec_has_qualifying_status"
+    run: |
+      grep "qualifying" "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" | head -3
+    assertions:
+      - type: output_contains
+        value: "qualifying"
+
+  # Case 7: plan-completion-report has Qualification section
+  - name: "completion_report_has_qualification"
+    run: |
+      grep "Qualification" "$PLUGIN_DIR/plugins/yf/rules/plan-completion-report.md" | head -3
+    assertions:
+      - type: output_contains
+        value: "Qualification"
+
+  # Case 8: plugin.json version is 2.14.0
+  - name: "version_bumped"
+    run: |
+      jq -r '.version' "$PLUGIN_DIR/plugins/yf/.claude-plugin/plugin.json"
+    assertions:
+      - type: output_contains
+        value: "2.14.0"
+
+  # Case 9: research-spike formula has planning_safe
+  - name: "research_spike_planning_safe"
+    run: |
+      jq -r '.planning_safe' "$PLUGIN_DIR/plugins/yf/formulas/research-spike.formula.json"
+    assertions:
+      - type: output_contains
+        value: "true"
+
+  # Case 10: preflight.json has all 19 rules
+  - name: "preflight_rule_count"
+    run: |
+      jq '.artifacts.rules | length' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json"
+    assertions:
+      - type: output_contains
+        value: "19"

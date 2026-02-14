@@ -5,6 +5,37 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.0] - 2026-02-13
+
+### Added
+
+- **Implicit swarm formula triggering**: Formulas fire automatically based on lifecycle events, task semantics, and runtime signals
+  - T1: Automatic formula selection at bead creation — `/yf:swarm_select_formula` assigns `formula:<name>` labels during `plan_create_beads` Step 8b based on task title keywords
+  - T2: Nested formula composition — `compose` field in formula steps triggers sub-swarms (max depth 2), with scoped state tracking in `swarm-state.sh`
+  - T3: Reactive bugfix on failure — `/yf:swarm_react` spawns `bugfix` formula on REVIEW:BLOCK or test failures, with retry budget and design-BLOCK exclusion
+  - T4: Code review qualification gate — `/yf:swarm_qualify` runs `code-review` formula before plan completion, blocking on REVIEW:BLOCK (configurable: blocking/advisory/disabled)
+  - T5: Research spike during planning — advisory rule suggests `research-spike` formula during heavy planning research (3+ web searches)
+- 3 new swarm skills: `/yf:swarm_select_formula`, `/yf:swarm_react`, `/yf:swarm_qualify`
+- 4 new rules: `swarm-formula-select.md`, `swarm-nesting.md`, `swarm-reactive.md`, `swarm-planning-research.md`
+- `plan-exec.sh start` records starting commit SHA as `start-sha:<hash>` label for qualification review scope
+- `plan-exec.sh status` returns `qualifying` when all tasks closed but qualification gate still open
+- `swarm-state.sh`: Added `mark-retrying` command and `--scope` flag for scoped clear
+- `feature-build.formula.json`: Added `compose: "build-test"` on implement step
+- `research-spike.formula.json`: Added `planning_safe: true`
+- Test scenarios: `unit-swarm-formula-select.yaml`, `unit-swarm-nesting.yaml`, `unit-swarm-reactive.yaml`, `unit-swarm-qualify.yaml`
+
+### Changed
+
+- Plugin version bumped: 2.13.0 → 2.14.0
+- `preflight.json`: Added 4 new rules to artifacts (19 total)
+- `plan_create_beads/SKILL.md`: Added Step 8b (formula selection) and Step 9c (qualification gate)
+- `swarm_dispatch/SKILL.md`: Added compose detection in Step 3, compose dispatch in Step 4, reactive check in Step 6b
+- `swarm_run/SKILL.md`: Added `depth` parameter for nesting control
+- `plan_execute/SKILL.md`: Added qualification gate check (Step 3e) before completion
+- `plan-completion-report.md`: Added Qualification section to report format
+- `README.md`: Added Implicit Triggers subsection, updated skill/rule counts
+- `DEVELOPERS.md`: Updated swarm capability with 3 new skills
+
 ## [2.13.0] - 2026-02-13
 
 ### Added

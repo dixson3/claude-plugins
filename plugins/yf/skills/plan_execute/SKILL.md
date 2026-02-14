@@ -115,9 +115,20 @@ After dispatching a batch:
 2. Mark completed beads: `pump-state.sh mark-done <bead-id>`
 3. Loop back to Step 3a — newly unblocked beads become ready
 
+### Step 3e: Qualification Gate
+
+When `plan-exec.sh status` returns `completed` (which also closes any chronicle gates), but **before** running the completion sequence:
+
+1. Invoke `/yf:swarm_qualify plan_idx:<idx>` to run the code-review qualification gate
+2. If the qualification returns **PASS** (or config is `advisory`/`disabled`), proceed to Step 4
+3. If the qualification returns **BLOCK** (and config is `blocking`):
+   - Report the block to the user
+   - Do NOT proceed to Step 4
+   - The user must fix the issues and re-run `/yf:plan_execute`
+
 ### Step 4: Completion
 
-When `plan-exec.sh status` returns `completed` (which also closes any chronicle gates):
+After qualification passes (or is advisory/disabled):
 
 1. **Capture completion context**: Invoke `/yf:chronicle_capture topic:completion` to preserve the execution summary as a chronicle bead before closing everything out.
 2. **Generate diary**: Invoke `/yf:chronicle_diary plan:<idx>` to process all plan chronicles into diary entries. Note the output — capture generated file paths and chronicle counts.

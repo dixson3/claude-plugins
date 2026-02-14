@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.13.0
+# Yoshiko Flow (yf) Plugin — v2.14.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -103,6 +103,20 @@ When invoked, the formula is instantiated as a **wisp** (ephemeral molecule). Th
 
 Plan tasks labeled `formula:<name>` are automatically dispatched through the swarm system instead of bare agent dispatch.
 
+### Implicit Triggers
+
+Formulas can fire automatically based on lifecycle events and task semantics — no manual labeling required:
+
+| Trigger | Signal | Formula | Phase |
+|---------|--------|---------|-------|
+| **Auto-select** | Task title keywords (implement, fix, research...) | Best match | Plan setup |
+| **Composition** | `compose` field in formula step JSON | Sub-formula | Execution |
+| **Reactive bugfix** | REVIEW:BLOCK or test failures | `bugfix` | Execution |
+| **Qualification** | All plan tasks closed | `code-review` | Completion |
+| **Research spike** | 3+ web searches during planning | `research-spike` (advisory) | Planning |
+
+Auto-selection runs during `plan_create_beads`, applying `formula:<name>` labels based on task semantics. Atomic tasks (single-file, single-concern) are left for bare agent dispatch. Formulas can nest via `compose` fields (max depth 2). Reactive bugfixes auto-spawn on failure with a retry budget. Qualification gates block plan completion until code review passes.
+
 ### Artifacts
 
 - **Formulas**: `plugins/yf/formulas/*.formula.json` (5 shipped)
@@ -117,6 +131,9 @@ Plan tasks labeled `formula:<name>` are automatically dispatched through the swa
 | `/yf:swarm_dispatch` | Core dispatch loop driving agents through molecule steps |
 | `/yf:swarm_status` | Show active swarm state and step progress |
 | `/yf:swarm_list_formulas` | List available formula templates |
+| `/yf:swarm_select_formula` | Auto-assign formula labels based on task semantics |
+| `/yf:swarm_react` | Reactive bugfix from BLOCK/FAIL verdicts |
+| `/yf:swarm_qualify` | Run code-review qualification gate before completion |
 | Agent: `yf_swarm_researcher` | Read-only research agent (posts FINDINGS) |
 | Agent: `yf_swarm_reviewer` | Read-only review agent (posts REVIEW with PASS/BLOCK) |
 | Agent: `yf_swarm_tester` | Test-writing agent (posts TESTS with results) |
@@ -207,7 +224,7 @@ Run `/yf:setup` to create or reconfigure this file interactively.
 
 ## Internals
 
-### Rules (15)
+### Rules (19)
 
 All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to `plugins/yf/rules/`):
 
@@ -228,6 +245,10 @@ All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to 
 | `swarm-comment-protocol.md` | Documents FINDINGS/CHANGES/REVIEW/TESTS comment protocol for swarm agents |
 | `swarm-formula-dispatch.md` | Routes plan tasks with `formula:<name>` label through swarm execution |
 | `swarm-archive-bridge.md` | Suggests archiving swarm output when research or decisions are detected |
+| `swarm-formula-select.md` | Heuristics for automatic formula assignment to plan tasks |
+| `swarm-nesting.md` | Nesting protocol, depth limits, and context flow for composed formulas |
+| `swarm-reactive.md` | Reactive bugfix spawning on REVIEW:BLOCK or test failures |
+| `swarm-planning-research.md` | Advisory: suggests research-spike formula during heavy planning research |
 
 ### Scripts (9)
 

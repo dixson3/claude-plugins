@@ -168,6 +168,18 @@ case "$COMMAND" in
             echo "No deferred tasks to undefer."
         fi
 
+        # Record starting commit SHA for qualification review scope
+        START_SHA=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+        if [[ "$START_SHA" != "unknown" ]]; then
+            # Remove any existing start-sha label first
+            EXISTING_SHA=$(bd label list "$ROOT_EPIC" --json 2>/dev/null | jq -r '.[] | select(startswith("start-sha:"))' 2>/dev/null | head -1)
+            if [[ -n "$EXISTING_SHA" ]]; then
+                bd label remove "$ROOT_EPIC" "$EXISTING_SHA" 2>/dev/null || true
+            fi
+            bd label add "$ROOT_EPIC" "start-sha:$START_SHA" 2>/dev/null || true
+            echo "Recorded start SHA: ${START_SHA:0:8}"
+        fi
+
         # Update execution state label
         bd label remove "$ROOT_EPIC" exec:paused 2>/dev/null || true
         bd label remove "$ROOT_EPIC" exec:ready 2>/dev/null || true
@@ -240,11 +252,18 @@ case "$COMMAND" in
         TOTAL_OPEN=$((OPEN_COUNT + IN_PROGRESS_COUNT + DEFERRED_COUNT))
 
         if [[ "$TOTAL_OPEN" -eq 0 ]]; then
-            # Auto-chronicle completion (fail-open, before closing gates)
-            SNAPSHOT=$(get_plan_snapshot "$PLAN_LABEL" 2>/dev/null || echo "unavailable")
-            create_transition_chronicle "$PLAN_LABEL" "complete" "$SNAPSHOT" 2>/dev/null || true
-            close_chronicle_gates "$PLAN_LABEL"
-            echo "completed"
+            # Check if qualification gate is still open (plan needs qualifying before completing)
+            QUAL_GATE=$(bd list -l "ys:qualification-gate,$PLAN_LABEL" --status=open --limit=1 --json 2>/dev/null \
+                | jq -r '.[0].id // empty' 2>/dev/null) || true
+            if [[ -n "$QUAL_GATE" ]]; then
+                echo "qualifying"
+            else
+                # Auto-chronicle completion (fail-open, before closing gates)
+                SNAPSHOT=$(get_plan_snapshot "$PLAN_LABEL" 2>/dev/null || echo "unavailable")
+                create_transition_chronicle "$PLAN_LABEL" "complete" "$SNAPSHOT" 2>/dev/null || true
+                close_chronicle_gates "$PLAN_LABEL"
+                echo "completed"
+            fi
         elif [[ -n "$GATE_ID" ]]; then
             # Check if this was ever started
             LABELS=$(bd label list "$ROOT_EPIC" --json 2>/dev/null | jq -r '.[]' 2>/dev/null)

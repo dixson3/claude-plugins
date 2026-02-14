@@ -14,6 +14,9 @@ arguments:
   - name: parent_bead
     description: "Parent bead ID (if running under a plan task)"
     required: false
+  - name: depth
+    description: "Nesting depth for composed formulas (default: 0, max: 2)"
+    required: false
 ---
 
 # Swarm Run
@@ -24,6 +27,7 @@ Full swarm lifecycle entry point. Instantiates a formula as a wisp, dispatches a
 
 - Directly by the user: `/yf:swarm_run formula:feature-build feature:"add dark mode"`
 - By the plan pump when a task has a `formula:<name>` label
+- By `/yf:swarm_dispatch` when a step has a `compose` field (nested invocation)
 - Programmatically from other skills
 
 ## Behavior
@@ -116,8 +120,14 @@ If the review blocked, leave the parent bead open and report the block.
 
 ### Step 5: Clear Dispatch State
 
+For top-level swarms (depth 0):
 ```bash
 bash plugins/yf/scripts/swarm-state.sh clear
+```
+
+For nested swarms (depth > 0), use scoped clear to only remove sub-swarm state:
+```bash
+bash plugins/yf/scripts/swarm-state.sh clear --scope <mol-id>
 ```
 
 ### Step 6: Report
@@ -150,6 +160,16 @@ Overall: PASS/BLOCK
 # Run under a plan task (auto-closes parent on success)
 /yf:swarm_run formula:feature-build feature:"implement dark mode" parent_bead:marketplace-abc
 ```
+
+## Depth Tracking (Nesting)
+
+The `depth` parameter tracks nesting level for composed formulas:
+
+- **Default**: 0 (top-level invocation)
+- **Max**: 2. If depth >= 2, the swarm runs but `compose` fields in steps are ignored (steps dispatch as bare Tasks instead)
+- Each nested invocation passes `depth+1` to the child swarm
+
+This prevents infinite recursion when formulas compose other formulas. See the `swarm-nesting` rule for details.
 
 ## Error Handling
 

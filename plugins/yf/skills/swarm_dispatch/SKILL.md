@@ -45,16 +45,22 @@ A step is ready when:
 bash plugins/yf/scripts/swarm-state.sh is-dispatched <step-id>
 ```
 
-### Step 3: Parse Agent Annotations
+### Step 3: Parse Step Annotations
 
-For each ready step, extract the `SUBAGENT:<type>` annotation from the description:
+For each ready step, extract annotations:
 
+**Agent annotation** — `SUBAGENT:<type>` from the description:
 ```
 SUBAGENT:Explore      → subagent_type = "Explore"
 SUBAGENT:general-purpose → subagent_type = "general-purpose"
 ```
-
 If no `SUBAGENT:` annotation, default to `general-purpose`.
+
+**Compose annotation** — Check the step's JSON for a `compose` field:
+```json
+{ "id": "implement", "compose": "build-test", ... }
+```
+If `compose` is present and the current swarm `depth < 2`, this step will be dispatched as a nested swarm instead of a bare Task call.
 
 ### Step 4: Dispatch Ready Steps
 
@@ -94,6 +100,20 @@ After posting your comment, close this step:
 
 Launch **all ready steps in parallel** (multiple Task calls in one message).
 
+**Compose dispatch** — If a step has a `compose` field and `depth < 2`:
+
+Instead of a bare Task call, invoke the nested formula:
+```
+/yf:swarm_run formula:<compose-value> feature:"<step title>" parent_bead:<parent_bead> depth:<current_depth+1> context:"<upstream FINDINGS from parent formula>"
+```
+
+The nested swarm:
+- Receives upstream FINDINGS from the parent formula's earlier steps as context
+- Posts CHANGES/TESTS/REVIEW comments on the **outermost** parent bead (single audit trail)
+- Uses scoped state tracking: `<parent-mol-id>/<step-id>` prefix in swarm-state.sh
+
+If `depth >= 2`, ignore the `compose` field and dispatch as a normal bare Task call.
+
 ### Step 5: Mark Dispatched
 
 After launching each Task call:
@@ -107,6 +127,23 @@ When Task calls return:
 1. Verify the agent posted a comment on the parent bead
 2. Mark done in swarm state: `bash plugins/yf/scripts/swarm-state.sh mark-done <step-id>`
 3. Check if the step bead was closed by the agent; if not, close it
+
+### Step 6b: Reactive Failure Check
+
+After processing each step's return, check for failure signals in the posted comment:
+
+1. **Read the comment** on the parent bead for this step
+2. **Check for REVIEW:BLOCK**: If the step posted a `REVIEW:BLOCK` comment, this is a failure
+3. **Check for TESTS with failures**: If the step posted a `TESTS:` comment containing `FAIL:` with a count > 0, this is a failure
+
+If a failure is detected, invoke `/yf:swarm_react`:
+```
+/yf:swarm_react parent_bead:<parent_bead> verdict:<BLOCK|FAIL> step_id:<step-id> depth:<current_depth>
+```
+
+The reactive skill handles eligibility checks (depth, dedup, config), spawns a bugfix formula if appropriate, and marks the step for retry. The dispatch loop will pick up the retried step on its next iteration (Step 7).
+
+If no failure is detected, proceed normally.
 
 ### Step 7: Re-dispatch Loop
 

@@ -45,7 +45,21 @@ CLOSED_ARCH=$((ALL_ARCH - OPEN_ARCH))
 
 List generated files in `docs/research/` and `docs/decisions/` if any were produced.
 
-### 5. Open Items Warning
+### 5. Qualification Summary
+
+If a qualification gate was run for this plan, include the result:
+
+```bash
+QUAL_GATE=$(bd list -l ys:qualification-gate,"$PLAN_LABEL" --limit=1 --json 2>/dev/null | jq -r '.[0].id // empty')
+```
+
+If the gate exists, read its comments for the REVIEW verdict and report:
+- Gate bead ID
+- Verdict (PASS/BLOCK)
+- Config mode (blocking/advisory/disabled)
+- If advisory BLOCK: note the issues found
+
+### 6. Open Items Warning
 
 If any chronicles or archives remain open after the completion steps have run, warn:
 
@@ -72,6 +86,10 @@ Archives: <total> captured, <closed> processed, <open> still open
   - docs/research/<topic>/SUMMARY.md
   - docs/decisions/<slug>/SUMMARY.md
   (or: No archive docs generated)
+
+Qualification: REVIEW:<PASS|BLOCK> (<blocking|advisory|disabled>)
+  (or: Qualification gate disabled)
+  (or: Qualification: REVIEW:BLOCK (advisory) — <N> issues noted)
 
 [If open items remain:]
 ⚠ <N> chronicle beads still open — run /yf:chronicle_diary to process

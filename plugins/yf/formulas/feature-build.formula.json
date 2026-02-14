@@ -16,7 +16,8 @@
       "id": "implement",
       "title": "Implement {{feature}}",
       "description": "Implement {{feature}} based on research findings. SUBAGENT:general-purpose\n\nPost a CHANGES: comment on the parent bead listing files created/modified and a brief summary of the implementation.",
-      "needs": ["research"]
+      "needs": ["research"],
+      "compose": "build-test"
     },
     {
       "id": "review",

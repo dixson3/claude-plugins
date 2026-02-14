@@ -123,6 +123,18 @@ For each created task:
 
 This assigns `agent:<name>` labels where appropriate.
 
+### Step 8b: Formula Selection
+
+After agent selection, evaluate each task for swarm formula assignment:
+
+```
+/yf:swarm_select_formula <task-id>
+```
+
+This applies `formula:<name>` labels based on task semantics (title keywords, type). Atomic/trivial tasks are skipped — they use bare agent dispatch. Tasks with explicit `formula:*` labels from the plan text are also skipped (author override).
+
+The existing `swarm-formula-dispatch` rule handles dispatching labeled tasks through the swarm system during plan pump execution. No changes to the pump are needed.
+
 ### Step 9: Create Execution Gate
 
 Create a human gate on the root epic to control execution state:
@@ -150,6 +162,21 @@ bd create --type=gate \
 ```
 
 This gate stays open until all plan tasks close. When `plan-exec.sh status` detects completion, it closes this gate, signaling that `/yf:chronicle_diary plan:<idx>` can now generate the full-arc diary.
+
+### Step 9c: Create Qualification Gate
+
+Create a qualification gate for the code-review step that runs before plan completion:
+
+```bash
+bd create --type=task \
+  --title="Qualification review for plan-<idx>" \
+  --parent=<root-epic-id> \
+  --description="Code review qualification gate. Must pass before plan completion." \
+  -l ys:qualification-gate,plan:<idx> \
+  --silent
+```
+
+This gate stays open until `/yf:swarm_qualify` runs the code-review formula and it passes. If `qualification_gate` is set to `"disabled"` in `.yoshiko-flow/config.json`, skip this step.
 
 ### Step 10: Defer All Tasks
 

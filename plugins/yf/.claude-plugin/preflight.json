@@ -17,7 +17,11 @@
       { "source": "rules/plan-completion-report.md", "target": ".claude/rules/yf/plan-completion-report.md" },
       { "source": "rules/swarm-comment-protocol.md", "target": ".claude/rules/yf/swarm-comment-protocol.md" },
       { "source": "rules/swarm-formula-dispatch.md", "target": ".claude/rules/yf/swarm-formula-dispatch.md" },
-      { "source": "rules/swarm-archive-bridge.md", "target": ".claude/rules/yf/swarm-archive-bridge.md" }
+      { "source": "rules/swarm-archive-bridge.md", "target": ".claude/rules/yf/swarm-archive-bridge.md" },
+      { "source": "rules/swarm-formula-select.md", "target": ".claude/rules/yf/swarm-formula-select.md" },
+      { "source": "rules/swarm-nesting.md", "target": ".claude/rules/yf/swarm-nesting.md" },
+      { "source": "rules/swarm-reactive.md", "target": ".claude/rules/yf/swarm-reactive.md" },
+      { "source": "rules/swarm-planning-research.md", "target": ".claude/rules/yf/swarm-planning-research.md" }
     ],
     "directories": ["docs/plans", "docs/diary", "docs/research", "docs/decisions", ".yoshiko-flow"],
     "setup": [

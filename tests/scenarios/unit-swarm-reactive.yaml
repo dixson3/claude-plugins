@@ -1,0 +1,77 @@
+name: "Unit: swarm reactive bugfix"
+setup:
+  - "mkdir -p .yoshiko-flow"
+
+steps:
+  # Case 1: swarm_react skill file exists
+  - name: "react_skill_exists"
+    run: |
+      test -f "$PLUGIN_DIR/plugins/yf/skills/swarm_react/SKILL.md" && echo "exists"
+    assertions:
+      - type: output_contains
+        value: "exists"
+
+  # Case 2: Skill has correct name
+  - name: "react_skill_name"
+    run: |
+      head -5 "$PLUGIN_DIR/plugins/yf/skills/swarm_react/SKILL.md" | grep "name:"
+    assertions:
+      - type: output_contains
+        value: "yf:swarm_react"
+
+  # Case 3: swarm_dispatch has Step 6b
+  - name: "dispatch_has_step_6b"
+    run: |
+      grep "Step 6b" "$PLUGIN_DIR/plugins/yf/skills/swarm_dispatch/SKILL.md"
+    assertions:
+      - type: output_contains
+        value: "Reactive"
+
+  # Case 4: swarm-state.sh mark-retrying works
+  - name: "mark_retrying"
+    run: |
+      rm -f .yoshiko-flow/swarm-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-retrying marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" is-dispatched marketplace-abc 2>/dev/null || true
+    assertions:
+      - type: output_contains
+        value: "not-dispatched"
+
+  # Case 5: mark-retrying is idempotent on non-existent step
+  - name: "mark_retrying_idempotent"
+    run: |
+      rm -f .yoshiko-flow/swarm-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-retrying marketplace-nonexistent
+    assertions:
+      - type: output_contains
+        value: "marked-retrying"
+      - type: exit_code
+        value: "0"
+
+  # Case 6: swarm-reactive rule exists
+  - name: "reactive_rule_exists"
+    run: |
+      test -f "$PLUGIN_DIR/plugins/yf/rules/swarm-reactive.md" && echo "exists"
+    assertions:
+      - type: output_contains
+        value: "exists"
+
+  # Case 7: Reactive rule documents design-BLOCK exclusion
+  - name: "reactive_design_block_excluded"
+    run: |
+      grep -c "design" "$PLUGIN_DIR/plugins/yf/rules/swarm-reactive.md"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 8: preflight.json includes reactive rule
+  - name: "preflight_has_reactive_rule"
+    run: |
+      grep "swarm-reactive" "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json"
+    assertions:
+      - type: output_contains
+        value: "swarm-reactive.md"
+
+teardown:
+  - "rm -f .yoshiko-flow/swarm-state.json"
