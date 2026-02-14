@@ -41,6 +41,21 @@ export-state/
 # Process semaphore slot files (runtime concurrency limiting)
 sem/
 
+# JSONL lock file (runtime)
+.jsonl.lock
+
+# Git hooks (deterministic output of `bd hooks install`, regenerated on init)
+hooks/
+
+# Boilerplate README (regenerated on init)
+README.md
+
+# Interactions log (empty by default, not part of issue state)
+interactions.jsonl
+
+# yf chronicle dedup markers (legacy — now written to .yoshiko-flow/)
+.chronicle-drafted-*
+
 # NOTE: Do NOT add negation patterns (e.g., !issues.jsonl) here.
 # They would override fork protection in .git/info/exclude, allowing
 # contributors to accidentally commit upstream issue databases.
