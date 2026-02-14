@@ -5,6 +5,29 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.0] - 2026-02-14
+
+### Added
+
+- **Automatic bead pruning**: Closed beads are automatically cleaned up at two trigger points
+  - **Plan-scoped prune**: When `plan-exec.sh status` returns `completed`, closed beads for that plan are soft-deleted (tombstones, 30-day recovery)
+  - **Global prune**: After `git push` via PostToolUse hook, all closed beads older than configurable threshold (default: 7 days) are cleaned up, plus closed ephemeral wisps
+  - `plan-prune.sh` script with `plan <label>` and `global` subcommands, `--dry-run` support
+  - `post-push-prune.sh` PostToolUse hook — runs global prune after push, then `bd sync` to push pruned state to beads-sync
+  - Both operations are fail-open (exit 0 always) and configurable via `.yoshiko-flow/config.json`:
+    ```json
+    { "config": { "auto_prune": { "on_plan_complete": true, "on_push": true, "older_than_days": 7 } } }
+    ```
+  - `yf_is_prune_on_complete()` and `yf_is_prune_on_push()` config helpers in `yf-config.sh`
+- Test scenarios: `unit-plan-prune.yaml` (8 cases), `unit-yf-config.yaml` cases 8-11
+
+### Changed
+
+- Plugin version bumped: 2.14.1 → 2.15.0
+- Plugin description updated to include automatic bead pruning
+- `plan-exec.sh`: Plan completion path now calls `plan-prune.sh plan` in fail-open subshell
+- `plugin.json`: Added `PostToolUse` hook section for `Bash(git push*)` → `post-push-prune.sh`
+
 ## [2.14.1] - 2026-02-14
 
 ### Added

@@ -59,3 +59,9 @@ yf_is_chronicler_on() { _yf_check_flag '.config.chronicler_enabled'; }
 
 # yf_is_archivist_on — returns 0 if archivist enabled, 1 if disabled
 yf_is_archivist_on() { _yf_check_flag '.config.archivist_enabled'; }
+
+# yf_is_prune_on_complete — returns 0 if plan-completion pruning enabled
+yf_is_prune_on_complete() { _yf_check_flag '.config.auto_prune.on_plan_complete'; }
+
+# yf_is_prune_on_push — returns 0 if post-push pruning enabled
+yf_is_prune_on_push() { _yf_check_flag '.config.auto_prune.on_push'; }

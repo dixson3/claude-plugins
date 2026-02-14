@@ -262,6 +262,12 @@ case "$COMMAND" in
                 SNAPSHOT=$(get_plan_snapshot "$PLAN_LABEL" 2>/dev/null || echo "unavailable")
                 create_transition_chronicle "$PLAN_LABEL" "complete" "$SNAPSHOT" 2>/dev/null || true
                 close_chronicle_gates "$PLAN_LABEL"
+                # Auto-prune closed plan beads (fail-open)
+                (
+                    set +e
+                    yf_is_prune_on_complete 2>/dev/null || exit 0
+                    bash "$SCRIPT_DIR/plan-prune.sh" plan "$PLAN_LABEL" 2>/dev/null
+                ) || true
                 echo "completed"
             fi
         elif [[ -n "$GATE_ID" ]]; then

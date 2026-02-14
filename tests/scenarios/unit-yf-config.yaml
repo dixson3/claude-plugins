@@ -143,5 +143,75 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 8: prune_on_complete defaults to enabled
+  - name: "prune_on_complete_default"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      if yf_is_prune_on_complete; then
+        echo "OK: defaults to enabled"
+      else
+        echo "FAIL: should default to enabled"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: prune_on_complete disabled
+  - name: "prune_on_complete_disabled"
+    run: |
+      echo '{"enabled":true,"config":{"auto_prune":{"on_plan_complete":false}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      if yf_is_prune_on_complete; then
+        echo "FAIL: should be disabled"
+        exit 1
+      fi
+      echo "OK: prune on complete disabled"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: prune_on_push defaults to enabled
+  - name: "prune_on_push_default"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      if yf_is_prune_on_push; then
+        echo "OK: defaults to enabled"
+      else
+        echo "FAIL: should default to enabled"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 11: prune_on_push disabled
+  - name: "prune_on_push_disabled"
+    run: |
+      echo '{"enabled":true,"config":{"auto_prune":{"on_push":false}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      if yf_is_prune_on_push; then
+        echo "FAIL: should be disabled"
+        exit 1
+      fi
+      echo "OK: prune on push disabled"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
   - "rm -f .yoshiko-flow/config.json"

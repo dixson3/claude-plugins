@@ -1,0 +1,181 @@
+name: "Unit: plan-prune.sh — automatic bead pruning"
+
+setup:
+  - "git init"
+  - "mkdir -p .yoshiko-flow docs/plans"
+  - "echo '# test' > CLAUDE.md"
+  - "git add -A && git commit -m 'init'"
+  - "bd init 2>/dev/null || true"
+
+steps:
+  # Case 1: Plan-scoped prune deletes closed beads with plan label
+  - name: "plan_prune_deletes_closed"
+    run: |
+      # Create and close a bead with plan label
+      ID=$(bd create --title="Test task" --type=task -l plan:99 --silent)
+      bd close "$ID" 2>/dev/null
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" plan "plan:99" 2>&1)
+      echo "$OUTPUT"
+      # Verify it was pruned (should not appear in list)
+      REMAINING=$(bd list -l plan:99 --status=closed --limit=0 --json 2>/dev/null | jq 'length')
+      if [ "$REMAINING" -eq 0 ]; then
+        echo "OK: closed bead pruned"
+      else
+        echo "FAIL: bead still exists"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "Pruned"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Plan-scoped prune skips when on_plan_complete is false
+  - name: "plan_prune_skips_when_disabled"
+    run: |
+      echo '{"enabled":true,"config":{"auto_prune":{"on_plan_complete":false}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      ID=$(bd create --title="Test task 2" --type=task -l plan:98 --silent)
+      bd close "$ID" 2>/dev/null
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" plan "plan:98" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "disabled by config"; then
+        echo "OK: skipped when disabled"
+      else
+        echo "FAIL: should have been disabled"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Plan-scoped prune handles empty result (no closed beads)
+  - name: "plan_prune_empty_result"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" plan "plan:97" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "No closed beads"; then
+        echo "OK: handles empty"
+      else
+        echo "FAIL: unexpected output"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Global prune calls bd admin cleanup with configured threshold
+  - name: "global_prune_runs_cleanup"
+    run: |
+      echo '{"enabled":true,"config":{"auto_prune":{"on_push":true,"older_than_days":14}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" global 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "Global prune"; then
+        echo "OK: global prune ran"
+      else
+        echo "FAIL: global prune did not run"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Global prune skips when on_push is false
+  - name: "global_prune_skips_when_disabled"
+    run: |
+      echo '{"enabled":true,"config":{"auto_prune":{"on_push":false}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" global 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "disabled by config"; then
+        echo "OK: skipped when disabled"
+      else
+        echo "FAIL: should have been disabled"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: Both subcommands always exit 0 (fail-open)
+  - name: "always_exit_zero"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" plan "plan:00" 2>&1
+      RC1=$?
+      bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" global 2>&1
+      RC2=$?
+      bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" invalid 2>&1
+      RC3=$?
+      if [ "$RC1" -eq 0 ] && [ "$RC2" -eq 0 ] && [ "$RC3" -eq 0 ]; then
+        echo "OK: all exit 0"
+      else
+        echo "FAIL: rc1=$RC1 rc2=$RC2 rc3=$RC3"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: --dry-run flag outputs without deleting
+  - name: "dry_run_preview"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      ID=$(bd create --title="Dry run task" --type=task -l plan:96 --silent)
+      bd close "$ID" 2>/dev/null
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" plan "plan:96" --dry-run 2>&1)
+      echo "$OUTPUT"
+      # Verify bead still exists
+      REMAINING=$(bd list -l plan:96 --status=closed --limit=0 --json 2>/dev/null | jq 'length')
+      if [ "$REMAINING" -gt 0 ] && echo "$OUTPUT" | grep -q "Dry run"; then
+        echo "OK: dry run preserved bead"
+      else
+        echo "FAIL: bead was deleted or no dry run output"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: Config defaults work when no auto_prune key exists
+  - name: "config_defaults"
+    run: |
+      echo '{"enabled":true}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      # With enabled=true but no auto_prune key, defaults should be enabled
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" plan "plan:95" 2>&1)
+      echo "$OUTPUT"
+      # Should not say "disabled by config"
+      if echo "$OUTPUT" | grep -q "disabled by config"; then
+        echo "FAIL: should default to enabled"
+        exit 1
+      fi
+      echo "OK: defaults to enabled"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .yoshiko-flow/config.json"

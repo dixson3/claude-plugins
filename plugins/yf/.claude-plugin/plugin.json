@@ -1,7 +1,7 @@
 {
   "name": "yf",
-  "version": "2.14.1",
-  "description": "Yoshiko Flow — plan lifecycle, swarm execution with implicit formula triggering, context persistence, diary generation, and research/decision archiving",
+  "version": "2.15.0",
+  "description": "Yoshiko Flow — plan lifecycle, swarm execution with implicit formula triggering, context persistence, diary generation, research/decision archiving, and automatic bead pruning",
   "author": {
     "name": "James Dixson",
     "email": "dixson3@gmail.com"
@@ -115,6 +115,17 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/pre-push-diary.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash(git push*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post-push-prune.sh"
           }
         ]
       }
