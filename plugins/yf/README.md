@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.16.0
+# Yoshiko Flow (yf) Plugin — v2.17.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -8,12 +8,13 @@ The natural state of software is _maintenance_. How hard or easy that maintenanc
 
 Traditionally, producing this content is a chore that requires real organizational discipline. Agentic coding makes the problem worse: agents generate context faster than humans can catalog it, and each session starts with a blank slate. Yoshiko Flow automates the discipline — capturing plans, observations, and decisions as structured artifacts without requiring the operator to remember to do it.
 
-It does this through four capabilities:
+It does this through five capabilities:
 
 1. **Plan Lifecycle** — Breaks plans into a dependency graph of tracked tasks, with automatic decomposition, scheduling, and dispatch
 2. **Swarm Execution** — Runs structured, parallel agent workflows using formula templates, wisps, and a dispatch loop
 3. **Chronicler** — Captures observations and context as work progresses, then composes diary entries that trace how and why changes were made
 4. **Archivist** — Preserves research findings and design decisions as permanent documentation that supports PRDs and ERDs
+5. **Engineer** — Synthesizes and maintains specification artifacts (PRD, EDD, Implementation Guides, TODO register), reconciling plans against specs before execution
 
 ## Getting Started
 
@@ -198,6 +199,43 @@ Research findings and decision rationale discussed in sessions are lost once the
 | `/yf:archive_suggest` | Scan git history for archive candidates |
 | Agent: `yf_archive_process` | Archive processing agent |
 
+## Engineer (Specification Artifacts)
+
+### Why
+
+The archivist captures *research* and *decisions*, and the chronicler captures *working context* — but neither produces the living specification documents that define what the software should do, how it's built, and how features work. PRDs, design docs, and implementation guides are traditionally written by hand and quickly fall out of date. The engineer capability synthesizes these documents from existing project context and maintains them as the project evolves, creating a feedback loop between specification and implementation.
+
+### How It Works
+
+- **Synthesis**: `/yf:engineer_analyze_project` scans plans, diary entries, research, decisions, and codebase structure to generate specification documents. Idempotent — does not overwrite existing specs unless forced.
+- **Updates**: `/yf:engineer_update` adds, updates, or deprecates individual entries (REQ-xxx, DD-xxx, NFR-xxx, UC-xxx, TODO-xxx) with cross-reference suggestions.
+- **Reconciliation**: `/yf:engineer_reconcile` checks plans against existing specs before execution. Fires automatically in the auto-chain between plan save and beads creation. Configurable as blocking (default), advisory, or disabled.
+- **Advisory**: `watch-for-spec-drift` rule monitors for changes that may cause specs to drift. Suggests updates, never auto-modifies.
+- **Completion**: `/yf:engineer_suggest_updates` runs after plan completion to suggest spec updates based on completed work.
+
+### Artifacts
+
+```
+specifications/
+  PRD.md                    # Product requirements (REQ-xxx)
+  EDD/
+    CORE.md                 # Primary design doc (DD-xxx, NFR-xxx)
+    <subsystem>.md          # Per-subsystem for complex projects
+  IG/
+    <feature>.md            # Per-feature use-case docs (UC-xxx)
+  TODO.md                   # Lightweight deferred items (TODO-xxx)
+```
+
+### Skills & Agents
+
+| Skill / Agent | Description |
+|---------------|-------------|
+| `/yf:engineer_analyze_project` | Synthesize specs from project context |
+| `/yf:engineer_update` | Add, update, or deprecate spec entries |
+| `/yf:engineer_reconcile` | Reconcile plans against specifications |
+| `/yf:engineer_suggest_updates` | Suggest spec updates after plan completion |
+| Agent: `yf_engineer_synthesizer` | Read-only agent that synthesizes spec content |
+
 ## Configuration
 
 Config lives in `.yoshiko-flow/config.json` (committed to git), while lock state lives in `.yoshiko-flow/lock.json` (gitignored).
@@ -222,7 +260,7 @@ Run `/yf:setup` to create or reconfigure this file interactively.
 
 ## Internals
 
-### Rules (19)
+### Rules (22)
 
 All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to `plugins/yf/rules/`):
 
@@ -247,6 +285,9 @@ All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to 
 | `swarm-nesting.md` | Nesting protocol, depth limits, and context flow for composed formulas |
 | `swarm-reactive.md` | Reactive bugfix spawning on REVIEW:BLOCK or test failures |
 | `swarm-planning-research.md` | Advisory: suggests research-spike formula during heavy planning research |
+| `engineer-reconcile-on-plan.md` | Reconciles plans against specs during auto-chain |
+| `watch-for-spec-drift.md` | Advisory: monitors for specification drift during work |
+| `engineer-suggest-on-completion.md` | Suggests spec updates after plan completion |
 
 ### Scripts (9)
 

@@ -5,6 +5,29 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.0] - 2026-02-14
+
+### Added
+
+- **Engineer capability**: Synthesize and maintain specification artifacts (PRD, EDD, Implementation Guides, TODO register) from existing project context
+  - `/yf:engineer_analyze_project` — Scan plans, diary, research, decisions, and codebase to generate spec documents. Idempotent (no overwrite unless `force`).
+  - `/yf:engineer_update` — Add, update, or deprecate individual spec entries (REQ-xxx, DD-xxx, NFR-xxx, UC-xxx, TODO-xxx) with cross-reference suggestions.
+  - `/yf:engineer_reconcile` — Check plans against PRD/EDD/IG specs before execution. Fires in auto-chain between plan save and beads creation. Configurable: `blocking` (default), `advisory`, `disabled`.
+  - `/yf:engineer_suggest_updates` — Advisory suggestions for spec updates after plan completion.
+  - `yf_engineer_synthesizer` agent — Read-only agent that synthesizes spec content (same tool profile as `yf_swarm_researcher`).
+  - `watch-for-spec-drift` rule — Advisory monitoring for PRD/EDD/IG drift during work.
+  - `engineer-reconcile-on-plan` rule — Auto-chain integration for plan-to-spec reconciliation.
+  - `engineer-suggest-on-completion` rule — Triggers spec update suggestions after plan completion.
+- Preflight creates `docs/specifications/`, `docs/specifications/EDD/`, `docs/specifications/IG/` directories
+- Code-gate exempts `docs/specifications/*` files when plan gate is active
+- Plan completion report includes Section 7: Specification Status
+- Plan execute step 3.5: suggest spec updates if specs exist
+
+### Changed
+
+- Auto-chain plan rule: step 1.5 reconciles plans against specifications when specs exist
+- Plugin description updated to include "specification artifacts"
+
 ## [2.16.0] - 2026-02-14
 
 ### Changed

@@ -122,6 +122,7 @@ case "$FILE_PATH" in
     */docs/plans/*)          exit 0 ;; # Plan lifecycle artifacts
     */docs/research/*)       exit 0 ;; # Archivist research docs
     */docs/decisions/*)      exit 0 ;; # Archivist decision docs
+    */docs/specifications/*) exit 0 ;; # Engineer spec artifacts
     */.claude/*)             exit 0 ;; # Config, rules, settings
     */.yoshiko-flow/*)       exit 0 ;; # yf state files
     */CHANGELOG.md)          exit 0 ;; # Documentation during transitions

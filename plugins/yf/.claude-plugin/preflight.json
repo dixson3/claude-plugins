@@ -21,9 +21,12 @@
       { "source": "rules/swarm-formula-select.md", "target": ".claude/rules/yf/swarm-formula-select.md" },
       { "source": "rules/swarm-nesting.md", "target": ".claude/rules/yf/swarm-nesting.md" },
       { "source": "rules/swarm-reactive.md", "target": ".claude/rules/yf/swarm-reactive.md" },
-      { "source": "rules/swarm-planning-research.md", "target": ".claude/rules/yf/swarm-planning-research.md" }
+      { "source": "rules/swarm-planning-research.md", "target": ".claude/rules/yf/swarm-planning-research.md" },
+      { "source": "rules/engineer-reconcile-on-plan.md", "target": ".claude/rules/yf/engineer-reconcile-on-plan.md" },
+      { "source": "rules/watch-for-spec-drift.md", "target": ".claude/rules/yf/watch-for-spec-drift.md" },
+      { "source": "rules/engineer-suggest-on-completion.md", "target": ".claude/rules/yf/engineer-suggest-on-completion.md" }
     ],
-    "directories": ["docs/plans", "docs/diary", "docs/research", "docs/decisions", ".yoshiko-flow"],
+    "directories": ["docs/plans", "docs/diary", "docs/research", "docs/decisions", "docs/specifications", "docs/specifications/EDD", "docs/specifications/IG", ".yoshiko-flow"],
     "setup": [
       { "name": "beads", "check": "test -d .beads", "run": "bd init && bd config set sync.branch beads-sync && bd config set sync.require_confirmation_on_mass_delete true && bd hooks install" }
     ]

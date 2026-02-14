@@ -1,0 +1,93 @@
+name: "Unit: Engineer capability — preflight directories and code-gate exemption"
+setup:
+  - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
+
+steps:
+  # Case 1: Preflight creates specification directories
+  - name: "preflight_creates_spec_directories"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      rm -rf "$WORK_DIR/.claude/rules/yf"
+      rm -rf "$WORK_DIR/docs/specifications"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
+      # Verify directories created
+      FAIL=false
+      for dir in docs/specifications docs/specifications/EDD docs/specifications/IG; do
+        if [ ! -d "$WORK_DIR/$dir" ]; then
+          echo "FAIL: $dir not created"
+          FAIL=true
+        fi
+      done
+      if $FAIL; then exit 1; fi
+      echo "OK: all specification directories created"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Engineer rules installed as symlinks
+  - name: "engineer_rules_installed"
+    run: |
+      FAIL=false
+      for rule in engineer-reconcile-on-plan.md watch-for-spec-drift.md engineer-suggest-on-completion.md; do
+        if [ ! -L "$WORK_DIR/.claude/rules/yf/$rule" ]; then
+          echo "FAIL: $rule not installed or not a symlink"
+          FAIL=true
+        fi
+      done
+      if $FAIL; then exit 1; fi
+      echo "OK: all engineer rules installed"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Code-gate exempts docs/specifications/ when gate active
+  - name: "gate_exempt_specifications"
+    run: |
+      echo '{"plan_idx":"34"}' > "$WORK_DIR/.yoshiko-flow/plan-gate"
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/docs/specifications/PRD.md"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 4: Code-gate exempts docs/specifications/EDD/ when gate active
+  - name: "gate_exempt_edd_specs"
+    run: |
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/docs/specifications/EDD/CORE.md"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 5: Code-gate exempts docs/specifications/IG/ when gate active
+  - name: "gate_exempt_ig_specs"
+    run: |
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/docs/specifications/IG/auth.md"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 6: Code-gate still blocks non-exempt files when gate active
+  - name: "gate_blocks_non_exempt"
+    run: |
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1 || true
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh"
+    assertions:
+      - type: exit_code
+        value: "2"
+
+  # Cleanup
+  - name: "cleanup_gate"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/plan-gate"
+      echo "OK: cleaned up"
+    assertions:
+      - type: exit_code
+        value: "0"

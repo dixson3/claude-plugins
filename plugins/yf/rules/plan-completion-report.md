@@ -59,6 +59,30 @@ If the gate exists, read its comments for the REVIEW verdict and report:
 - Config mode (blocking/advisory/disabled)
 - If advisory BLOCK: note the issues found
 
+### 7. Specification Status
+
+Check for specification documents and report their state:
+
+```bash
+ARTIFACT_DIR=$(jq -r '.config.artifact_dir // "docs"' .yoshiko-flow/config.json 2>/dev/null || echo "docs")
+SPEC_DIR="${ARTIFACT_DIR}/specifications"
+
+HAS_PRD="no"; [ -f "$SPEC_DIR/PRD.md" ] && HAS_PRD="yes"
+EDD_COUNT=$(ls "$SPEC_DIR/EDD/"*.md 2>/dev/null | wc -l | tr -d ' ')
+IG_COUNT=$(ls "$SPEC_DIR/IG/"*.md 2>/dev/null | wc -l | tr -d ' ')
+HAS_TODO="no"; [ -f "$SPEC_DIR/TODO.md" ] && HAS_TODO="yes"
+```
+
+If any specs exist, report:
+- PRD: yes/no
+- EDD: N documents
+- IG: N documents
+- TODO: yes/no
+- Reconciliation verdict (from plan epic's `ys:engineer:reconciliation` label or "not run")
+- Pending update suggestions count (from `/yf:engineer_suggest_updates` output)
+
+If no specs exist, report: "No specification documents found"
+
 ### 6. Open Items Warning
 
 If any chronicles or archives remain open after the completion steps have run, warn:
@@ -90,6 +114,11 @@ Archives: <total> captured, <closed> processed, <open> still open
 Qualification: REVIEW:<PASS|BLOCK> (<blocking|advisory|disabled>)
   (or: Qualification gate disabled)
   (or: Qualification: REVIEW:BLOCK (advisory) — <N> issues noted)
+
+Specifications: <PRD: yes/no> | <EDD: N docs> | <IG: N docs> | <TODO: yes/no>
+  Reconciliation: <PASS|NEEDS-RECONCILIATION|not run>
+  Pending update suggestions: <N>
+  (or: No specification documents found)
 
 [If open items remain:]
 ⚠ <N> chronicle beads still open — run /yf:chronicle_diary to process

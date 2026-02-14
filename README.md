@@ -81,6 +81,17 @@ Flags research findings and design decisions during work, then processes them in
 | `/yf:archive_disable` | Close archive beads without generating docs |
 | `/yf:archive_suggest` | Scan git history for archive candidates |
 
+### Engineer (Specification Artifacts)
+
+Synthesizes and maintains specification documents — PRD, EDD, Implementation Guides, and TODO register — from existing project context. When specs exist, plans are reconciled against them before execution, creating a feedback loop between specification and implementation.
+
+| Skill | Description |
+|-------|-------------|
+| `/yf:engineer_analyze_project` | Synthesize specs from project context |
+| `/yf:engineer_update` | Add, update, or deprecate spec entries |
+| `/yf:engineer_reconcile` | Reconcile plans against specifications |
+| `/yf:engineer_suggest_updates` | Suggest spec updates after plan completion |
+
 ### Configuration
 
 Run `/yf:setup` to enable Yoshiko Flow. Config lives in `.yoshiko-flow/config.json` (committed to git).

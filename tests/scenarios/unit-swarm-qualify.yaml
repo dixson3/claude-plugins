@@ -65,7 +65,7 @@ steps:
       jq -r '.version' "$PLUGIN_DIR/plugins/yf/.claude-plugin/plugin.json"
     assertions:
       - type: output_contains
-        value: "2.16.0"
+        value: "2.17.0"
 
   # Case 9: research-spike formula has planning_safe
   - name: "research_spike_planning_safe"
@@ -75,10 +75,10 @@ steps:
       - type: output_contains
         value: "true"
 
-  # Case 10: preflight.json has all 19 rules
+  # Case 10: preflight.json has all 22 rules
   - name: "preflight_rule_count"
     run: |
       jq '.artifacts.rules | length' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json"
     assertions:
       - type: output_contains
-        value: "19"
+        value: "22"

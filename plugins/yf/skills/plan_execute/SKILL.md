@@ -133,6 +133,7 @@ After qualification passes (or is advisory/disabled):
 1. **Capture completion context**: Invoke `/yf:chronicle_capture topic:completion` to preserve the execution summary as a chronicle bead before closing everything out.
 2. **Generate diary**: Invoke `/yf:chronicle_diary plan:<idx>` to process all plan chronicles into diary entries. Note the output — capture generated file paths and chronicle counts.
 3. **Process archives**: Invoke `/yf:archive_process plan:<idx>` to process plan-scoped archive beads into permanent documentation. Note the output — capture generated file paths.
+3.5. **Suggest spec updates**: If specification files exist under `<artifact_dir>/specifications/`, invoke `/yf:engineer_suggest_updates plan_idx:<idx>` to generate advisory update suggestions. Include suggestions in the completion report.
 4. **Update plan file** status to "Completed"
 5. **Close root epic** if not already closed
 6. **Collect summary data** for the completion report:

@@ -27,6 +27,8 @@ When ExitPlanMode completes and you see "Auto-chaining plan lifecycle..." in the
 
    The plan file is in `docs/plans/` which is exempt from the plan gate.
 
+1.5. **Reconcile with specifications**: If `<artifact_dir>/specifications/` exists and contains spec files, invoke `/yf:engineer_reconcile plan_file:<path> mode:gate`. If conflicts are detected, present to operator and await decision. If no specs, skip.
+
 2. **Update MEMORY.md**: Add the plan reference under "Current Plans" in the project MEMORY.md.
 
 3. **Create beads**: Invoke `/yf:plan_create_beads` with the plan file. This creates the epic/task hierarchy, gates, labels, dependencies, and defers all tasks.
