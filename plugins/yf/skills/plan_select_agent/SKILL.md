@@ -48,6 +48,10 @@ For each discovered agent, extract:
 |---|---|---|
 | `yf_chronicle_recall` | yf | Context recovery from beads |
 | `yf_chronicle_diary` | yf | Diary generation from chronicles |
+| `yf_code_researcher` | yf | Read-only; researches technology standards and coding patterns |
+| `yf_code_writer` | yf | Full-capability; implements code following standards |
+| `yf_code_tester` | yf | Limited-write; creates and runs tests |
+| `yf_code_reviewer` | yf | Read-only; reviews against IGs and coding standards |
 
 ### Step 3: Read Task Context
 

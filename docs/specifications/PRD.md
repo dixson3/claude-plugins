@@ -68,6 +68,7 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 | REQ-029 | Project `.gitignore` must be automatically managed with sentinel-bracketed block for yf ephemeral files | P1 | Core | Plan 23 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/setup-project.sh` |
 | REQ-030 | All new work must include automated test scenarios in YAML format, runnable via `bash tests/run-tests.sh --unit-only` | P0 | Testing | Plan 06 | `/Users/james/workspace/dixson3/d3-claude-plugins/tests/run-tests.sh` |
 | REQ-031 | Go test harness must support both unit tests (shell-only) and integration tests (Claude sessions via --resume) | P1 | Testing | Plan 06 | `/Users/james/workspace/dixson3/d3-claude-plugins/tests/harness/` |
+| REQ-032 | Code implementation must support standards-driven workflows with dedicated research, coding, testing, and review agents via the `code-implement` formula | P1 | Coder | Plan 35 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/formulas/code-implement.formula.json` |
 
 ## 4. Functional Specifications
 
@@ -127,3 +128,10 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 - FS-031: Unit tests run shell scripts directly without Claude sessions
 - FS-032: Integration tests use multi-turn Claude sessions via `--resume`
 - FS-033: 486+ unit tests across 40 test scenario files
+
+### 4.9 Coder
+
+- FS-034: Four specialized code agents (researcher, writer, tester, reviewer) with appropriate tool profiles
+- FS-035: `code-implement` formula with 4-step pipeline: research-standards, implement, test, review
+- FS-036: Code researcher checks existing IGs before proposing new standards
+- FS-037: Code reviewer references IGs for specification alignment in reviews

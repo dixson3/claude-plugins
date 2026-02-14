@@ -41,6 +41,24 @@ Flag these events as chronicle-worthy:
    - Database migrations or schema changes
    - Configuration changes affecting system behavior
 
+7. **Implementation Adjustments**
+   - Code modified to comply with REQ-xxx requirements
+   - Rework after review feedback (REVIEW:BLOCK resolution)
+   - Implementation adjusted for plan constraints or spec alignment
+   - Changes driven by specification reconciliation results
+
+8. **Swarm Execution Events**
+   - Reactive bugfix triggered (TESTS failure or REVIEW:BLOCK)
+   - Formula step retried after bugfix
+   - Swarm completed with mixed results (some steps BLOCK, final PASS)
+   - Test failures requiring implementation adjustments
+
+9. **Plan Compliance Adjustments**
+   - Implementation deviating from plan (scope change during execution)
+   - Dependency ordering changed mid-execution
+   - Task scope expanded or split during execution
+   - Plan constraints requiring approach changes
+
 ### Behavior
 
 When you notice a chronicle-worthy event:
@@ -67,11 +85,12 @@ Do NOT flag these as chronicle-worthy:
 - Trivial changes (typos, formatting, minor tweaks)
 - Already-committed work with good commit messages
 - Simple Q&A that doesn't affect project state
-- Routine operations (running tests, building)
+- Routine operations (running tests, building) — unless tests fail and trigger rework
 - Reading/exploring code without changes
 
 ### Frequency
 
-- Don't over-suggest - at most once every 15-20 minutes of active work
+- Don't over-suggest — at most once every 15-20 minutes of active work for categories 1-6
+- For categories 7-9 (implementation adjustments, swarm events, plan compliance): at most once every 10-15 minutes, since these are high-context moments worth preserving
 - Prioritize major milestones over minor progress
 - If unsure, err on the side of not suggesting

@@ -75,9 +75,17 @@ If the pump returns no beads to dispatch:
 
 #### 3c. Dispatch in Parallel
 
-For each agent group from the pump, launch Task tool calls **in parallel** (multiple calls in one message):
+For each group from the pump, launch dispatch calls **in parallel** (multiple calls in one message). The pump classifies beads into two tracks:
 
-**Subagent dispatch** (tasks with `agent:<name>` label):
+**Formula dispatch** (tasks with `formula:<name>` label):
+Invoke the swarm system for full multi-agent workflow:
+```
+/yf:swarm_run formula:<formula-name> feature:"<bead title>" parent_bead:<task-id>
+```
+
+The swarm handles the complete lifecycle: wisp instantiation, step dispatch through specialized agents, squash on completion, and chronicle capture. The parent bead is closed by swarm_run on success.
+
+**Agent dispatch** (tasks with `agent:<name>` label, no formula):
 ```
 Task(
   subagent_type = "<agent-name>",
@@ -96,7 +104,7 @@ Instructions:
 )
 ```
 
-**Direct execution** (tasks without agent label — `general-purpose`):
+**Direct execution** (tasks without agent or formula label — `general-purpose`):
 Claim and work on the task directly:
 ```bash
 bd update <task-id> --status=in_progress

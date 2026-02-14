@@ -15,7 +15,7 @@ On first session start, the preflight system automatically installs rules and cr
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, swarm execution, context persistence, diary generation, specification artifacts, and research/decision archiving | 2.17.0 |
+| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, swarm execution, context persistence, diary generation, specification artifacts, standards-driven code generation, and research/decision archiving | 2.18.0 |
 
 ## Yoshiko Flow (yf)
 
@@ -91,6 +91,17 @@ Synthesizes and maintains specification documents — PRD, EDD, Implementation G
 | `/yf:engineer_update` | Add, update, or deprecate spec entries |
 | `/yf:engineer_reconcile` | Reconcile plans against specifications |
 | `/yf:engineer_suggest_updates` | Suggest spec updates after plan completion |
+
+### Coder (Code Generation)
+
+Standards-driven code generation with dedicated agents for research, implementation, testing, and review. The `code-implement` formula ensures implementations follow technology-specific standards and existing IG guidelines, with a reactive bugfix loop for test failures.
+
+| Agent | Description |
+|-------|-------------|
+| `yf_code_researcher` | Researches technology standards and coding patterns |
+| `yf_code_writer` | Implements code following upstream standards |
+| `yf_code_tester` | Writes and runs tests for implementations |
+| `yf_code_reviewer` | Reviews against IGs and coding standards |
 
 ### Configuration
 

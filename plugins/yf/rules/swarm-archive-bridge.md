@@ -33,7 +33,8 @@ Do NOT auto-create archive beads. Only suggest when markers are clearly present.
 
 ## When This Fires
 
-- After `/yf:swarm_run` completes Step 4b (squash)
+- After `/yf:swarm_run` completes Step 4b (squash) for **any formula**
+- After any formula completion — not limited to feature-build; applies to research-spike, bugfix, build-test, code-review, and custom formulas
 - When reviewing swarm completion summaries
 
 ## When This Does NOT Fire
@@ -41,6 +42,7 @@ Do NOT auto-create archive beads. Only suggest when markers are clearly present.
 - During swarm execution (mid-dispatch)
 - For swarms that produce no FINDINGS or REVIEW comments
 - When findings are purely internal code analysis (no external sources)
+- For steps that already auto-archived via Step 6d `archive_findings` opt-in
 
 ## Frequency
 

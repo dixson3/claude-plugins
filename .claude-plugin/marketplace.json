@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "D3 Claude Marketplace - A collection of Claude plugins",
-    "version": "2.17.0",
+    "version": "2.18.0",
     "license": "MIT",
     "organization": "James Dixson / Yoshiko Studios LLC",
     "github": "dixson3"
@@ -15,8 +15,8 @@
     {
       "name": "yf",
       "source": "./plugins/yf",
-      "description": "Yoshiko Flow — plan lifecycle, swarm execution, context persistence, diary generation, specification artifacts, and research/decision archiving",
-      "version": "2.17.0"
+      "description": "Yoshiko Flow — plan lifecycle, swarm execution, context persistence, diary generation, specification artifacts, standards-driven code generation, and research/decision archiving",
+      "version": "2.18.0"
     }
   ]
 }

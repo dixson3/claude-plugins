@@ -81,6 +81,28 @@ Invoke the bugfix formula:
 /yf:swarm_run formula:bugfix feature:"Fix: <failure summary>" parent_bead:<parent_bead> depth:<current_depth+1> context:"<failure details from comment>"
 ```
 
+### Step 4.5: Auto-Capture Chronicle
+
+Create a chronicle bead to preserve the reactive bugfix context (per `swarm-chronicle-bridge` rule):
+
+```bash
+PLAN_LABEL=$(bd label list <parent_bead> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
+LABELS="ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto"
+[ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
+
+bd create --type=task \
+  --title="Chronicle (Auto): Reactive bugfix — <failure summary>" \
+  --description="Reactive bugfix triggered on <parent_bead>.
+Verdict: <verdict>
+Failed step: <step_id>
+Bugfix formula: <bugfix mol-id>
+Failure details: <extracted failure context from Step 3>" \
+  -l "$LABELS" \
+  --silent
+```
+
+This fires automatically (not advisory) because mid-swarm context is lost after wisp squashing.
+
 ### Step 5: Retry Failed Step
 
 After bugfix completes, mark the original failed step for retry:

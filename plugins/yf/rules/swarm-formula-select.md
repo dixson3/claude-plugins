@@ -13,6 +13,7 @@ When creating beads from a plan, each task is evaluated for swarm formula assign
 | Research verbs: research, investigate, evaluate, spike | `research-spike` | Needs investigate → synthesize → archive |
 | Review verbs: review, audit, inspect | `code-review` | Needs analyze → report |
 | Test verbs: test, spec, coverage, verify | `build-test` | Needs implement → test → review |
+| Code verbs with technology context: code, write, program, develop | `code-implement` | Needs research-standards → implement → test → review |
 
 ## When NOT to Assign a Formula
 

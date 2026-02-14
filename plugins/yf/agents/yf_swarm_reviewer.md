@@ -84,6 +84,23 @@ bd comment <bead-id> "REVIEW:BLOCK
 - **Security**: Any injection, XSS, or other vulnerabilities?
 - **Performance**: Any obvious performance issues?
 - **Completeness**: Is anything missing from the implementation?
+- **Specification Alignment**: Does the implementation align with relevant Implementation Guides?
+
+## Implementation Guide Reference
+
+Before reviewing, check if `docs/specifications/IG/` contains an IG relevant to the feature under review:
+
+```bash
+ARTIFACT_DIR=$(jq -r '.config.artifact_dir // "docs"' .yoshiko-flow/config.json 2>/dev/null || echo "docs")
+ls "$ARTIFACT_DIR/specifications/IG/"*.md 2>/dev/null
+```
+
+If a relevant IG exists:
+- Read its use cases (UC-xxx) and verify the implementation satisfies them
+- Note any divergence from documented flows in your REVIEW comment
+- Reference the IG and specific UC numbers in your review
+
+If no IG exists or none is relevant, skip this step — do not flag the absence of specs.
 
 ## Guidelines
 

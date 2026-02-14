@@ -21,6 +21,8 @@
       { "source": "rules/swarm-formula-select.md", "target": ".claude/rules/yf/swarm-formula-select.md" },
       { "source": "rules/swarm-nesting.md", "target": ".claude/rules/yf/swarm-nesting.md" },
       { "source": "rules/swarm-reactive.md", "target": ".claude/rules/yf/swarm-reactive.md" },
+      { "source": "rules/swarm-chronicle-bridge.md", "target": ".claude/rules/yf/swarm-chronicle-bridge.md" },
+      { "source": "rules/swarm-spec-bridge.md", "target": ".claude/rules/yf/swarm-spec-bridge.md" },
       { "source": "rules/swarm-planning-research.md", "target": ".claude/rules/yf/swarm-planning-research.md" },
       { "source": "rules/engineer-reconcile-on-plan.md", "target": ".claude/rules/yf/engineer-reconcile-on-plan.md" },
       { "source": "rules/watch-for-spec-drift.md", "target": ".claude/rules/yf/watch-for-spec-drift.md" },

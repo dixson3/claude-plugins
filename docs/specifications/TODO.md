@@ -22,6 +22,13 @@
 | TODO-016 | Verify config pruning works on an existing installation with old chronicler/archivist toggle keys | P2 | Diary 26-02-14.14-30 (Next Steps) | Open |
 | TODO-017 | ~~Plan 24 and Plan 26 status still shows "Draft" in plan files but work appears completed~~ | P1 | `docs/plans/plan-24.md`, `docs/plans/plan-26.md` | Resolved |
 | TODO-018 | Confirm chronicle safety net fires appropriately during plan execution without false positives | P2 | Diary 26-02-13.17-52 (Next Steps) | Open |
+| TODO-019 | UC-008 behavioral test: reactive bugfix eligibility logic (depth check, label dedup, design-BLOCK exclusion) | P2 | Plan 35 Phase 3 (spec-test reconciliation) | Open |
+| TODO-020 | UC-018-021 behavioral tests: engineer synthesis, reconciliation, drift detection, update suggestions | P2 | Plan 35 Phase 3 (spec-test reconciliation) | Open |
+| TODO-021 | UC-014-017 behavioral tests: archivist capture, process, suggestion, git scan workflows | P2 | Plan 35 Phase 3 (spec-test reconciliation) | Open |
+| TODO-022 | Integration test maintenance: refresh gate-enforcement.yaml, full-lifecycle.yaml, dismiss-gate.yaml (see TODO-014) | P2 | Plan 35 Phase 3 (spec-test reconciliation) | Open |
+| TODO-023 | End-to-end test: code-implement formula dispatched from plan pump via swarm_run | P2 | Plan 35 Phase 5 (coder capability) | Open |
+| TODO-024 | End-to-end test: code-researcher checks existing IGs before researching standards | P2 | Plan 35 Phase 5 (coder capability) | Open |
+| TODO-025 | End-to-end test: reactive bugfix triggers on REVIEW:BLOCK within code-implement swarm | P2 | Plan 35 Phase 5 (coder capability) | Open |
 
 ## Completed Items
 

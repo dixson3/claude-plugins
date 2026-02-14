@@ -1,8 +1,6 @@
 {
   "enabled": true,
   "config": {
-    "artifact_dir": "docs",
-    "chronicler_enabled": true,
-    "archivist_enabled": true
+    "artifact_dir": "docs"
   }
 }

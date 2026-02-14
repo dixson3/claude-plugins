@@ -38,9 +38,16 @@ bd comment <bead-id> "FINDINGS:
 <What was investigated and why>
 
 ## Sources
-<Files, patterns, and references examined>
+
+### Internal
+<Files and patterns examined within the codebase>
 - path/to/file.ext — <what it contains>
 - path/to/other.ext — <relevance>
+
+### External
+<URLs, documentation, and references outside the codebase — include if any external sources were consulted>
+- <URL or doc reference> — <what it provided>
+- <API docs, specs, or papers> — <relevance>
 
 ## Summary
 <Key findings, patterns discovered, integration points identified>

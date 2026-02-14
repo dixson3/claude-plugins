@@ -19,14 +19,16 @@ Reads beads that are ready for work, groups them by assigned agent, and dispatch
 ## Architecture
 
 ```
-Beads (bd ready) → group by agent:<name> → parallel Task tool calls
-                                            └→ subagent_type = agent name
+Beads (bd ready) → classify dispatch track → group by track
+                     ├→ formula:<name>  → swarm dispatch (via /yf:swarm_run)
+                     └→ agent:<name>    → bare agent dispatch (via Task tool)
 ```
 
 **Beads** = persistent store of work (git-backed, labeled, with dependencies)
 **Task tool** = execution engine (launches specialized agent subprocesses)
+**Swarm** = multi-agent formula execution (research → implement → review)
 
-The pump is the bridge: it reads from beads and dispatches to agents.
+The pump is the bridge: it reads from beads, classifies dispatch tracks, and groups for execution.
 
 ## Behavior
 
@@ -56,21 +58,41 @@ plugins/yf/scripts/pump-state.sh is-dispatched <bead-id>
 
 Skip beads that have already been dispatched (prevents double-dispatch on re-pump).
 
-### Step 4: Group by Agent
+### Step 4: Classify Dispatch Track and Group
 
-Read each bead's labels to find the `agent:<name>` assignment:
+For each ready bead, read labels to determine the dispatch track:
+
 ```bash
-bd label list <bead-id> --json | jq -r '.[] | select(startswith("agent:")) | sub("agent:"; "")'
+# Check for formula label first (takes priority)
+FORMULA=$(bd label list <bead-id> --json | jq -r '.[] | select(startswith("formula:")) | sub("formula:"; "")' | head -1)
+
+# Check for agent label
+AGENT=$(bd label list <bead-id> --json | jq -r '.[] | select(startswith("agent:")) | sub("agent:"; "")' | head -1)
 ```
 
-Group beads by agent name:
-- Beads with `agent:<name>` -> grouped under that agent
-- Beads without agent label -> grouped under `general-purpose`
+**Dispatch track classification:**
+- Beads with `formula:<name>` label → **formula track** (grouped by formula name)
+- Beads with `agent:<name>` label only → **agent track** (grouped by agent name)
+- Beads with neither → **agent track** under `general-purpose`
+
+If a bead has both `formula:<name>` and `agent:<name>` labels, the formula label takes priority — the swarm formula handles agent selection internally.
+
+Group beads into two output sections:
+1. **Formula dispatch** — keyed by formula name, each entry includes bead ID and title
+2. **Agent dispatch** — keyed by agent name (unchanged from previous behavior)
 
 ### Step 5: Dispatch in Parallel
 
-For each agent group, launch Task tool calls **in parallel** (multiple calls in one message):
+For each group, launch dispatch calls **in parallel** (multiple calls in one message):
 
+**Formula track** — dispatch via swarm_run:
+```
+/yf:swarm_run formula:<formula-name> feature:"<bead title>" parent_bead:<bead-id>
+```
+
+The swarm handles the full lifecycle: wisp instantiation, multi-agent dispatch, squash, and chronicle.
+
+**Agent track** — dispatch via Task tool (unchanged):
 ```
 Task(
   subagent_type = "<agent-name>",
@@ -89,7 +111,7 @@ Instructions:
 )
 ```
 
-Independent beads (no dependency between them) are dispatched concurrently.
+Independent beads (no dependency between them) are dispatched concurrently. Formula and agent track beads can also dispatch concurrently.
 
 ### Step 6: Mark Dispatched
 
@@ -107,9 +129,10 @@ Task Pump: plan-07
 Ready beads: 4
 Already dispatched: 1
 Dispatching: 3
-  agent:yf_chronicle_diary → 1 task
-  general-purpose → 2 tasks
-Parallel Task calls launched: 3
+  [formula] feature-build → 1 task (via swarm_run)
+  [agent] yf_chronicle_diary → 1 task
+  [agent] general-purpose → 1 task
+Parallel dispatch calls launched: 3
 ```
 
 ## Completion Tracking

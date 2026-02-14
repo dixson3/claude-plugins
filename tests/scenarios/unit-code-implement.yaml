@@ -1,0 +1,141 @@
+name: "Unit: code-implement formula and coder capability"
+setup:
+  - "mkdir -p plugins/yf/formulas plugins/yf/agents"
+
+steps:
+  # Case 1: code-implement formula exists
+  - name: "formula_exists"
+    run: |
+      test -f "$PLUGIN_DIR/plugins/yf/formulas/code-implement.formula.json" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Formula has 4 steps
+  - name: "formula_has_4_steps"
+    run: |
+      COUNT=$(jq '.steps | length' "$PLUGIN_DIR/plugins/yf/formulas/code-implement.formula.json")
+      echo "step_count=$COUNT"
+      [ "$COUNT" -eq 4 ] && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Steps have correct IDs
+  - name: "formula_step_ids"
+    run: |
+      IDS=$(jq -r '.steps[].id' "$PLUGIN_DIR/plugins/yf/formulas/code-implement.formula.json" | sort | tr '\n' ',')
+      echo "ids=$IDS"
+      echo "$IDS" | grep -q "implement" && echo "$IDS" | grep -q "research-standards" && echo "$IDS" | grep -q "review" && echo "$IDS" | grep -q "test" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Correct dependency chain
+  - name: "formula_dependency_chain"
+    run: |
+      F="$PLUGIN_DIR/plugins/yf/formulas/code-implement.formula.json"
+      # research-standards has no deps
+      RS=$(jq -r '.steps[] | select(.id=="research-standards") | .needs | length' "$F")
+      # implement depends on research-standards
+      IMP=$(jq -r '.steps[] | select(.id=="implement") | .needs[0]' "$F")
+      # test depends on implement
+      TST=$(jq -r '.steps[] | select(.id=="test") | .needs[0]' "$F")
+      # review depends on test
+      REV=$(jq -r '.steps[] | select(.id=="review") | .needs[0]' "$F")
+      echo "rs_deps=$RS imp_dep=$IMP tst_dep=$TST rev_dep=$REV"
+      [ "$RS" -eq 0 ] && [ "$IMP" = "research-standards" ] && [ "$TST" = "implement" ] && [ "$REV" = "test" ] && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: All 4 code agents exist
+  - name: "code_agents_exist"
+    run: |
+      PASS=0
+      for agent in yf_code_researcher yf_code_writer yf_code_tester yf_code_reviewer; do
+        test -f "$PLUGIN_DIR/plugins/yf/agents/${agent}.md" && PASS=$((PASS + 1))
+      done
+      echo "agents=$PASS"
+      [ "$PASS" -eq 4 ] && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: Code researcher is read-only
+  - name: "code_researcher_read_only"
+    run: |
+      grep -q 'read-only' "$PLUGIN_DIR/plugins/yf/agents/yf_code_researcher.md" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: Code writer is full-capability
+  - name: "code_writer_full_capability"
+    run: |
+      grep -q 'full-capability' "$PLUGIN_DIR/plugins/yf/agents/yf_code_writer.md" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: Code reviewer is read-only
+  - name: "code_reviewer_read_only"
+    run: |
+      grep -q 'read-only' "$PLUGIN_DIR/plugins/yf/agents/yf_code_reviewer.md" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: All agents follow naming convention (yf_ prefix)
+  - name: "agents_naming_convention"
+    run: |
+      PASS=0
+      for agent in yf_code_researcher yf_code_writer yf_code_tester yf_code_reviewer; do
+        NAME=$(head -5 "$PLUGIN_DIR/plugins/yf/agents/${agent}.md" | grep "^name:" | awk '{print $2}')
+        [ "$NAME" = "$agent" ] && PASS=$((PASS + 1))
+      done
+      echo "correct_names=$PASS"
+      [ "$PASS" -eq 4 ] && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: Formula has SUBAGENT annotations on all steps
+  - name: "formula_subagent_annotations"
+    run: |
+      COUNT=$(grep -c 'SUBAGENT:' "$PLUGIN_DIR/plugins/yf/formulas/code-implement.formula.json")
+      echo "subagent_count=$COUNT"
+      [ "$COUNT" -eq 4 ] && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 11: Formula references correct comment protocol prefixes
+  - name: "formula_comment_prefixes"
+    run: |
+      F="$PLUGIN_DIR/plugins/yf/formulas/code-implement.formula.json"
+      FINDINGS=$(grep -c 'FINDINGS:' "$F")
+      CHANGES=$(grep -c 'CHANGES:' "$F")
+      TESTS=$(grep -c 'TESTS:' "$F")
+      REVIEW=$(grep -c 'REVIEW:' "$F")
+      echo "findings=$FINDINGS changes=$CHANGES tests=$TESTS review=$REVIEW"
+      [ "$FINDINGS" -ge 1 ] && [ "$CHANGES" -ge 1 ] && [ "$TESTS" -ge 1 ] && [ "$REVIEW" -ge 1 ] && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 12: Code reviewer checks IG references
+  - name: "code_reviewer_checks_igs"
+    run: |
+      grep -q 'Implementation Guide\|IG' "$PLUGIN_DIR/plugins/yf/agents/yf_code_reviewer.md" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 13: Code researcher checks for existing IGs
+  - name: "code_researcher_checks_igs"
+    run: |
+      grep -q 'Implementation Guide\|IG' "$PLUGIN_DIR/plugins/yf/agents/yf_code_researcher.md" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"

@@ -226,6 +226,76 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 9: Chronicle worthiness rule includes implementation adjustment triggers
+  - name: "rule_has_implementation_adjustment_triggers"
+    run: |
+      grep -q 'Implementation Adjustments' "$PLUGIN_DIR/plugins/yf/rules/watch-for-chronicle-worthiness.md" && echo "OK: has implementation adjustment trigger"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: Chronicle worthiness rule includes swarm execution event triggers
+  - name: "rule_has_swarm_execution_triggers"
+    run: |
+      grep -q 'Swarm Execution Events' "$PLUGIN_DIR/plugins/yf/rules/watch-for-chronicle-worthiness.md" && echo "OK: has swarm execution trigger"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 11: Chronicle worthiness rule includes plan compliance adjustment triggers
+  - name: "rule_has_plan_compliance_triggers"
+    run: |
+      grep -q 'Plan Compliance Adjustments' "$PLUGIN_DIR/plugins/yf/rules/watch-for-chronicle-worthiness.md" && echo "OK: has plan compliance trigger"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 12: Swarm chronicle bridge rule exists
+  - name: "swarm_chronicle_bridge_exists"
+    run: |
+      test -f "$PLUGIN_DIR/plugins/yf/rules/swarm-chronicle-bridge.md" && echo "OK: swarm-chronicle-bridge rule exists"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 13: Swarm chronicle bridge fires automatically (not advisory)
+  - name: "swarm_chronicle_bridge_auto_fires"
+    run: |
+      grep -q 'NOT advisory' "$PLUGIN_DIR/plugins/yf/rules/swarm-chronicle-bridge.md" && echo "OK: bridge fires automatically"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 14: swarm_react has Step 4.5 for chronicle auto-capture
+  - name: "swarm_react_has_chronicle_step"
+    run: |
+      grep -q 'Step 4.5.*Chronicle\|Auto-Capture Chronicle' "$PLUGIN_DIR/plugins/yf/skills/swarm_react/SKILL.md" && echo "OK: swarm_react has chronicle step"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 15: Reduced frequency threshold for new categories
+  - name: "reduced_frequency_for_new_categories"
+    run: |
+      grep -q '10-15 minutes' "$PLUGIN_DIR/plugins/yf/rules/watch-for-chronicle-worthiness.md" && echo "OK: reduced frequency for new categories"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
   - "rm -f .yoshiko-flow/config.json"
   - "rm -rf .yoshiko-flow/.chronicle-drafted-* .beads/bd-create-calls.txt mock-bin"

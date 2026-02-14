@@ -1,0 +1,196 @@
+name: "Unit: swarm comment protocol compliance"
+setup:
+  - "mkdir -p plugins/yf/formulas plugins/yf/rules"
+
+steps:
+  # Case 1: All 5 formulas have SUBAGENT annotations
+  - name: "all_formulas_have_subagent"
+    run: |
+      PASS=0
+      FAIL=0
+      for f in "$PLUGIN_DIR"/plugins/yf/formulas/*.formula.json; do
+        NAME=$(basename "$f" .formula.json)
+        COUNT=$(grep -c 'SUBAGENT:' "$f")
+        if [ "$COUNT" -gt 0 ]; then
+          PASS=$((PASS + 1))
+        else
+          echo "MISSING SUBAGENT in $NAME"
+          FAIL=$((FAIL + 1))
+        fi
+      done
+      echo "formulas_with_subagent=$PASS missing=$FAIL"
+      [ "$FAIL" -eq 0 ] && echo "OK"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: feature-build formula uses correct SUBAGENT types
+  - name: "feature_build_subagents"
+    run: |
+      F="$PLUGIN_DIR/plugins/yf/formulas/feature-build.formula.json"
+      EXPLORE=$(grep -c 'SUBAGENT:Explore' "$F")
+      GP=$(grep -c 'SUBAGENT:general-purpose' "$F")
+      echo "explore=$EXPLORE general-purpose=$GP"
+      [ "$EXPLORE" -ge 1 ] && [ "$GP" -ge 1 ] && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: bugfix formula references FINDINGS, CHANGES, TESTS comment types
+  - name: "bugfix_comment_types"
+    run: |
+      F="$PLUGIN_DIR/plugins/yf/formulas/bugfix.formula.json"
+      FINDINGS=$(grep -c 'FINDINGS:' "$F")
+      CHANGES=$(grep -c 'CHANGES:' "$F")
+      TESTS=$(grep -c 'TESTS:' "$F")
+      echo "findings=$FINDINGS changes=$CHANGES tests=$TESTS"
+      [ "$FINDINGS" -ge 1 ] && [ "$CHANGES" -ge 1 ] && [ "$TESTS" -ge 1 ] && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: build-test formula references CHANGES, TESTS, REVIEW
+  - name: "build_test_comment_types"
+    run: |
+      F="$PLUGIN_DIR/plugins/yf/formulas/build-test.formula.json"
+      CHANGES=$(grep -c 'CHANGES:' "$F")
+      TESTS=$(grep -c 'TESTS:' "$F")
+      REVIEW=$(grep -c 'REVIEW:' "$F")
+      echo "changes=$CHANGES tests=$TESTS review=$REVIEW"
+      [ "$CHANGES" -ge 1 ] && [ "$TESTS" -ge 1 ] && [ "$REVIEW" -ge 1 ] && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: research-spike formula references FINDINGS, CHANGES
+  - name: "research_spike_comment_types"
+    run: |
+      F="$PLUGIN_DIR/plugins/yf/formulas/research-spike.formula.json"
+      FINDINGS=$(grep -c 'FINDINGS:' "$F")
+      CHANGES=$(grep -c 'CHANGES:' "$F")
+      echo "findings=$FINDINGS changes=$CHANGES"
+      [ "$FINDINGS" -ge 1 ] && [ "$CHANGES" -ge 1 ] && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: code-review formula references FINDINGS, REVIEW
+  - name: "code_review_comment_types"
+    run: |
+      F="$PLUGIN_DIR/plugins/yf/formulas/code-review.formula.json"
+      FINDINGS=$(grep -c 'FINDINGS:' "$F")
+      REVIEW=$(grep -c 'REVIEW:' "$F")
+      echo "findings=$FINDINGS review=$REVIEW"
+      [ "$FINDINGS" -ge 1 ] && [ "$REVIEW" -ge 1 ] && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: All formulas have valid step dependency chains
+  - name: "formula_step_dependencies_valid"
+    run: |
+      PASS=0
+      FAIL=0
+      for f in "$PLUGIN_DIR"/plugins/yf/formulas/*.formula.json; do
+        NAME=$(basename "$f" .formula.json)
+        # Check that all "needs" references point to existing step IDs
+        STEP_IDS=$(jq -r '.steps[].id' "$f" | sort)
+        NEEDS=$(jq -r '.steps[].needs[]?' "$f" 2>/dev/null | sort -u)
+        VALID=true
+        for need in $NEEDS; do
+          if ! echo "$STEP_IDS" | grep -q "^${need}$"; then
+            echo "INVALID: $NAME step needs '$need' but no such step ID"
+            VALID=false
+          fi
+        done
+        if $VALID; then
+          PASS=$((PASS + 1))
+        else
+          FAIL=$((FAIL + 1))
+        fi
+      done
+      echo "valid=$PASS invalid=$FAIL"
+      [ "$FAIL" -eq 0 ] && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: Comment protocol rule documents all 4 protocol prefixes
+  - name: "protocol_rule_has_all_prefixes"
+    run: |
+      RULE="$PLUGIN_DIR/plugins/yf/rules/swarm-comment-protocol.md"
+      FINDINGS=$(grep -c '### FINDINGS:' "$RULE")
+      CHANGES=$(grep -c '### CHANGES:' "$RULE")
+      REVIEW=$(grep -c '### REVIEW:' "$RULE")
+      TESTS=$(grep -c '### TESTS:' "$RULE")
+      echo "findings=$FINDINGS changes=$CHANGES review=$REVIEW tests=$TESTS"
+      [ "$FINDINGS" -ge 1 ] && [ "$CHANGES" -ge 1 ] && [ "$REVIEW" -ge 1 ] && [ "$TESTS" -ge 1 ] && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: feature-build has compose field for nested build-test
+  - name: "feature_build_compose"
+    run: |
+      jq -r '.steps[] | select(.compose) | .compose' "$PLUGIN_DIR/plugins/yf/formulas/feature-build.formula.json"
+    assertions:
+      - type: output_contains
+        value: "build-test"
+
+  # Case 10: swarm_dispatch has Step 6c progressive chronicle
+  - name: "dispatch_has_progressive_chronicle"
+    run: |
+      grep -q 'Step 6c.*Progressive Chronicle\|Progressive Chronicle.*Opt-In' "$PLUGIN_DIR/plugins/yf/skills/swarm_dispatch/SKILL.md" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 11: swarm_dispatch has Step 6d archive findings
+  - name: "dispatch_has_archive_findings"
+    run: |
+      grep -q 'Step 6d.*Archive Findings\|Archive Findings.*Opt-In' "$PLUGIN_DIR/plugins/yf/skills/swarm_dispatch/SKILL.md" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 12: swarm-spec-bridge rule exists
+  - name: "spec_bridge_rule_exists"
+    run: |
+      test -f "$PLUGIN_DIR/plugins/yf/rules/swarm-spec-bridge.md" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 13: swarm_run E1 chronicle has structured execution narrative
+  - name: "swarm_run_structured_chronicle"
+    run: |
+      grep -q 'structured execution narrative\|Step Results\|BLOCK verdicts\|Final outcome' "$PLUGIN_DIR/plugins/yf/skills/swarm_run/SKILL.md" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 14: researcher agent has External sources subsection
+  - name: "researcher_has_external_sources"
+    run: |
+      grep -q '### External' "$PLUGIN_DIR/plugins/yf/agents/yf_swarm_researcher.md" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 15: reviewer agent has IG reference section
+  - name: "reviewer_has_ig_reference"
+    run: |
+      grep -q 'Implementation Guide Reference\|Specification Alignment' "$PLUGIN_DIR/plugins/yf/agents/yf_swarm_reviewer.md" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 16: swarm-archive-bridge fires after any formula
+  - name: "archive_bridge_any_formula"
+    run: |
+      grep -q 'any formula' "$PLUGIN_DIR/plugins/yf/rules/swarm-archive-bridge.md" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"

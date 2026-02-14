@@ -91,3 +91,70 @@ steps:
     assertions:
       - type: exit_code
         value: "0"
+
+  # Case 8: Specification directory structure matches expected layout
+  - name: "spec_directory_structure"
+    run: |
+      # After preflight, verify the expected structure
+      FAIL=false
+      for dir in docs/specifications docs/specifications/EDD docs/specifications/IG; do
+        if [ ! -d "$WORK_DIR/$dir" ]; then
+          echo "FAIL: missing $dir"
+          FAIL=true
+        fi
+      done
+      $FAIL && exit 1
+      echo "OK: spec directory structure correct"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: Reconciliation config defaults to blocking
+  - name: "reconciliation_config_default"
+    run: |
+      # Default when not set should be "blocking"
+      RESULT=$(jq -r '.config.engineer.reconciliation_mode // "blocking"' "$WORK_DIR/.yoshiko-flow/config.json" 2>/dev/null || echo "blocking")
+      echo "mode=$RESULT"
+      [ "$RESULT" = "blocking" ] && echo "OK: default is blocking"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: Engineer reconcile skill exists
+  - name: "reconcile_skill_exists"
+    run: |
+      test -f "$PLUGIN_DIR/plugins/yf/skills/engineer_reconcile/SKILL.md" && echo "OK: reconcile skill exists"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 11: Engineer suggest_updates skill exists
+  - name: "suggest_updates_skill_exists"
+    run: |
+      test -f "$PLUGIN_DIR/plugins/yf/skills/engineer_suggest_updates/SKILL.md" && echo "OK: suggest_updates skill exists"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 12: Watch-for-spec-drift rule covers PRD, EDD, and IG
+  - name: "spec_drift_covers_all_types"
+    run: |
+      RULE="$PLUGIN_DIR/plugins/yf/rules/watch-for-spec-drift.md"
+      PRD=$(grep -c 'PRD' "$RULE")
+      EDD=$(grep -c 'EDD' "$RULE")
+      IG=$(grep -c 'IG' "$RULE")
+      echo "prd=$PRD edd=$EDD ig=$IG"
+      [ "$PRD" -ge 1 ] && [ "$EDD" -ge 1 ] && [ "$IG" -ge 1 ] && echo "OK: covers all spec types"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

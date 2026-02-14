@@ -73,5 +73,64 @@ steps:
       - type: output_contains
         value: "swarm-reactive.md"
 
+  # Case 9: swarm_react documents depth check guard rail
+  - name: "react_depth_check"
+    run: |
+      grep -q 'depth >= 2.*skip\|depth check.*skip' "$PLUGIN_DIR/plugins/yf/skills/swarm_react/SKILL.md" && echo "OK: depth check documented"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: swarm_react documents bugfix-attempt label dedup
+  - name: "react_label_dedup"
+    run: |
+      grep -q 'ys:bugfix-attempt' "$PLUGIN_DIR/plugins/yf/skills/swarm_react/SKILL.md" && echo "OK: dedup label documented"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 11: swarm_react documents design-BLOCK exclusion
+  - name: "react_design_block_exclusion"
+    run: |
+      grep -q 'Design BLOCKs.*NOT eligible\|design-level concern' "$PLUGIN_DIR/plugins/yf/skills/swarm_react/SKILL.md" && echo "OK: design-BLOCK exclusion documented"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 12: swarm_react has Step 4.5 for chronicle auto-capture
+  - name: "react_chronicle_auto_capture"
+    run: |
+      grep -q 'Step 4.5' "$PLUGIN_DIR/plugins/yf/skills/swarm_react/SKILL.md" && echo "OK: Step 4.5 exists"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 13: mark-retrying clears dispatched state
+  - name: "mark_retrying_clears_dispatched"
+    run: |
+      rm -f .yoshiko-flow/swarm-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-dispatched marketplace-retry-test
+      # Verify dispatched
+      R1=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" is-dispatched marketplace-retry-test)
+      # Mark for retry
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-retrying marketplace-retry-test
+      # Should no longer be dispatched
+      R2=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" is-dispatched marketplace-retry-test 2>/dev/null || true)
+      echo "before=$R1 after=$R2"
+      echo "$R1" | grep -q "dispatched" && echo "$R2" | grep -q "not-dispatched" && echo "OK: retrying clears dispatched"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
   - "rm -f .yoshiko-flow/swarm-state.json"

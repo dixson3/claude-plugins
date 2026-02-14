@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.17.0
+# Yoshiko Flow (yf) Plugin — v2.18.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -8,13 +8,14 @@ The natural state of software is _maintenance_. How hard or easy that maintenanc
 
 Traditionally, producing this content is a chore that requires real organizational discipline. Agentic coding makes the problem worse: agents generate context faster than humans can catalog it, and each session starts with a blank slate. Yoshiko Flow automates the discipline — capturing plans, observations, and decisions as structured artifacts without requiring the operator to remember to do it.
 
-It does this through five capabilities:
+It does this through six capabilities:
 
 1. **Plan Lifecycle** — Breaks plans into a dependency graph of tracked tasks, with automatic decomposition, scheduling, and dispatch
 2. **Swarm Execution** — Runs structured, parallel agent workflows using formula templates, wisps, and a dispatch loop
 3. **Chronicler** — Captures observations and context as work progresses, then composes diary entries that trace how and why changes were made
 4. **Archivist** — Preserves research findings and design decisions as permanent documentation that supports PRDs and ERDs
 5. **Engineer** — Synthesizes and maintains specification artifacts (PRD, EDD, Implementation Guides, TODO register), reconciling plans against specs before execution
+6. **Coder** — Standards-driven code generation with dedicated research, implementation, testing, and review agents working through a structured formula
 
 ## Getting Started
 
@@ -236,6 +237,41 @@ specifications/
 | `/yf:engineer_suggest_updates` | Suggest spec updates after plan completion |
 | Agent: `yf_engineer_synthesizer` | Read-only agent that synthesizes spec content |
 
+## Coder (Code Generation)
+
+### Why
+
+Implementation tasks are handled by generic agents without technology-specific standards, dedicated review criteria, or test feedback loops. The coder capability provides a structured code generation workflow where a research step identifies applicable standards and patterns, an implementation step follows them, a test step verifies correctness, and a review step checks compliance.
+
+### How It Works
+
+The `code-implement` formula drives four specialized agents through a linear pipeline:
+
+```
+research-standards → implement → test → review
+```
+
+- **Research standards**: Checks for existing coding standards IGs and researches technology-specific best practices. Posts FINDINGS with concrete, actionable standards.
+- **Implement**: Reads upstream standards and relevant IGs, implements the feature following discovered patterns. Posts CHANGES.
+- **Test**: Writes unit/integration tests, runs them. Posts TESTS. Failures trigger the reactive bugfix loop.
+- **Review**: Reviews against standards IG + global quality criteria + feature-specific IG. Posts REVIEW:PASS or REVIEW:BLOCK.
+
+The formula is selected automatically when task titles include code/write/program/develop with technology/language context. Without technology context, `feature-build` remains the default.
+
+### Artifacts
+
+No new file artifacts — the coder capability works through the existing swarm comment protocol (FINDINGS, CHANGES, TESTS, REVIEW on parent beads) and produces code/test files as its output.
+
+### Skills & Agents
+
+| Skill / Agent | Description |
+|---------------|-------------|
+| Formula: `code-implement` | 4-step standards-driven code workflow |
+| Agent: `yf_code_researcher` | Read-only; researches technology standards and patterns |
+| Agent: `yf_code_writer` | Full-capability; implements code following standards |
+| Agent: `yf_code_tester` | Limited-write; creates and runs tests |
+| Agent: `yf_code_reviewer` | Read-only; reviews against IGs and standards |
+
 ## Configuration
 
 Config lives in `.yoshiko-flow/config.json` (committed to git), while lock state lives in `.yoshiko-flow/lock.json` (gitignored).
@@ -260,7 +296,7 @@ Run `/yf:setup` to create or reconfigure this file interactively.
 
 ## Internals
 
-### Rules (22)
+### Rules (24)
 
 All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to `plugins/yf/rules/`):
 

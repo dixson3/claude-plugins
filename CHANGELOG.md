@@ -5,6 +5,42 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.18.0] - 2026-02-14
+
+### Added
+
+- **Coder capability**: Standards-driven code generation with dedicated agents for research, implementation, testing, and review
+  - `yf_code_researcher` agent — Read-only; researches technology standards and coding patterns, checks existing IGs before proposing new standards
+  - `yf_code_writer` agent — Full-capability; implements code following upstream standards from FINDINGS and IGs
+  - `yf_code_tester` agent — Limited-write; creates and runs tests, posts TESTS with pass/fail results
+  - `yf_code_reviewer` agent — Read-only; reviews against IGs, coding standards, and quality criteria
+  - `code-implement` formula — 4-step pipeline: research-standards → implement → test → review
+  - Reactive bugfix inherited from existing swarm infrastructure (TESTS failures and REVIEW:BLOCK trigger bugfix formula)
+  - `swarm_select_formula` heuristic: matches `code`, `write`, `program`, `develop` with technology/language context
+  - `plan_select_agent` registry updated with 4 new code agents
+- **Swarm-to-spec bridge rule**: Advisory suggestion to update specifications after feature-build/build-test/code-implement swarm completes with REVIEW:PASS
+- **Swarm-to-chronicle bridge rule**: Auto-captures chronicle when reactive bugfix triggers (not advisory — fires automatically)
+- **Progressive chronicle/archive in swarm dispatch**: Opt-in per formula step via `"chronicle": true` / `"archive_findings": true` in step JSON
+- **More aggressive chronicle triggers**: 3 new categories — implementation adjustments, swarm execution events, plan compliance adjustments (10-15 min frequency)
+- **Spec-test traceability matrix**: `docs/specifications/test-coverage.md` mapping all REQ, DD, NFR, UC to test scenarios
+- **Coder IG**: `docs/specifications/IG/coder.md` with UC-029 through UC-032
+- Test scenarios: `unit-formula-dispatch.yaml` (7 cases), `unit-swarm-comment-protocol.yaml` (16 cases), `unit-code-implement.yaml` (13 cases)
+- Behavioral test enhancements: `unit-swarm-reactive.yaml` (+5), `unit-engineer.yaml` (+5), `unit-archive-suggest.yaml` (+3), `unit-chronicle-check.yaml` (+7)
+
+### Changed
+
+- **Plan pump dual-track dispatch**: `plan_pump/SKILL.md` Step 4 now classifies beads into formula track (swarm_run) and agent track (bare Task); formula labels take priority over agent labels
+- **Plan execute formula dispatch**: `plan_execute/SKILL.md` Step 3c dispatches formula-labeled beads via `/yf:swarm_run` before existing agent dispatch path
+- **Swarm run enhanced chronicle**: Step 4c Auto-Chronicle (E1) now includes structured execution narrative with formula name, step count, retry attempts, BLOCK verdicts, and step results
+- **Swarm archive bridge broadened**: Now fires after any formula completion, not just feature-build
+- **Swarm researcher structured sources**: FINDINGS Sources section split into Internal and External subsections
+- **Swarm reviewer IG reference**: Reviews now check `docs/specifications/IG/` for relevant implementation guides
+- **PRD updated**: Added REQ-032 (coding standards workflow), FS-034 through FS-037 (Coder section)
+- **EDD updated**: Added DD-013 (standards-driven code implementation formula design)
+- **TODO updated**: Added TODO-019 through TODO-025 for spec-test gaps and coder end-to-end testing
+- Plugin version bumped: 2.17.0 → 2.18.0
+- `preflight.json`: Added 2 new rules (swarm-chronicle-bridge, swarm-spec-bridge) — 24 rules total
+
 ## [2.17.0] - 2026-02-14
 
 ### Added

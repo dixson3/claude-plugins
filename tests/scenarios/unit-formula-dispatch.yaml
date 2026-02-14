@@ -1,0 +1,71 @@
+name: "Unit: formula dispatch integration"
+setup:
+  - "mkdir -p plugins/yf/skills/plan_pump plugins/yf/skills/plan_execute plugins/yf/rules"
+
+steps:
+  # Case 1: plan_pump documents formula label detection
+  - name: "pump_detects_formula_labels"
+    run: |
+      grep -c 'formula:<' "$PLUGIN_DIR/plugins/yf/skills/plan_pump/SKILL.md"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_not_contains
+        value: "0"
+
+  # Case 2: plan_pump classifies dispatch tracks
+  - name: "pump_classifies_dispatch_tracks"
+    run: |
+      grep -c 'formula track\|agent track\|Dispatch track classification' "$PLUGIN_DIR/plugins/yf/skills/plan_pump/SKILL.md"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_not_contains
+        value: "0"
+
+  # Case 3: plan_pump formula takes priority over agent label
+  - name: "pump_formula_priority_over_agent"
+    run: |
+      grep -q 'formula label takes priority' "$PLUGIN_DIR/plugins/yf/skills/plan_pump/SKILL.md" && echo "found"
+    assertions:
+      - type: output_contains
+        value: "found"
+
+  # Case 4: plan_execute documents swarm_run dispatch path
+  - name: "execute_dispatches_via_swarm_run"
+    run: |
+      grep -c 'swarm_run' "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_not_contains
+        value: "0"
+
+  # Case 5: plan_execute has both formula and agent dispatch sections
+  - name: "execute_has_both_dispatch_tracks"
+    run: |
+      FORMULA=$(grep -c 'Formula dispatch' "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md")
+      AGENT=$(grep -c 'Agent dispatch' "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md")
+      echo "formula=$FORMULA agent=$AGENT"
+      [ "$FORMULA" -ge 1 ] && [ "$AGENT" -ge 1 ] && echo "both_tracks_present"
+    assertions:
+      - type: output_contains
+        value: "both_tracks_present"
+
+  # Case 6: swarm-formula-dispatch rule references the pump
+  - name: "formula_dispatch_rule_references_pump"
+    run: |
+      grep -c 'pump\|plan_pump\|plan_execute' "$PLUGIN_DIR/plugins/yf/rules/swarm-formula-dispatch.md"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_not_contains
+        value: "0"
+
+  # Case 7: plan_execute formula dispatch invokes swarm_run with correct args
+  - name: "execute_formula_dispatch_args"
+    run: |
+      grep -q 'formula:<formula-name>.*feature:.*parent_bead:' "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md" && echo "correct_args"
+    assertions:
+      - type: output_contains
+        value: "correct_args"

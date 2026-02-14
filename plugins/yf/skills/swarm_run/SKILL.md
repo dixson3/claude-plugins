@@ -99,15 +99,31 @@ This creates a digest and cleans up ephemeral step beads.
 
 #### 4c. Auto-Chronicle (E1)
 
-Capture a chronicle bead with the swarm summary:
+Capture a structured execution narrative as a chronicle bead:
 
 ```bash
+PLAN_LABEL=$(bd label list <parent_bead> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
+LABELS="ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto"
+[ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
+
 bd create --title "Chronicle: Swarm <formula> — <feature>" \
-  -l ys:chronicle,ys:topic:swarm,ys:swarm \
-  --description "<squash summary with formula used, step outcomes, key findings>"
+  -l "$LABELS" \
+  --description "Swarm Execution: <formula>
+Feature: <feature>
+Steps: <completed>/<total>
+Retries: <retry count or 0>
+BLOCK verdicts: <list of steps that BLOCKed, or none>
+Final outcome: <PASS or BLOCK>
+
+Step Results:
+- <step-id>: <verdict/summary> (<agent type>)
+- <step-id>: <verdict/summary> (<agent type>)
+
+Key Findings: <condensed FINDINGS from research steps>
+Key Changes: <condensed CHANGES from implementation steps>"
 ```
 
-If a plan is executing, auto-tag with the plan label.
+This structured narrative replaces the bare squash summary to give the diary agent richer context for generating diary entries.
 
 #### 4d. Close Parent Bead (if applicable)
 

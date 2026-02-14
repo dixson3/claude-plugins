@@ -145,6 +145,51 @@ The reactive skill handles eligibility checks (depth, dedup, config), spawns a b
 
 If no failure is detected, proceed normally.
 
+### Step 6c: Progressive Chronicle (Opt-In)
+
+After a step completes, if the step JSON has `"chronicle": true`:
+
+```bash
+# Check step definition for chronicle flag
+CHRONICLE=$(jq -r '.chronicle // false' <<< "$STEP_JSON")
+if [ "$CHRONICLE" = "true" ]; then
+  PLAN_LABEL=$(bd label list <parent_bead> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
+  LABELS="ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto"
+  [ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
+
+  bd create --title "Chronicle (Auto): Swarm step <step-id> — <step title>" \
+    -l "$LABELS" \
+    --description "<step comment content (FINDINGS/CHANGES/REVIEW/TESTS)>" \
+    --silent
+fi
+```
+
+This is **opt-in per step** — no existing formulas are affected unless their step JSON explicitly includes `"chronicle": true`. Use this for steps that produce high-value context worth preserving independently of the final swarm chronicle.
+
+### Step 6d: Archive Findings (Opt-In)
+
+After a step completes, if the step JSON has `"archive_findings": true` and the step posted a `FINDINGS:` comment containing external sources (URLs, doc references):
+
+```bash
+ARCHIVE=$(jq -r '.archive_findings // false' <<< "$STEP_JSON")
+if [ "$ARCHIVE" = "true" ]; then
+  # Check if FINDINGS contains external sources
+  COMMENT=$(bd show <parent_bead> --comments | grep -A 50 "FINDINGS:" | head -50)
+  if echo "$COMMENT" | grep -qiE 'http|docs/|external|reference|api|library'; then
+    PLAN_LABEL=$(bd label list <parent_bead> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
+    LABELS="ys:archive,ys:archive:research,ys:swarm"
+    [ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
+
+    bd create --title "Archive: Research from swarm step <step-id>" \
+      -l "$LABELS" \
+      --description "<FINDINGS content with external sources>" \
+      --silent
+  fi
+fi
+```
+
+This is **opt-in per step** — extends archival beyond research-spike to any formula step that produces findings with external sources.
+
 ### Step 7: Re-dispatch Loop
 
 After processing returns, loop back to Step 1:

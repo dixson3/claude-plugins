@@ -55,6 +55,9 @@ Match task title and description against keyword patterns (case-insensitive):
 | research, investigate, evaluate, spike, compare, explore, analyze | `research-spike` | Deep investigation with synthesis |
 | review, audit, inspect, assess | `code-review` | Analysis and reporting |
 | test, spec, coverage, verify (as primary action) | `build-test` | Implementation + test + review |
+| code, write, program, develop (with technology/language context) | `code-implement` | Standards-driven code with research, testing, and review |
+
+**Note on `code-implement` vs `feature-build`**: The `code-implement` formula is preferred when the task description includes technology/language context (e.g., "write a Go service", "code the Python API", "program the auth module in TypeScript"). Without technology context, `feature-build` is the default for implementation tasks.
 
 **Priority rules:**
 1. If multiple patterns match, prefer the first match in the table order above

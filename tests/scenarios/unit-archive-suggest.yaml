@@ -76,5 +76,52 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 5: Script detects research keyword patterns
+  - name: "detects_research_keyword_patterns"
+    run: |
+      SCRIPT="$PLUGIN_DIR/plugins/yf/scripts/archive-suggest.sh"
+      # Verify script contains the research keyword patterns
+      PATTERNS=0
+      for kw in "research" "investigate" "evaluate" "compare" "analyze"; do
+        grep -qi "$kw" "$SCRIPT" && PATTERNS=$((PATTERNS + 1))
+      done
+      echo "research_patterns=$PATTERNS"
+      [ "$PATTERNS" -ge 3 ] && echo "OK: research keywords present"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: Script detects decision keyword patterns
+  - name: "detects_decision_keyword_patterns"
+    run: |
+      SCRIPT="$PLUGIN_DIR/plugins/yf/scripts/archive-suggest.sh"
+      PATTERNS=0
+      for kw in "chose" "decided" "selected" "architecture" "approved"; do
+        grep -qi "$kw" "$SCRIPT" && PATTERNS=$((PATTERNS + 1))
+      done
+      echo "decision_patterns=$PATTERNS"
+      [ "$PATTERNS" -ge 3 ] && echo "OK: decision keywords present"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: Archive watch rule documents research and decision triggers
+  - name: "archive_watch_rule_triggers"
+    run: |
+      RULE="$PLUGIN_DIR/plugins/yf/rules/watch-for-archive-worthiness.md"
+      R=$(grep -c 'Research Triggers' "$RULE")
+      D=$(grep -c 'Decision Triggers' "$RULE")
+      echo "research_triggers=$R decision_triggers=$D"
+      [ "$R" -ge 1 ] && [ "$D" -ge 1 ] && echo "OK: both trigger types documented"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
   - "rm -f .yoshiko-flow/config.json research-test.txt decision-test.txt"
