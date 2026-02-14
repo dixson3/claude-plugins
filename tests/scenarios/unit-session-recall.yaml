@@ -193,7 +193,67 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 8: Warns about plan without beads
+  - name: "plan_without_beads_warns"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.beads/.pending-diary"
+      mkdir -p "$WORK_DIR/docs/plans"
+      printf '# Plan 99\n**Status:** Draft' > "$WORK_DIR/docs/plans/plan-99.md"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      if [ "$1" = "list" ]; then
+        echo "[]"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "WARNING.*Plan 99.*no beads"; then
+        echo "OK: warns about plan without beads"
+      else
+        echo "FAIL: should warn about plan without beads"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: No warning for completed plan
+  - name: "completed_plan_no_warning"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.beads/.pending-diary"
+      mkdir -p "$WORK_DIR/docs/plans"
+      printf '# Plan 99\n**Status: Completed**' > "$WORK_DIR/docs/plans/plan-99.md"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      if [ "$1" = "list" ]; then
+        echo "[]"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
+      if [ -z "$OUTPUT" ]; then
+        echo "OK: no warning for completed plan"
+      else
+        echo "FAIL: unexpected output: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
   - "rm -f .yoshiko-flow/config.json"
   - "rm -f .beads/.pending-diary"
   - "rm -rf mock-bin"
+  - "rm -rf docs/plans"

@@ -36,6 +36,11 @@ Flag these events as chronicle-worthy:
    - Before a long break
    - When conversation is getting long
 
+6. **Database or Infrastructure Operations**
+   - Bulk bead deletions or modifications
+   - Database migrations or schema changes
+   - Configuration changes affecting system behavior
+
 ### Behavior
 
 When you notice a chronicle-worthy event:

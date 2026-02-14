@@ -34,6 +34,7 @@ fi
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 BEADS_DIR="$PROJECT_DIR/.beads"
 PENDING_MARKER="$BEADS_DIR/.pending-diary"
+PLANS_DIR="$PROJECT_DIR/docs/plans"
 
 # --- Check for pending-diary marker from previous session ---
 HAS_PENDING=false
@@ -50,8 +51,28 @@ fi
 CHRONICLES=$( (set +e; bd list --label=ys:chronicle --status=open --format=json 2>/dev/null) || echo "[]")
 COUNT=$(echo "$CHRONICLES" | jq 'length' 2>/dev/null || echo "0")
 
+# --- Check for plans without beads ---
+HAS_PLAN_WARNING=false
+PLAN_WARNING_IDX=""
+if [ -d "$PLANS_DIR" ]; then
+  LATEST_PLAN=$(ls -t "$PLANS_DIR"/plan-*.md 2>/dev/null | head -1)
+  if [ -n "$LATEST_PLAN" ]; then
+    if ! grep -q 'Status: Completed' "$LATEST_PLAN" 2>/dev/null; then
+      PLAN_IDX=$(basename "$LATEST_PLAN" | sed -n 's/^plan-\([0-9]*\).*/\1/p')
+      if [ -n "$PLAN_IDX" ]; then
+        EPIC_COUNT=$(bd list -l "plan:$PLAN_IDX" --type=epic --limit=1 --json 2>/dev/null \
+          | jq 'length' 2>/dev/null) || EPIC_COUNT="0"
+        if [ "$EPIC_COUNT" = "0" ]; then
+          HAS_PLAN_WARNING=true
+          PLAN_WARNING_IDX="$PLAN_IDX"
+        fi
+      fi
+    fi
+  fi
+fi
+
 # --- Exit silently if nothing to report ---
-if [ "$COUNT" -eq 0 ] && [ "$HAS_PENDING" = "false" ]; then
+if [ "$COUNT" -eq 0 ] && [ "$HAS_PENDING" = "false" ] && [ "$HAS_PLAN_WARNING" = "false" ]; then
   exit 0
 fi
 
@@ -74,9 +95,14 @@ if [ "$COUNT" -gt 0 ]; then
   echo ""
 fi
 
+if $HAS_PLAN_WARNING; then
+  echo "WARNING: Plan $PLAN_WARNING_IDX exists but has no beads. Run /yf:plan_intake to set up the lifecycle."
+  echo ""
+fi
+
 if $HAS_PENDING; then
   echo "Run /yf:chronicle_diary to process pending entries"
-else
+elif [ "$COUNT" -gt 0 ]; then
   echo "Run /yf:chronicle_recall for full context recovery"
 fi
 

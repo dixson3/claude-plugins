@@ -1,0 +1,215 @@
+name: "Unit: bd-safety-net.sh — advisory hook for bd delete"
+
+setup:
+  - "mkdir -p .yoshiko-flow docs/plans"
+  - "rm -f .yoshiko-flow/plan-intake-ok"
+
+steps:
+  # Case 1: No plan files → no warning, exits 0
+  - name: "no_plans_no_warning"
+    run: |
+      rm -f docs/plans/plan-*.md
+      OUTPUT=$(echo '{"tool_input":{"command":"bd delete beads-001"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/bd-safety-net.sh" 2>&1)
+      EXIT_CODE=$?
+      echo "$OUTPUT"
+      if [ "$EXIT_CODE" -ne 0 ]; then
+        echo "FAIL: expected exit 0, got $EXIT_CODE"
+        exit 1
+      fi
+      if echo "$OUTPUT" | grep -q "WARNING"; then
+        echo "FAIL: unexpected warning"
+        exit 1
+      fi
+      echo "OK: no warning when no plan files"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Plan exists without beads + delete → plan-intake warning
+  - name: "plan_without_beads_warns"
+    run: |
+      rm -f .yoshiko-flow/plan-intake-ok
+      printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
+      mkdir -p "$WORK_DIR/mock_bin"
+      printf '#!/bin/bash\necho '\''[]'\''' > "$WORK_DIR/mock_bin/bd"
+      chmod +x "$WORK_DIR/mock_bin/bd"
+      OUTPUT=$(echo '{"tool_input":{"command":"bd delete beads-001"}}' | \
+        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/bd-safety-net.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "yf:plan_intake"; then
+        echo "OK: warning mentions yf:plan_intake"
+      else
+        echo "FAIL: warning missing yf:plan_intake"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "WARNING"
+      - type: output_contains
+        value: "yf:plan_intake"
+
+  # Case 3: Completed plan → no warning
+  - name: "completed_plan_no_warning"
+    run: |
+      rm -f .yoshiko-flow/plan-intake-ok
+      printf '# Plan 99\n**Status: Completed**' > docs/plans/plan-99.md
+      OUTPUT=$(echo '{"tool_input":{"command":"bd delete beads-001"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/bd-safety-net.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "WARNING"; then
+        echo "FAIL: unexpected warning for completed plan"
+        exit 1
+      fi
+      echo "OK: no warning for completed plan"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Bulk delete >5 targets with no chronicle → chronicle warning
+  - name: "bulk_delete_no_chronicle_warns"
+    run: |
+      rm -f docs/plans/plan-*.md
+      mkdir -p "$WORK_DIR/mock_bin"
+      cat > "$WORK_DIR/mock_bin/bd" << 'MOCK'
+      #!/bin/bash
+      echo '[]'
+      MOCK
+      chmod +x "$WORK_DIR/mock_bin/bd"
+      OUTPUT=$(echo '{"tool_input":{"command":"bd delete beads-001 beads-002 beads-003 beads-004 beads-005 beads-006"}}' | \
+        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/bd-safety-net.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "chronicle_capture"; then
+        echo "OK: warns about missing chronicle on bulk delete"
+      else
+        echo "FAIL: should warn about chronicle on bulk delete"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "WARNING"
+      - type: output_contains
+        value: "chronicle_capture"
+
+  # Case 5: Bulk delete with open chronicle → no chronicle warning
+  - name: "bulk_delete_with_chronicle_no_warning"
+    run: |
+      rm -f docs/plans/plan-*.md
+      mkdir -p "$WORK_DIR/mock_bin"
+      cat > "$WORK_DIR/mock_bin/bd" << 'MOCK'
+      #!/bin/bash
+      echo '[{"id":"chron-001"}]'
+      MOCK
+      chmod +x "$WORK_DIR/mock_bin/bd"
+      OUTPUT=$(echo '{"tool_input":{"command":"bd delete beads-001 beads-002 beads-003 beads-004 beads-005 beads-006"}}' | \
+        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/bd-safety-net.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "chronicle_capture"; then
+        echo "FAIL: should not warn when chronicle exists"
+        exit 1
+      fi
+      echo "OK: no chronicle warning when chronicle exists"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: Small delete (<=5) → no chronicle warning
+  - name: "small_delete_no_chronicle_warning"
+    run: |
+      rm -f docs/plans/plan-*.md
+      mkdir -p "$WORK_DIR/mock_bin"
+      cat > "$WORK_DIR/mock_bin/bd" << 'MOCK'
+      #!/bin/bash
+      echo '[]'
+      MOCK
+      chmod +x "$WORK_DIR/mock_bin/bd"
+      OUTPUT=$(echo '{"tool_input":{"command":"bd delete beads-001 beads-002 beads-003"}}' | \
+        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/bd-safety-net.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "chronicle_capture"; then
+        echo "FAIL: should not warn for small delete"
+        exit 1
+      fi
+      echo "OK: no chronicle warning for small delete"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: Non-bd-delete command → exits silently
+  - name: "non_delete_command_silent"
+    run: |
+      OUTPUT=$(echo '{"tool_input":{"command":"bd list --status=open"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/bd-safety-net.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -ne 0 ]; then
+        echo "FAIL: expected exit 0"
+        exit 1
+      fi
+      if [ -n "$OUTPUT" ]; then
+        echo "FAIL: expected no output for non-delete command"
+        exit 1
+      fi
+      echo "OK: silent for non-delete command"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: Always exits 0 even when both warnings fire
+  - name: "always_exits_zero"
+    run: |
+      rm -f .yoshiko-flow/plan-intake-ok
+      printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
+      mkdir -p "$WORK_DIR/mock_bin"
+      cat > "$WORK_DIR/mock_bin/bd" << 'MOCK'
+      #!/bin/bash
+      echo '[]'
+      MOCK
+      chmod +x "$WORK_DIR/mock_bin/bd"
+      echo '{"tool_input":{"command":"bd delete beads-001 beads-002 beads-003 beads-004 beads-005 beads-006"}}' | \
+        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/bd-safety-net.sh" >/dev/null 2>&1
+      echo "OK: exit code $?"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK: exit code 0"
+
+  # Case 9: Intake marker suppresses plan warning
+  - name: "intake_marker_suppresses_warning"
+    run: |
+      printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
+      touch .yoshiko-flow/plan-intake-ok
+      mkdir -p "$WORK_DIR/mock_bin"
+      printf '#!/bin/bash\necho '\''[]'\''' > "$WORK_DIR/mock_bin/bd"
+      chmod +x "$WORK_DIR/mock_bin/bd"
+      OUTPUT=$(echo '{"tool_input":{"command":"bd delete beads-001"}}' | \
+        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/bd-safety-net.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "plan_intake"; then
+        echo "FAIL: intake marker did not suppress warning"
+        exit 1
+      fi
+      echo "OK: intake marker suppresses plan warning"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .yoshiko-flow/plan-intake-ok docs/plans/plan-99.md"
+  - "rm -rf mock_bin"

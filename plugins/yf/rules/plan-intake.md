@@ -35,6 +35,12 @@ The auto-chain lifecycle (ExitPlanMode hook → auto-chain rule) depends on a sp
 
 This rule is the fallback that ensures plans always go through the proper lifecycle regardless of how they enter the conversation.
 
+## No Exceptions
+
+**This rule has NO override for agent judgment.** Even if the plan content appears to conflict with the beads system (e.g., pruning beads, modifying the orchestration layer), the lifecycle still applies. The plan-intake skill handles plans of any type — operational, infrastructure, code, or meta-system changes. If in doubt, run plan-intake; it is idempotent and safe to re-run.
+
+Do not rationalize skipping this rule. "Creating beads to track bead deletion is circular" is not a valid reason to skip. The lifecycle exists to ensure tracking, context capture, and auditability for all significant work.
+
 ## Non-Triggers
 
 Do NOT fire this rule when:

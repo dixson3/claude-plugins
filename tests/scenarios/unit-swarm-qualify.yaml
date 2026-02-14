@@ -59,13 +59,13 @@ steps:
       - type: output_contains
         value: "Qualification"
 
-  # Case 8: plugin.json version is 2.14.0
+  # Case 8: plugin.json version is current
   - name: "version_bumped"
     run: |
       jq -r '.version' "$PLUGIN_DIR/plugins/yf/.claude-plugin/plugin.json"
     assertions:
       - type: output_contains
-        value: "2.14.0"
+        value: "2.14.1"
 
   # Case 9: research-spike formula has planning_safe
   - name: "research_spike_planning_safe"

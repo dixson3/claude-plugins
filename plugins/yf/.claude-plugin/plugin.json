@@ -1,6 +1,6 @@
 {
   "name": "yf",
-  "version": "2.14.0",
+  "version": "2.14.1",
   "description": "Yoshiko Flow — plan lifecycle, swarm execution with implicit formula triggering, context persistence, diary generation, and research/decision archiving",
   "author": {
     "name": "James Dixson",
@@ -97,6 +97,15 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/plan-exec-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(bd delete*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/bd-safety-net.sh"
           }
         ]
       },

@@ -5,6 +5,24 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.1] - 2026-02-14
+
+### Added
+
+- **bd-safety-net.sh**: PreToolUse hook on `Bash(bd delete*)` that warns when destructive bd operations lack plan lifecycle or chronicle capture
+  - Warns when an incomplete plan exists without beads (missing plan-intake)
+  - Warns on bulk deletes (>5 targets) with no open chronicle
+  - Advisory only (always exits 0), matching code-gate.sh safety net pattern
+- Test scenarios: `unit-bd-safety-net.yaml` (9 scenarios)
+- Session-recall.sh plan state check: warns at session start when plan exists without beads
+
+### Changed
+
+- Plugin version bumped: 2.14.0 → 2.14.1
+- **plan-intake.md**: Added explicit no-exception language — rule has NO override for agent judgment
+- **watch-for-chronicle-worthiness.md**: Added "Database or Infrastructure Operations" capture trigger (bulk bead deletions, migrations, config changes)
+- Session-recall.sh: Added plan-without-beads warning and new test cases (Cases 8-9)
+
 ## [2.14.0] - 2026-02-13
 
 ### Added
