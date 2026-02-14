@@ -22,25 +22,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Exits silently when chronicler disabled
-  - name: "exits_when_chronicler_disabled"
-    run: |
-      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
-      EXIT_CODE=$?
-      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ]; then
-        echo "OK: exits silently when chronicler disabled"
-      else
-        echo "FAIL: should exit 0 silently (exit=$EXIT_CODE, output=$OUTPUT)"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 3: Silent when no open chronicles and no marker
+  # Case 2: Silent when no open chronicles and no marker
   - name: "silent_when_no_chronicles"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -69,7 +51,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Outputs summary when open chronicles exist
+  # Case 3: Outputs summary when open chronicles exist
   - name: "outputs_summary_with_chronicles"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -100,7 +82,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: Detects and consumes pending-diary marker
+  # Case 4: Detects and consumes pending-diary marker
   - name: "detects_pending_diary_marker"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -138,7 +120,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: Shows pending-diary even with zero current chronicles
+  # Case 5: Shows pending-diary even with zero current chronicles
   - name: "pending_diary_with_no_current_chronicles"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -174,7 +156,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: Always exits 0
+  # Case 6: Always exits 0
   - name: "always_exits_zero"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -193,7 +175,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 8: Warns about plan without beads
+  # Case 7: Warns about plan without beads
   - name: "plan_without_beads_warns"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -223,7 +205,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 9: No warning for completed plan
+  # Case 8: No warning for completed plan
   - name: "completed_plan_no_warning"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"

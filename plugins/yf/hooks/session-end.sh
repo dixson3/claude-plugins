@@ -16,7 +16,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # --- Guards ---
 yf_is_enabled || exit 0
-yf_is_chronicler_on || exit 0
 
 if ! command -v bd >/dev/null 2>&1; then
   exit 0

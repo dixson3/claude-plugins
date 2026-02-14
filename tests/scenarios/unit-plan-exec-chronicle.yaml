@@ -34,27 +34,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Chronicler disabled — no chronicle created on start
-  - name: "chronicler_disabled_guard"
-    run: |
-      rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-transition-"*
-      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      ROOT=$(cat .test-epic-id)
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT" 2>&1
-      DEDUP_FILE="$WORK_DIR/.yoshiko-flow/.chronicle-transition-$(date +%Y%m%d)"
-      if [ ! -f "$DEDUP_FILE" ]; then
-        echo "OK: no chronicle when chronicler disabled"
-      else
-        echo "FAIL: chronicle should not be created when disabled"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 3: Dedup prevents duplicate transition chronicle on repeated start
+  # Case 2: Dedup prevents duplicate transition chronicle on repeated start
   - name: "dedup_prevents_duplicate"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -80,7 +60,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: plan-exec start still reaches State: executing (chronicle is additive)
+  # Case 3: plan-exec start still reaches State: executing (chronicle is additive)
   - name: "start_reaches_executing_state"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -100,7 +80,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: create_transition_chronicle function creates bead with correct labels
+  # Case 4: create_transition_chronicle function creates bead with correct labels
   - name: "chronicle_has_correct_labels"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"

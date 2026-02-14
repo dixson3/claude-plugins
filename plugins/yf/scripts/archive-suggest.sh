@@ -16,9 +16,8 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/yf-config.sh"
 
-# --- Guard: exit if yf disabled or archivist disabled ---
+# --- Guard: exit if yf disabled ---
 yf_is_enabled || { echo "yf disabled — skipping"; exit 0; }
-yf_is_archivist_on || { echo "archivist disabled — skipping"; exit 0; }
 
 # --- Change to project directory ---
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"

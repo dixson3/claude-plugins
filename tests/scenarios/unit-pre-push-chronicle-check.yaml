@@ -41,28 +41,5 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: Chronicle-check skipped when chronicler disabled
-  - name: "skipped_when_chronicler_disabled"
-    run: |
-      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-diary.sh" 2>&1)
-      EXIT_CODE=$?
-      echo "$OUTPUT"
-      if [ "$EXIT_CODE" -eq 0 ]; then
-        if echo "$OUTPUT" | grep -q "CHRONICLE-CHECK"; then
-          echo "FAIL: chronicle-check should not run when chronicler disabled"
-          exit 1
-        fi
-        echo "OK: chronicle-check skipped when chronicler disabled"
-      else
-        echo "FAIL: should exit 0"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
 teardown:
   - "rm -f .yoshiko-flow/config.json"

@@ -76,9 +76,6 @@ create_transition_chronicle() {
     local transition="$2"   # start, pause, complete
     local snapshot="$3"     # task count summary
 
-    # Guard: chronicler must be enabled
-    yf_is_chronicler_on 2>/dev/null || return 0
-
     # Guard: bd must be available
     command -v bd >/dev/null 2>&1 || return 0
 

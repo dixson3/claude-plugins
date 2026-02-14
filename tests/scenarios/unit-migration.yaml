@@ -57,13 +57,16 @@ steps:
         echo "FAIL: lock keys leaked into config"
         exit 1
       fi
-      # Verify archivist setting preserved
-      ARCH=$(jq -r '.config.archivist_enabled' "$WORK_DIR/.yoshiko-flow/config.json")
-      if [ "$ARCH" != "false" ]; then
-        echo "FAIL: archivist_enabled should be false, got $ARCH"
+      # Verify deprecated fields were pruned
+      if jq -e '.config.archivist_enabled' "$WORK_DIR/.yoshiko-flow/config.json" >/dev/null 2>&1; then
+        echo "FAIL: archivist_enabled should have been pruned"
         exit 1
       fi
-      echo "OK: config file has config-only keys"
+      if jq -e '.config.chronicler_enabled' "$WORK_DIR/.yoshiko-flow/config.json" >/dev/null 2>&1; then
+        echo "FAIL: chronicler_enabled should have been pruned"
+        exit 1
+      fi
+      echo "OK: config file has config-only keys (deprecated fields pruned)"
     assertions:
       - type: exit_code
         value: "0"

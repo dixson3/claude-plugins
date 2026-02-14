@@ -24,8 +24,6 @@ if [[ ! -f "$GATE_FILE" ]]; then
   # ── Chronicle staleness nudge (subshell, fail-open) ────────────────
   (
     set +e
-    # Guard: chronicler must be on
-    yf_is_chronicler_on 2>/dev/null || exit 0
     command -v bd >/dev/null 2>&1 || exit 0
     command -v jq >/dev/null 2>&1 || exit 0
 

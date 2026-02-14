@@ -21,9 +21,8 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/yf-config.sh"
 
-# --- Guard: exit if yf disabled or chronicler disabled ---
+# --- Guard: exit if yf disabled ---
 yf_is_enabled || exit 0
-yf_is_chronicler_on || exit 0
 
 # --- Change to project directory ---
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"

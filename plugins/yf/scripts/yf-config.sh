@@ -54,12 +54,6 @@ _yf_check_flag() {
 # yf_is_enabled — returns 0 if enabled, 1 if disabled
 yf_is_enabled() { _yf_check_flag '.enabled'; }
 
-# yf_is_chronicler_on — returns 0 if chronicler enabled, 1 if disabled
-yf_is_chronicler_on() { _yf_check_flag '.config.chronicler_enabled'; }
-
-# yf_is_archivist_on — returns 0 if archivist enabled, 1 if disabled
-yf_is_archivist_on() { _yf_check_flag '.config.archivist_enabled'; }
-
 # yf_is_prune_on_complete — returns 0 if plan-completion pruning enabled
 yf_is_prune_on_complete() { _yf_check_flag '.config.auto_prune.on_plan_complete'; }
 

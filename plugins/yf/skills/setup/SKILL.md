@@ -1,144 +1,110 @@
 ---
 name: yf:setup
-description: Configure Yoshiko Flow for this project (idempotent — works for initial setup and reconfiguration)
+description: Configure Yoshiko Flow for this project (zero-question setup)
 user_invocable: true
+arguments:
+  - name: action
+    description: "Optional: 'disable' to disable yf, or 'artifact_dir:<name>' to set artifact directory"
+    required: false
 ---
 
-# /yf:setup — Project Configuration Wizard
+# /yf:setup — Project Configuration
 
-Idempotent setup skill. Works for both first-run and reconfiguration.
+Zero-question setup. Enables yf with sensible defaults. Chronicler and archivist are always on.
 
 ## Behavior
 
-### 1. Read existing config
+### Default (no arguments)
 
-Check if `.yoshiko-flow/config.json` exists. Load config:
-
-```bash
-cat .yoshiko-flow/config.json 2>/dev/null || echo "{}"
-```
-
-Extract current values (defaults shown):
-- `enabled` → `true`
-- `config.artifact_dir` → `"docs"`
-- `config.chronicler_enabled` → `true`
-- `config.archivist_enabled` → `true`
-
-If reconfiguring, show a summary:
-```
-Current configuration:
-  Enabled: true
-  Artifact directory: docs
-  Chronicler: enabled
-  Archivist: enabled
-```
-
-### 2. Ask questions
-
-Use AskUserQuestion with these questions (pre-populate descriptions with current values when reconfiguring):
-
-**Question 1**: "Do you want to enable Yoshiko Flow on this project?"
-- Options: "Yes" (enabled=true), "No" (enabled=false)
-- Header: "Enable YF"
-
-**Question 2**: "Where should artifacts (plans, diary) be stored?"
-- Options: "docs/ (Recommended)", "project root", custom
-- Header: "Artifact dir"
-
-**Question 3**: "Should the chronicler (context capture & diary generation) be enabled?"
-- Options: "Yes (Recommended)", "No"
-- Header: "Chronicler"
-
-**Question 4**: "Should the archivist (research & decision documentation) be enabled?"
-- Options: "Yes (Recommended)", "No"
-- Header: "Archivist"
-
-### 3. Write config
-
-All config goes to `.yoshiko-flow/config.json` (committed to git):
+Enable yf with `artifact_dir: docs`. No questions asked.
 
 ```bash
 YF_CONFIG="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/config.json"
 mkdir -p "${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow"
 
-# Write config
 if [ -f "$YF_CONFIG" ]; then
-  jq --argjson enabled ENABLED_BOOL \
-     --arg artifact_dir "ARTIFACT_DIR" \
-     --argjson chronicler CHRONICLER_BOOL \
-     --argjson archivist ARCHIVIST_BOOL \
-     '. + {enabled: $enabled, config: {artifact_dir: $artifact_dir, chronicler_enabled: $chronicler, archivist_enabled: $archivist}}' \
+  jq '. + {enabled: true, config: (.config // {} | {artifact_dir: (.artifact_dir // "docs")} )}' \
      "$YF_CONFIG" > "$YF_CONFIG.tmp" && mv "$YF_CONFIG.tmp" "$YF_CONFIG"
 else
-  jq -n --argjson enabled ENABLED_BOOL \
-        --arg artifact_dir "ARTIFACT_DIR" \
-        --argjson chronicler CHRONICLER_BOOL \
-        --argjson archivist ARCHIVIST_BOOL \
-        '{enabled: $enabled, config: {artifact_dir: $artifact_dir, chronicler_enabled: $chronicler, archivist_enabled: $archivist}}' \
-        > "$YF_CONFIG"
+  jq -n '{enabled: true, config: {artifact_dir: "docs"}}' > "$YF_CONFIG"
 fi
 ```
 
-Replace `ENABLED_BOOL`, `ARTIFACT_DIR`, `CHRONICLER_BOOL`, `ARCHIVIST_BOOL` with actual values from the user's answers.
-
-### 4. Run preflight
-
-Execute the preflight script to reconcile artifacts with the new config:
+Then run preflight:
 
 ```bash
 CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}" bash "${CLAUDE_PLUGIN_ROOT}/scripts/plugin-preflight.sh"
 ```
 
-This will install/remove rules based on the new settings.
+Report:
 
-### 4b. Project environment
-
-The preflight script automatically:
-- Ensures `.gitignore` has entries for yf ephemeral files (sentinel-bracketed block)
-- Removes conflicting `bd init` / `bd onboard` content from AGENTS.md
-
-No manual action needed — handled by the preflight pipeline.
-
-### 5. Report results
-
-Show what changed. Examples:
-
-**First run:**
 ```
-Initial setup complete.
-  Enabled: true
+Yoshiko Flow enabled.
   Artifact directory: docs
-  Chronicler: enabled
-  Archivist: enabled
+  Chronicler: always on
+  Archivist: always on
   Config: .yoshiko-flow/config.json
-  Rules installed: 11
 ```
 
-**Reconfiguration with changes:**
+### `disable` argument
+
+Disable yf and remove rules:
+
+```bash
+YF_CONFIG="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/config.json"
+mkdir -p "${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow"
+
+if [ -f "$YF_CONFIG" ]; then
+  jq '. + {enabled: false}' "$YF_CONFIG" > "$YF_CONFIG.tmp" && mv "$YF_CONFIG.tmp" "$YF_CONFIG"
+else
+  jq -n '{enabled: false, config: {artifact_dir: "docs"}}' > "$YF_CONFIG"
+fi
 ```
-Configuration updated.
-  Enabled: true → false
-  Chronicler: enabled → disabled
-  Archivist: enabled → disabled
+
+Then run preflight (which removes all rules when disabled).
+
+Report:
+
+```
+Yoshiko Flow disabled.
+  Rules removed.
+  Re-enable with /yf:setup
+```
+
+### `artifact_dir:<name>` argument
+
+Set artifact directory to `<name>`:
+
+```bash
+YF_CONFIG="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/config.json"
+mkdir -p "${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow"
+
+ARTIFACT_DIR="<name>"  # extracted from argument
+
+if [ -f "$YF_CONFIG" ]; then
+  jq --arg dir "$ARTIFACT_DIR" '. + {enabled: true, config: (.config // {} | . + {artifact_dir: $dir})}' \
+     "$YF_CONFIG" > "$YF_CONFIG.tmp" && mv "$YF_CONFIG.tmp" "$YF_CONFIG"
+else
+  jq -n --arg dir "$ARTIFACT_DIR" '{enabled: true, config: {artifact_dir: $dir}}' > "$YF_CONFIG"
+fi
+```
+
+Then run preflight.
+
+Report:
+
+```
+Yoshiko Flow enabled.
+  Artifact directory: <name>
+  Chronicler: always on
+  Archivist: always on
   Config: .yoshiko-flow/config.json
-  Rules removed: 11
 ```
 
-**No changes:**
-```
-No changes — configuration unchanged.
-```
+## Important
 
-## Answer Mapping
-
-| Answer | Field | Value |
-|--------|-------|-------|
-| Enable YF: Yes | `enabled` | `true` |
-| Enable YF: No | `enabled` | `false` |
-| Artifact dir: docs/ | `config.artifact_dir` | `"docs"` |
-| Artifact dir: project root | `config.artifact_dir` | `"."` |
-| Artifact dir: (custom) | `config.artifact_dir` | user-provided path |
-| Chronicler: Yes | `config.chronicler_enabled` | `true` |
-| Chronicler: No | `config.chronicler_enabled` | `false` |
-| Archivist: Yes | `config.archivist_enabled` | `true` |
-| Archivist: No | `config.archivist_enabled` | `false` |
+- No `AskUserQuestion` calls — this is zero-question setup
+- Config writes only `{enabled, config: {artifact_dir}}` — no chronicler/archivist fields
+- Chronicler and archivist are always on when yf is enabled
+- The only way to disable yf is `/yf:setup disable`
+- Old configs with `chronicler_enabled`/`archivist_enabled` are pruned by preflight

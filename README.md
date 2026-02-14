@@ -83,14 +83,14 @@ Flags research findings and design decisions during work, then processes them in
 
 ### Configuration
 
-Run `/yf:setup` to configure Yoshiko Flow interactively. Config lives in `.yoshiko-flow/config.json` (committed to git).
+Run `/yf:setup` to enable Yoshiko Flow. Config lives in `.yoshiko-flow/config.json` (committed to git).
 
 | Setting | Description |
 |---------|-------------|
 | `enabled` | Master switch — when `false`, all rule symlinks are removed |
-| `chronicler_enabled` | Enable/disable the chronicler capability |
-| `archivist_enabled` | Enable/disable the archivist capability |
 | `artifact_dir` | Base directory for plans and diary (default: `docs`) |
+
+Chronicler and archivist are always on when yf is enabled. Use `/yf:setup disable` to disable yf entirely.
 
 ## Contributing
 

@@ -113,7 +113,40 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 8: Fail-open on bad CLAUDE_PROJECT_DIR
+  # Case 8: Config pruning strips deprecated chronicler/archivist fields
+  - name: "config_pruning"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/lock.json"
+      echo '{"enabled":true,"config":{"artifact_dir":"docs","chronicler_enabled":true,"archivist_enabled":true}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      # Check the config file no longer has the deprecated fields
+      if jq -e '.config.chronicler_enabled' "$WORK_DIR/.yoshiko-flow/config.json" >/dev/null 2>&1; then
+        echo "FAIL: chronicler_enabled not pruned"
+        exit 1
+      fi
+      if jq -e '.config.archivist_enabled' "$WORK_DIR/.yoshiko-flow/config.json" >/dev/null 2>&1; then
+        echo "FAIL: archivist_enabled not pruned"
+        exit 1
+      fi
+      # Verify enabled and artifact_dir are still present
+      ENABLED=$(jq -r '.enabled' "$WORK_DIR/.yoshiko-flow/config.json")
+      ART_DIR=$(jq -r '.config.artifact_dir' "$WORK_DIR/.yoshiko-flow/config.json")
+      if [ "$ENABLED" = "true" ] && [ "$ART_DIR" = "docs" ]; then
+        echo "OK: deprecated fields pruned, valid fields preserved"
+      else
+        echo "FAIL: enabled=$ENABLED artifact_dir=$ART_DIR"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "pruned deprecated"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: Fail-open on bad CLAUDE_PROJECT_DIR
   - name: "failopen_bad_project_dir"
     run: |
       CLAUDE_PROJECT_DIR="/nonexistent/path" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1

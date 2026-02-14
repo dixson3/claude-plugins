@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.14.0
+# Yoshiko Flow (yf) Plugin — v2.16.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -206,17 +206,15 @@ Config lives in `.yoshiko-flow/config.json` (committed to git), while lock state
 {
   "enabled": true,
   "config": {
-    "artifact_dir": "docs",
-    "chronicler_enabled": true,
-    "archivist_enabled": true
+    "artifact_dir": "docs"
   }
 }
 ```
 
 - **`enabled`** — Master switch. When `false`, preflight removes all rule symlinks.
 - **`config.artifact_dir`** — Base directory for plans and diary (default: `docs`).
-- **`config.chronicler_enabled`** — When `false`, chronicle rules are not installed.
-- **`config.archivist_enabled`** — When `false`, archivist rules are not installed.
+
+Chronicler and archivist are always on when yf is enabled. Old configs with `chronicler_enabled`/`archivist_enabled` fields are automatically pruned on first preflight run.
 
 Lock state (`lock.json`) is managed by `plugin-preflight.sh` — do not edit manually.
 

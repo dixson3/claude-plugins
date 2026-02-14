@@ -24,25 +24,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Exits cleanly when chronicler disabled
-  - name: "exits_when_chronicler_disabled"
-    run: |
-      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" check 2>&1)
-      EXIT_CODE=$?
-      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ]; then
-        echo "OK: exits silently when chronicler disabled"
-      else
-        echo "FAIL: should exit 0 silently (exit=$EXIT_CODE, output=$OUTPUT)"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 3: No significant changes — no drafts
+  # Case 2: No significant changes — no drafts
   - name: "no_significant_changes"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -65,7 +47,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Keyword matches in commits trigger draft creation
+  # Case 3: Keyword matches in commits trigger draft creation
   - name: "keyword_matches_create_draft"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -115,7 +97,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: Significant file changes trigger draft creation
+  # Case 4: Significant file changes trigger draft creation
   - name: "significant_files_create_draft"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -139,7 +121,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: Dedup — second run does not create duplicate drafts
+  # Case 5: Dedup — second run does not create duplicate drafts
   - name: "dedup_prevents_duplicates"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -163,7 +145,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: In-progress beads trigger draft creation (even without commits)
+  # Case 6: In-progress beads trigger draft creation (even without commits)
   - name: "in_progress_beads_create_draft"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -213,7 +195,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 8: In-progress beads dedup works
+  # Case 7: In-progress beads dedup works
   - name: "in_progress_beads_dedup"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -232,7 +214,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 9: Always exits 0
+  # Case 8: Always exits 0
   - name: "always_exits_zero"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"

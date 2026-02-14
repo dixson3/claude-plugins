@@ -194,9 +194,7 @@ Config is split across two files in `.yoshiko-flow/`:
 {
   "enabled": true,
   "config": {
-    "artifact_dir": "docs",
-    "chronicler_enabled": true,
-    "archivist_enabled": true
+    "artifact_dir": "docs"
   }
 }
 
@@ -221,8 +219,6 @@ The `yf-config.sh` shell library provides accessor functions:
 |----------|-------------|
 | `yf_merged_config` | Read merged config as JSON |
 | `yf_is_enabled` | Check master switch |
-| `yf_is_chronicler_on` | Check chronicler enabled |
-| `yf_is_archivist_on` | Check archivist enabled |
 | `yf_read_field` | Read arbitrary config field |
 | `yf_config_exists` | Check if config file exists |
 

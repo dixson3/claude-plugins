@@ -5,26 +5,7 @@ setup:
   - "git init . >/dev/null 2>&1 || true"
 
 steps:
-  # Case 1: Exits cleanly when archivist disabled
-  - name: "exits_when_disabled"
-    run: |
-      echo '{"config":{"archivist_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/archive-suggest.sh" 2>&1)
-      EXIT_CODE=$?
-      echo "$OUTPUT"
-      if [ "$EXIT_CODE" -eq 0 ] && echo "$OUTPUT" | grep -q "disabled"; then
-        echo "OK: exits cleanly when disabled"
-      else
-        echo "FAIL: should exit cleanly when disabled (exit=$EXIT_CODE)"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 2: No commits found
+  # Case 1: No commits found
   - name: "no_commits"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -42,7 +23,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: Detects research keywords
+  # Case 2: Detects research keywords
   - name: "detects_research_keywords"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -63,7 +44,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Detects decision keywords
+  # Case 3: Detects decision keywords
   - name: "detects_decision_keywords"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -83,7 +64,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: Script always exits 0
+  # Case 4: Script always exits 0
   - name: "always_exits_zero"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"

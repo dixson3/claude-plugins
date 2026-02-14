@@ -4,30 +4,7 @@ setup:
   - "mkdir -p .yoshiko-flow"
 
 steps:
-  # Case 1: Archivist check skipped when disabled
-  - name: "archivist_check_skipped_when_disabled"
-    run: |
-      echo '{"config":{"archivist_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-diary.sh" 2>&1)
-      EXIT_CODE=$?
-      echo "$OUTPUT"
-      if [ "$EXIT_CODE" -eq 0 ]; then
-        if echo "$OUTPUT" | grep -q "ARCHIVIST"; then
-          echo "FAIL: should not show archivist warning when disabled"
-          exit 1
-        fi
-        echo "OK: archivist check skipped"
-      else
-        echo "FAIL: should exit 0 (exit=$EXIT_CODE)"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 2: Hook is non-blocking (always exits 0)
+  # Case 1: Hook is non-blocking (always exits 0)
   - name: "non_blocking_exit"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -45,7 +22,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: Archivist enabled by default (no config)
+  # Case 2: Archivist enabled by default (no config)
   - name: "archivist_enabled_by_default"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"

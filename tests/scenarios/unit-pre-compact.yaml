@@ -24,25 +24,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Exits silently when chronicler disabled
-  - name: "exits_when_chronicler_disabled"
-    run: |
-      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" 2>&1)
-      EXIT_CODE=$?
-      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ]; then
-        echo "OK: exits silently when chronicler disabled"
-      else
-        echo "FAIL: should exit 0 silently (exit=$EXIT_CODE, output=$OUTPUT)"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 3: Runs chronicle-check.sh (calls bd)
+  # Case 2: Runs chronicle-check.sh (calls bd)
   - name: "runs_chronicle_check"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -81,7 +63,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Always exits 0 even when bd missing
+  # Case 3: Always exits 0 even when bd missing
   - name: "always_exits_zero_bd_missing"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -100,7 +82,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: Always exits 0 even when chronicle-check fails
+  # Case 4: Always exits 0 even when chronicle-check fails
   - name: "always_exits_zero_on_failure"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"

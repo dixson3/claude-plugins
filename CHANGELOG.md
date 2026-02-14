@@ -5,6 +5,27 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.0] - 2026-02-14
+
+### Changed
+
+- **Zero-question setup**: `/yf:setup` now enables yf silently with no interactive questions. Chronicler and archivist are always on — no longer toggleable.
+- **Config simplified**: `chronicler_enabled` and `archivist_enabled` fields removed from config. Old configs are automatically pruned on first preflight run.
+- **Setup interface**: `/yf:setup disable` to disable yf, `/yf:setup artifact_dir:<name>` to override artifact directory.
+
+### Removed
+
+- `yf_is_chronicler_on()` and `yf_is_archivist_on()` config functions
+- Feature guards for chronicler/archivist in all hooks and scripts
+- Conditional rule installation/removal based on feature toggles in preflight
+- Test files: `unit-preflight-chronicler.yaml`, `unit-preflight-archivist.yaml`, `unit-archivist-config.yaml`
+- Test cases for disabled chronicler/archivist guards across 10 test files
+
+### Added
+
+- Config pruning in preflight: strips deprecated `chronicler_enabled`/`archivist_enabled` fields on first run
+- New test case `config_pruning` in `unit-preflight.yaml` verifying the pruning behavior
+
 ## [2.15.0] - 2026-02-14
 
 ### Added

@@ -26,7 +26,7 @@ steps:
   - name: "reads_config"
     run: |
       mkdir -p "$WORK_DIR/.claude"
-      echo '{"enabled":true,"config":{"artifact_dir":"docs","chronicler_enabled":true}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       MERGED=$(yf_merged_config)
@@ -48,7 +48,7 @@ steps:
   - name: "disabled_detected"
     run: |
       mkdir -p "$WORK_DIR/.claude"
-      echo '{"enabled":false,"config":{"artifact_dir":"docs","chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":false,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       if yf_is_enabled; then
@@ -62,25 +62,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Chronicler disabled detected
-  - name: "chronicler_disabled"
-    run: |
-      mkdir -p "$WORK_DIR/.claude"
-      echo '{"enabled":true,"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      export CLAUDE_PROJECT_DIR="$WORK_DIR"
-      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
-      if yf_is_chronicler_on; then
-        echo "FAIL: chronicler should be disabled"
-        exit 1
-      fi
-      echo "OK: chronicler disabled"
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 5: Malformed config → fail-open
+  # Case 4: Malformed config -- fail-open
   - name: "malformed_failopen"
     run: |
       mkdir -p "$WORK_DIR/.claude"
@@ -99,7 +81,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: yf_read_field works
+  # Case 5: yf_read_field works
   - name: "read_field"
     run: |
       mkdir -p "$WORK_DIR/.claude"
@@ -119,7 +101,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: yf_config_exists
+  # Case 6: yf_config_exists
   - name: "config_exists_check"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -143,7 +125,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 8: prune_on_complete defaults to enabled
+  # Case 7: prune_on_complete defaults to enabled
   - name: "prune_on_complete_default"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -161,7 +143,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 9: prune_on_complete disabled
+  # Case 8: prune_on_complete disabled
   - name: "prune_on_complete_disabled"
     run: |
       echo '{"enabled":true,"config":{"auto_prune":{"on_plan_complete":false}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
@@ -178,7 +160,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 10: prune_on_push defaults to enabled
+  # Case 9: prune_on_push defaults to enabled
   - name: "prune_on_push_default"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -196,7 +178,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 11: prune_on_push disabled
+  # Case 10: prune_on_push disabled
   - name: "prune_on_push_disabled"
     run: |
       echo '{"enabled":true,"config":{"auto_prune":{"on_push":false}}}' > "$WORK_DIR/.yoshiko-flow/config.json"

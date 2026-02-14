@@ -9,9 +9,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 . "$SCRIPT_DIR/scripts/yf-config.sh"
 yf_is_enabled || exit 0
 
-# ── Chronicler guard: exit early if chronicler disabled ───────────────
-yf_is_chronicler_on || exit 0
-
 if ! command -v bd &> /dev/null; then
     echo "beads-cli not found, skipping chronicle check"
     exit 0
@@ -50,10 +47,8 @@ warn_open_beads "ys:chronicle" \
     "/yf:chronicle_diary" "/yf:chronicle_disable"
 
 # ── Archivist check: warn about open archive beads ─────────────────
-if yf_is_archivist_on; then
-    warn_open_beads "ys:archive" \
-        "ARCHIVIST: Open archives detected" \
-        "/yf:archive_process" "/yf:archive_disable"
-fi
+warn_open_beads "ys:archive" \
+    "ARCHIVIST: Open archives detected" \
+    "/yf:archive_process" "/yf:archive_disable"
 
 exit 0

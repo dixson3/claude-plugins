@@ -25,26 +25,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Exits silently when chronicler disabled
-  - name: "exits_when_chronicler_disabled"
-    run: |
-      echo '{"config":{"chronicler_enabled":false}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/.pending-diary"
-      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
-      EXIT_CODE=$?
-      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ] && [ ! -f "$WORK_DIR/.beads/.pending-diary" ]; then
-        echo "OK: exits silently when chronicler disabled"
-      else
-        echo "FAIL: should exit 0 silently (exit=$EXIT_CODE, output=$OUTPUT)"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 3: Writes pending-diary marker when open chronicles exist
+  # Case 2: Writes pending-diary marker when open chronicles exist
   - name: "writes_pending_marker"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -82,7 +63,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: No marker when no open chronicles
+  # Case 3: No marker when no open chronicles
   - name: "no_marker_when_no_chronicles"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -110,7 +91,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: Always exits 0 even when bd fails
+  # Case 4: Always exits 0 even when bd fails
   - name: "always_exits_zero"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
