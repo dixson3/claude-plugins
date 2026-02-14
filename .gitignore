@@ -1,12 +1,13 @@
 # Test harness binary
 tests/bin/
 
+# Local Claude Code settings (machine-specific)
+.claude/settings.local.json
+
 # >>> yf-managed >>>
 # Beads issue tracker (local-only)
 .beads/
 
-# Claude Code local files
-.claude/settings.local.json
-.claude/CLAUDE.local.md
-.claude/rules/yf-*.md
+# Plugin-managed rule symlinks
+.claude/rules/yf/
 # <<< yf-managed <<<
