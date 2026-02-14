@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.11.0
+# Yoshiko Flow (yf) Plugin — v2.12.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -31,7 +31,7 @@ It does this through three capabilities:
 
 4. **Start planning** — Enter plan mode, write your plan, exit. Yoshiko Flow takes it from there — saving the plan, creating tracked tasks, and beginning execution. See [Plan Lifecycle](#plan-lifecycle) for details.
 
-> **Note:** Beads state (`.beads/`) is local-only and not committed to git.
+> **Note:** Beads uses a `beads-sync` branch for issue state. Code branches stay clean.
 
 ## Plan Lifecycle
 

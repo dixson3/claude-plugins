@@ -9,12 +9,22 @@ bd ready              # Find available work
 bd show <id>          # View issue details
 bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
+bd sync               # Sync beads state with git
 ```
 
-## Beads Are Local
+## Beads Git Workflow
 
-Beads state lives in `.beads/` and is **not committed to git**. It persists locally
-across sessions. There is no `bd sync` step and no sync branch.
+Beads state lives in `.beads/` and is **git-tracked**. Beads manages its own
+`.beads/.gitignore` to track essential files (`issues.jsonl`, `config.yaml`,
+`metadata.json`, `interactions.jsonl`) while ignoring ephemeral files (`*.db`,
+daemon files).
+
+The `beads-sync` branch keeps beads data separate from code branches:
+- Git hooks handle JSONL export/import automatically on commit and merge
+- A pre-push hook auto-pushes the `beads-sync` branch alongside your code branch
+- Code branches stay clean — beads data lives only on `beads-sync`
+
+Run `bd sync` to manually sync beads state with the git remote.
 
 ## Landing the Plane (Session Completion)
 
@@ -25,12 +35,11 @@ across sessions. There is no `bd sync` step and no sync branch.
 3. **Generate diary** (if open chronicles exist) - Invoke `/yf:chronicle_diary` to process all open chronicles into diary entries. Stage the generated files for commit.
 4. **Run quality gates** (if code changed) - Tests, linters, builds
 5. **Update issue status** - Close finished work, update in-progress items
-6. **Commit code changes** - Stage and commit implementation files
-7. **Push** (only when the user asks) - Do NOT push automatically at session close
-8. **Hand off** - Provide context for next session
+6. **Sync beads** - Run `bd sync` to push beads state
+7. **Commit code changes** - Stage and commit implementation files
+8. **Push** (only when the user asks) - Do NOT push automatically at session close
+9. **Hand off** - Provide context for next session
 
 **IMPORTANT:**
-- Beads data persists locally — no push required for issue state
-- Do NOT run `bd sync` — beads is not git-synced
 - Push code changes only when the user explicitly requests it
-- If the user says "land the plane" or "wrap up", complete steps 1-6 and ask if they want to push
+- If the user says "land the plane" or "wrap up", complete steps 1-7 and ask if they want to push

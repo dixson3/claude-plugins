@@ -5,9 +5,6 @@ tests/bin/
 .claude/settings.local.json
 
 # >>> yf-managed >>>
-# Beads issue tracker (local-only)
-.beads/
-
 # Plugin-managed rule symlinks
 .claude/rules/yf/
 # <<< yf-managed <<<

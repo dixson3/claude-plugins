@@ -18,7 +18,7 @@
     ],
     "directories": ["docs/plans", "docs/diary", "docs/research", "docs/decisions", ".yoshiko-flow"],
     "setup": [
-      { "name": "beads", "check": "test -d .beads", "run": "bd init --skip-hooks" }
+      { "name": "beads", "check": "test -d .beads", "run": "bd init && bd config set sync.branch beads-sync && bd config set sync.require_confirmation_on_mass_delete true && bd hooks install" }
     ]
   }
 }

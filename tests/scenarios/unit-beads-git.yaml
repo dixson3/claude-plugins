@@ -1,0 +1,139 @@
+name: "Unit: beads git workflow — sync branch and hooks enabled"
+
+steps:
+  # Case 1: setup-project.sh generates .gitignore without .beads/ in managed block
+  - name: "gitignore_no_beads"
+    run: |
+      rm -f "$WORK_DIR/.gitignore"
+      mkdir -p "$WORK_DIR/.yoshiko-flow"
+      echo '{"enabled": true}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" gitignore 2>&1
+      MANAGED=$(awk '/# >>> yf-managed >>>/,/# <<< yf-managed <<</' "$WORK_DIR/.gitignore" 2>/dev/null || echo "")
+      if echo "$MANAGED" | grep -q '\.beads/'; then
+        echo "FAIL: .gitignore yf-managed block still contains .beads/"
+        exit 1
+      fi
+      echo "OK: .gitignore yf-managed block does not contain .beads/"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: preflight.json does NOT use --skip-hooks
+  - name: "preflight_no_skip_hooks"
+    run: |
+      RUN_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads") | .run' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
+      if echo "$RUN_CMD" | grep -q '\-\-skip-hooks'; then
+        echo "FAIL: preflight still uses --skip-hooks"
+        exit 1
+      fi
+      echo "OK: preflight does not use --skip-hooks"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: preflight.json includes bd hooks install
+  - name: "preflight_has_hooks_install"
+    run: |
+      RUN_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads") | .run' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
+      if echo "$RUN_CMD" | grep -q 'bd hooks install'; then
+        echo "OK: preflight includes bd hooks install"
+      else
+        echo "FAIL: preflight run command is '$RUN_CMD', expected 'bd hooks install'"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: beads.md Quick Reference contains bd sync
+  - name: "beads_has_bd_sync"
+    run: |
+      if grep -A10 '## Quick Reference' "$PLUGIN_DIR/plugins/yf/rules/beads.md" | grep -q 'bd sync'; then
+        echo "OK: beads.md Quick Reference includes bd sync"
+      else
+        echo "FAIL: beads.md Quick Reference does not include bd sync"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: beads.md contains "Beads Git Workflow" section
+  - name: "beads_has_git_workflow_section"
+    run: |
+      if grep -q 'Beads Git Workflow' "$PLUGIN_DIR/plugins/yf/rules/beads.md"; then
+        echo "OK: beads.md contains 'Beads Git Workflow' section"
+      else
+        echo "FAIL: beads.md missing 'Beads Git Workflow' section"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: beads.md does NOT contain "Beads Are Local"
+  - name: "beads_no_local_section"
+    run: |
+      if grep -q 'Beads Are Local' "$PLUGIN_DIR/plugins/yf/rules/beads.md"; then
+        echo "FAIL: beads.md still contains 'Beads Are Local' section"
+        exit 1
+      fi
+      echo "OK: beads.md does not contain 'Beads Are Local'"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: README.md no longer says "local-only"
+  - name: "readme_no_local_only"
+    run: |
+      if grep -q 'local-only' "$PLUGIN_DIR/plugins/yf/README.md"; then
+        echo "FAIL: README.md still says 'local-only'"
+        exit 1
+      fi
+      echo "OK: README.md does not say 'local-only'"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: install-beads-push-hook.sh exists
+  - name: "push_hook_installer_exists"
+    run: |
+      if [ -f "$PLUGIN_DIR/plugins/yf/scripts/install-beads-push-hook.sh" ]; then
+        echo "OK: install-beads-push-hook.sh exists"
+      else
+        echo "FAIL: install-beads-push-hook.sh not found"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: setup-project.sh MANAGED_BLOCK does not include .beads/
+  - name: "setup_project_no_beads"
+    run: |
+      if grep -A5 'MANAGED_BLOCK=' "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" | grep -q '\.beads/'; then
+        echo "FAIL: setup-project.sh MANAGED_BLOCK still includes .beads/"
+        exit 1
+      fi
+      echo "OK: setup-project.sh MANAGED_BLOCK does not include .beads/"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

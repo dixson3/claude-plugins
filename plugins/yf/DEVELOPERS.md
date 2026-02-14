@@ -170,16 +170,14 @@ Preflight also calls `setup-project.sh` after setup commands to manage two proje
 
 ```
 # >>> yf-managed >>>
-.beads/
-.claude/settings.local.json
-.claude/CLAUDE.local.md
+# Plugin-managed rule symlinks
 .claude/rules/yf/
 # <<< yf-managed <<<
 ```
 
 The sentinel markers (`# >>> yf-managed >>>` / `# <<< yf-managed <<<`) make the block identifiable for idempotent updates. User entries outside the block are preserved. Block replacement uses awk for bash 3.2 / macOS compatibility.
 
-**AGENTS.md cleanup** — `bd init --skip-hooks` creates an AGENTS.md with `bd sync`, mandatory `git push`, and push-enforcement language that conflicts with yf's local-only beads model. The script detects and removes this content, preserving any non-bd sections.
+**AGENTS.md cleanup** — `bd init` creates an AGENTS.md with session-close instructions. The yf rules are the canonical source for agent instructions (beads workflow, session protocol), so this content is removed to prevent duplication and conflicts. The script detects and removes bd-generated content, preserving any non-bd sections.
 
 ## Configuration Model
 

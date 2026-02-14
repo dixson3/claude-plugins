@@ -32,10 +32,7 @@ SENTINEL_START="# >>> yf-managed >>>"
 SENTINEL_END="# <<< yf-managed <<<"
 
 # The managed block content (without sentinels)
-MANAGED_BLOCK='# Beads issue tracker (local-only)
-.beads/
-
-# Plugin-managed rule symlinks
+MANAGED_BLOCK='# Plugin-managed rule symlinks
 .claude/rules/yf/'
 
 # Full block with sentinels

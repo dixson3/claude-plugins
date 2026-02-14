@@ -83,6 +83,32 @@ if [[ ! -f "$GATE_FILE" ]]; then
     ) || true
     touch "$INTAKE_MARKER"
   fi
+
+  # ── Chronicle safety net: warn if active plan has beads but no chronicle ──
+  CHRONICLE_MARKER="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/plan-chronicle-ok"
+  if [[ ! -f "$CHRONICLE_MARKER" ]] && [[ -d "$PLANS_DIR" ]] && ls "$PLANS_DIR"/plan-*.md >/dev/null 2>&1; then
+    (
+      set +e
+      command -v bd >/dev/null 2>&1 || exit 0
+      command -v jq >/dev/null 2>&1 || exit 0
+      LATEST_PLAN=$(ls -t "$PLANS_DIR"/plan-*.md 2>/dev/null | head -1)
+      [[ -n "$LATEST_PLAN" ]] || exit 0
+      grep -q 'Status: Completed' "$LATEST_PLAN" 2>/dev/null && exit 0
+      PLAN_IDX=$(basename "$LATEST_PLAN" | sed -n 's/^plan-\([0-9]*\).*/\1/p')
+      [[ -n "$PLAN_IDX" ]] || exit 0
+      # Only check if beads exist (plan is past intake)
+      EPIC_COUNT=$(bd list -l "plan:$PLAN_IDX" --type=epic --limit=1 --json 2>/dev/null \
+        | jq 'length' 2>/dev/null) || EPIC_COUNT="0"
+      [[ "$EPIC_COUNT" != "0" ]] || exit 0
+      # Check for any chronicle for this plan
+      CHRON_COUNT=$(bd list -l "ys:chronicle,plan:$PLAN_IDX" --limit=1 --json 2>/dev/null \
+        | jq 'length' 2>/dev/null) || CHRON_COUNT="0"
+      if [[ "$CHRON_COUNT" = "0" ]]; then
+        echo "WARNING: Plan $PLAN_IDX has tasks but no chronicle. Run /yf:chronicle_capture topic:planning to preserve planning context."
+      fi
+    ) || true
+    touch "$CHRONICLE_MARKER"
+  fi
   exit 0
 fi
 

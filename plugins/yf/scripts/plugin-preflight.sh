@@ -367,6 +367,53 @@ j=0; while [ $j -lt "$SETUP_COUNT" ]; do
   PLUGIN_LOCK=$(echo "$PLUGIN_LOCK" | jq ".artifacts.setup += [{\"name\": \"$SETUP_NAME\", \"completed\": $COMPLETED}]")
 j=$((j + 1)); done
 
+# --- Beads git workflow migration ---
+BEADS_MIGRATION_COMPLETE=$(jq -r '.preflight.plugins.yf.beads_migration_complete // false' "$LOCK_FILE" 2>/dev/null || echo "false")
+
+if [ -d "$PROJECT_DIR/.beads" ] && [ "$BEADS_MIGRATION_COMPLETE" != "true" ]; then
+  # Check if .beads/ is in the yf-managed gitignore block (legacy local-only)
+  NEEDS_MIGRATION=false
+  if [ -f "$PROJECT_DIR/.gitignore" ] && grep -qF "# >>> yf-managed >>>" "$PROJECT_DIR/.gitignore"; then
+    if awk '/# >>> yf-managed >>>/,/# <<< yf-managed <<</' "$PROJECT_DIR/.gitignore" | grep -q '\.beads/'; then
+      NEEDS_MIGRATION=true
+    fi
+  fi
+
+  if $NEEDS_MIGRATION; then
+    echo "preflight: migrating beads to git-tracked model..."
+
+    # Configure sync branch
+    (cd "$PROJECT_DIR" && bd config set sync.branch beads-sync) 2>&1 || echo "preflight: warn: failed to set sync.branch" >&2
+
+    # Enable mass-delete protection
+    (cd "$PROJECT_DIR" && bd config set sync.require_confirmation_on_mass_delete true) 2>&1 || echo "preflight: warn: failed to set mass-delete protection" >&2
+
+    # Install beads git hooks
+    (cd "$PROJECT_DIR" && bd hooks install) 2>&1 || echo "preflight: warn: failed to install beads hooks" >&2
+
+    # Install pre-push hook for beads-sync auto-push
+    bash "$SCRIPT_DIR/install-beads-push-hook.sh" "$PROJECT_DIR" 2>&1 || echo "preflight: warn: failed to install beads push hook" >&2
+
+    # Run doctor to verify
+    (cd "$PROJECT_DIR" && bd doctor) 2>&1 || echo "preflight: warn: bd doctor reported issues" >&2
+
+    # Record migration complete in lock
+    PLUGIN_LOCK=$(echo "$PLUGIN_LOCK" | jq '.beads_migration_complete = true')
+
+    echo "preflight: beads git workflow migration complete"
+    echo ""
+    echo "preflight: ACTION REQUIRED — To enable beads git tracking, run:"
+    echo "  git add .beads/"
+    echo "  git commit -m \"chore: enable beads git-tracking\""
+    echo "  git push  # pre-push hook will create beads-sync branch"
+  fi
+fi
+
+# Install beads pre-push hook unconditionally (idempotent)
+if [ -d "$PROJECT_DIR/.beads" ]; then
+  bash "$SCRIPT_DIR/install-beads-push-hook.sh" "$PROJECT_DIR" 2>&1 || echo "preflight: warn: failed to install beads push hook" >&2
+fi
+
 # --- Project setup (gitignore + AGENTS.md cleanup) ---
 bash "$SCRIPT_DIR/setup-project.sh" all 2>&1 || true
 

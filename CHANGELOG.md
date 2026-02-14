@@ -5,6 +5,28 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.0] - 2026-02-13
+
+### Changed
+
+- **Beads git workflow integration**: `.beads/` transitions from local-only to git-tracked with `beads-sync` branch strategy
+  - Reversed the local-only decision from v2.5.0 (Plan 18) — beads now uses git hooks for JSONL sync and a dedicated sync branch
+  - `setup-project.sh`: Removed `.beads/` from yf-managed `.gitignore` block (beads manages its own `.beads/.gitignore`)
+  - `preflight.json`: `bd init` no longer uses `--skip-hooks`; chains `bd config set sync.branch beads-sync`, mass-delete protection, and `bd hooks install`
+  - `plugin-preflight.sh`: Added automatic migration for legacy local-only deployments (detects `.beads/` in yf-managed gitignore, configures sync branch, installs hooks, records migration in lock)
+  - `rules/beads.md`: Rewritten — "Beads Are Local" replaced with "Beads Git Workflow" explaining sync branch strategy; `bd sync` added to Quick Reference; session-close protocol includes sync step
+  - `README.md`: Updated beads note from "local-only" to "beads-sync branch" description
+  - `DEVELOPERS.md`: Updated gitignore managed block example and AGENTS.md cleanup rationale
+
+### Added
+
+- `install-beads-push-hook.sh` script — idempotent installer for pre-push hook that auto-pushes `beads-sync` branch alongside code pushes (fail-open, sentinel-marked, appends to existing hooks)
+- Test scenario: `unit-beads-git.yaml` (9 cases) — validates gitignore block, preflight commands, beads.md content, README, hook installer, and setup-project.sh
+
+### Removed
+
+- Test scenario: `unit-beads-local.yaml` — replaced by `unit-beads-git.yaml`
+
 ## [2.11.0] - 2026-02-13
 
 ### Changed
