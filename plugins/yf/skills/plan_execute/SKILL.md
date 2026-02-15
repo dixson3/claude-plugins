@@ -12,7 +12,7 @@ arguments:
 
 # Execute Plan Skill
 
-Orchestrates plan execution using the task pump. The pump reads ready beads from the plan DAG, groups them by assigned agent, and dispatches them as parallel Task tool calls. The execution loop continues until all work is complete.
+Orchestrates plan execution using the task pump. The pump reads ready beads from the plan DAG, classifies each into a **formula track** (dispatched via `/yf:swarm_run`) or an **agent track** (dispatched via bare Task tool calls), and launches them in parallel. The execution loop continues until all work is complete.
 
 ## Architecture
 
@@ -62,8 +62,8 @@ Call `/yf:task_pump` with the plan index. The pump:
 
 1. Calls `plan-exec.sh next <root-epic-id>` to get ready beads
 2. Filters out already-dispatched beads via `pump-state.sh is-dispatched`
-3. Groups remaining beads by `agent:<name>` label
-4. Returns the grouped beads for dispatch
+3. Classifies each bead into **formula track** (has `formula:<name>` label → dispatch via `/yf:swarm_run`) or **agent track** (has `agent:<name>` label only → dispatch via bare Task tool)
+4. Returns two groups: formula beads (for swarm dispatch) and agent beads (for bare Task dispatch)
 
 #### 3b. Check Empty Result
 
@@ -72,6 +72,9 @@ If the pump returns no beads to dispatch:
   - **completed** -> proceed to Step 4 (completion)
   - **paused** -> report "Plan is paused. Say 'resume the plan' to continue." and stop
   - **executing** with in-progress tasks -> wait for subagents to return, then re-pump
+
+> **CRITICAL: Dispatch Routing**
+> Beads with a `formula:<name>` label MUST be dispatched via `/yf:swarm_run`, NOT via bare Task tool calls. Bare dispatch of formula-labeled beads is a bug — it bypasses multi-agent workflows (research → implement → review), structured bead comments (FINDINGS/CHANGES/REVIEW/TESTS), reactive bugfix spawning, and chronicle capture.
 
 #### 3c. Dispatch in Parallel
 

@@ -10,7 +10,7 @@ When the plan pump (`/yf:plan_pump`) reads a ready bead's labels:
 bd label list <bead-id> --json | jq -r '.[] | select(startswith("formula:"))'
 ```
 
-If a `formula:<name>` label is found, this task should be dispatched through the swarm system instead of bare agent dispatch.
+If a `formula:<name>` label is found, this task MUST be dispatched through the swarm system via `/yf:swarm_run`. Bare agent dispatch (Task tool with `subagent_type`) of formula-labeled beads is a bug — it bypasses multi-agent workflows, structured bead comments, reactive bugfix, and chronicle capture.
 
 ## Behavior
 
@@ -46,6 +46,14 @@ The pump sees `formula:feature-build` and dispatches:
 ```
 
 This runs: research -> implement -> review with specialized agents.
+
+## Validation
+
+Before dispatching any bead during plan execution, verify the dispatch route:
+
+1. **Check for formula label**: `bd label list <bead-id> --json | jq -r '.[] | select(startswith("formula:"))'`
+2. **If formula label exists**: Dispatch via `/yf:swarm_run formula:<name> feature:"<title>" parent_bead:<bead-id>`. Do NOT use bare Task tool dispatch.
+3. **If no formula label**: Dispatch via bare Task tool with `subagent_type` from the `agent:<name>` label (or `general-purpose` if no agent label).
 
 ## Non-Triggers
 

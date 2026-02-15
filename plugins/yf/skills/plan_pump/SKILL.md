@@ -9,7 +9,7 @@ arguments:
 
 # Task Pump Skill
 
-Reads beads that are ready for work, groups them by assigned agent, and dispatches them as parallel Task tool calls. This is the mechanism that converts the persistent beads DAG into live agent execution.
+Reads beads that are ready for work, classifies each into a **formula track** (dispatched via `/yf:swarm_run` for multi-agent workflows) or an **agent track** (dispatched via bare Task tool calls), and launches them in parallel. This is the mechanism that converts the persistent beads DAG into live agent execution.
 
 ## When to Invoke
 
@@ -58,7 +58,7 @@ plugins/yf/scripts/pump-state.sh is-dispatched <bead-id>
 
 Skip beads that have already been dispatched (prevents double-dispatch on re-pump).
 
-### Step 4: Classify Dispatch Track and Group
+### Step 4: Classify Dispatch Track and Group (CRITICAL — formula labels take priority)
 
 For each ready bead, read labels to determine the dispatch track:
 
