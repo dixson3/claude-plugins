@@ -1,23 +1,24 @@
-# Rule: Chronicle Planning Context During Plan Transitions
+# Rule: Enrich Planning Context During Plan Transitions
 
 **Applies:** When a plan is saved via ExitPlanMode auto-chain
 
-When you see "Plan saved to docs/plans/" in the conversation (from the ExitPlanMode hook), the planning discussion that preceded it contains valuable context: design rationale, alternatives considered, architectural decisions, trade-offs.
+A plan-save chronicle stub is automatically created by `exit-plan-gate.sh` via `plan-chronicle.sh`. This stub contains the first 20 lines of the plan file as context. This rule governs optional enrichment.
 
 ## Behavior
 
-Before proceeding with beads creation (the plan_to_beads step of the auto-chain), invoke `/yf:chronicle_capture topic:planning` to capture the planning context as a chronicle bead. This bead will automatically be tagged with the plan label if a plan is active.
+If the planning discussion had significant design rationale beyond what the plan file captures — alternatives considered, architectural debates, research findings, trade-off analysis — invoke `/yf:chronicle_capture topic:planning` to create an enriched chronicle bead. This bead will automatically be tagged with the plan label if a plan is active.
 
 ## Why
 
-Planning discussions are the richest source of "why" context. Once execution begins, the planning rationale is buried in conversation history that may be compacted. Capturing it as a chronicle bead preserves it for diary generation.
+Planning discussions are the richest source of "why" context. The deterministic stub guarantees a chronicle always exists. Enrichment adds the deeper rationale that isn't captured in the plan file itself.
 
 ## Timing
 
-This fires between the plan save and beads creation steps of the auto-chain. The chronicle capture is fast (a single `bd create` call) and does not interfere with the lifecycle.
+This fires between the plan save and beads creation steps of the auto-chain. The stub is already created by the hook; enrichment is additive.
 
 ## Important
 
 - This rule only applies when the auto-chain is active (you see "Auto-chaining" in hook output)
+- The stub chronicle is guaranteed by `exit-plan-gate.sh` — this rule is about optional enrichment only
 - For manual plan transitions (user says "engage the plan" explicitly), the watch-for-chronicle-worthiness rule handles it normally
-- Do NOT capture if the planning discussion was trivial (less than a few exchanges)
+- Do NOT enrich if the planning discussion was trivial (less than a few exchanges) or if the plan file already captures all relevant rationale

@@ -6,6 +6,8 @@ When ExitPlanMode completes and you see "Auto-chaining plan lifecycle..." in the
 
 ## Auto-Chain Sequence
 
+> **Note:** A plan-save chronicle stub was already created deterministically by `exit-plan-gate.sh` via `plan-chronicle.sh`. You do not need to create one. If the planning discussion had significant design rationale beyond the plan file, you may optionally invoke `/yf:chronicle_capture topic:planning` for enrichment — but the stub is guaranteed.
+
 1. **Format the plan file**: Open the saved plan file (path in `PLAN_FILE=` output) and ensure it has the standard structure:
 
    ```markdown
@@ -55,3 +57,4 @@ If any step fails, stop the chain and report the error. The user can:
 - The plan gate blocks Edit/Write on implementation files, but all auto-chain operations use Bash (`bd` commands) and exempt paths (`docs/plans/`), so the gate does not interfere
 - If the user said "engage the plan" explicitly (gate already existed before ExitPlanMode), the hook exits silently with no "Auto-chaining" output — this rule does NOT fire in that case
 - Legacy manual triggers ("the plan is ready", "execute the plan") still work via `/yf:plan_engage`
+- Chronicle creation is handled deterministically by the hook — do not duplicate it in the chain

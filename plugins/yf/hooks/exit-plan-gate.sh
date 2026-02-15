@@ -69,6 +69,9 @@ printf '{"plan_idx":"%s","plan_file":"docs/plans/plan-%s.md","created":"%s"}\n' 
     "$NEXT_PAD" "$NEXT_PAD" "$TIMESTAMP" > "$GATE_FILE"
 
 # Inform the agent
+# Deterministic chronicle: capture plan-save boundary
+bash "$SCRIPT_DIR/scripts/plan-chronicle.sh" save "plan:${NEXT_PAD}" "$DEST" 2>/dev/null || true
+
 cat <<EOF
 Plan saved to docs/plans/plan-${NEXT_PAD}.md
 Plan gate activated. Auto-chaining plan lifecycle...

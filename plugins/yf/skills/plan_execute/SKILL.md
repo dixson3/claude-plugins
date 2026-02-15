@@ -141,7 +141,15 @@ When `plan-exec.sh status` returns `completed` (which also closes any chronicle 
 
 After qualification passes (or is advisory/disabled):
 
-1. **Capture completion context**: Invoke `/yf:chronicle_capture topic:completion` to preserve the execution summary as a chronicle bead before closing everything out.
+1. **Verify completion chronicle**: A completion chronicle stub was already created by `plan-exec.sh` when it detected completion. Verify it exists:
+
+   ```bash
+   bd list -l "ys:chronicle:auto,plan:<idx>" --status=open --json 2>/dev/null \
+     | jq '[.[] | select(.title | ascii_downcase | contains("complete"))] | length'
+   ```
+
+   - If count > 0: stub exists. Optionally invoke `/yf:chronicle_capture topic:completion` to create an enriched chronicle with execution details.
+   - If count = 0: invoke `/yf:chronicle_capture topic:completion` as a fallback to preserve the execution summary.
 2. **Generate diary**: Invoke `/yf:chronicle_diary plan:<idx>` to process all plan chronicles into diary entries. Note the output — capture generated file paths and chronicle counts.
 3. **Process archives**: Invoke `/yf:archive_process plan:<idx>` to process plan-scoped archive beads into permanent documentation. Note the output — capture generated file paths.
 3.5. **Suggest spec updates**: If specification files exist under `<artifact_dir>/specifications/`, invoke `/yf:engineer_suggest_updates plan_idx:<idx>` to generate advisory update suggestions. Include suggestions in the completion report.

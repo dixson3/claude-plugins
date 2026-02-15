@@ -259,6 +259,8 @@ case "$COMMAND" in
                 SNAPSHOT=$(get_plan_snapshot "$PLAN_LABEL" 2>/dev/null || echo "unavailable")
                 create_transition_chronicle "$PLAN_LABEL" "complete" "$SNAPSHOT" 2>/dev/null || true
                 close_chronicle_gates "$PLAN_LABEL"
+                # Validate chronicle coverage (fail-open)
+                bash "$SCRIPT_DIR/chronicle-validate.sh" "$PLAN_LABEL" 2>/dev/null || true
                 # Auto-prune closed plan beads (fail-open)
                 (
                     set +e

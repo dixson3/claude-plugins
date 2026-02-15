@@ -73,13 +73,17 @@ test -f .yoshiko-flow/plan-gate && echo "gate exists" || echo "no gate"
   ```
 - **If no gate**: Plan is already in Executing state (or was never gated). Proceed.
 
-### Step 4: Capture Planning Context (REQUIRED)
+### Step 4: Capture Planning Context
 
-**Always capture a chronicle for pasted/manual plans.** The plan content itself constitutes planning context — design rationale, implementation sequence, and architectural decisions are embedded in it. Without a chronicle, this context is lost when the conversation compacts.
+**Step 4a (DETERMINISTIC):** Run the shell command to create a guaranteed chronicle stub:
 
-Invoke `/yf:chronicle_capture topic:planning` to preserve the planning context as a chronicle bead.
+```bash
+bash plugins/yf/scripts/plan-chronicle.sh intake "plan:<idx>" "docs/plans/plan-<idx>.md"
+```
 
-**Do NOT skip this step.** The only exception is if a chronicle bead already exists for this plan (check `bd list -l ys:chronicle,plan:<idx>`).
+This creates a stub chronicle bead with the plan excerpt. It is deduped (safe to re-run) and fail-open.
+
+**Step 4b (OPTIONAL):** If the planning discussion had significant design rationale beyond what the plan file captures (e.g., alternatives considered, architecture debates), invoke `/yf:chronicle_capture topic:planning` to create a richer chronicle. Skip if the plan file already contains all relevant context.
 
 ### Step 5: Dispatch via Task Pump
 
