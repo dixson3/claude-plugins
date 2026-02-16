@@ -51,13 +51,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: beads.md Quick Reference contains bd sync
-  - name: "beads_has_bd_sync"
+  # Case 4: yf-rules.md Quick Reference contains bd sync
+  - name: "rules_has_bd_sync"
     run: |
-      if grep -A10 '## Quick Reference' "$PLUGIN_DIR/plugins/yf/rules/beads.md" | grep -q 'bd sync'; then
-        echo "OK: beads.md Quick Reference includes bd sync"
+      if grep -A10 '## Quick Reference\|### 4.1' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" | grep -q 'bd sync'; then
+        echo "OK: yf-rules.md Quick Reference includes bd sync"
       else
-        echo "FAIL: beads.md Quick Reference does not include bd sync"
+        echo "FAIL: yf-rules.md Quick Reference does not include bd sync"
         exit 1
       fi
     assertions:
@@ -66,13 +66,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: beads.md contains "Beads Git Workflow" section
-  - name: "beads_has_git_workflow_section"
+  # Case 5: yf-rules.md contains beads session protocol
+  - name: "rules_has_session_protocol"
     run: |
-      if grep -q 'Beads Git Workflow' "$PLUGIN_DIR/plugins/yf/rules/beads.md"; then
-        echo "OK: beads.md contains 'Beads Git Workflow' section"
+      if grep -q 'SESSION PROTOCOL' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
+        echo "OK: yf-rules.md contains session protocol"
       else
-        echo "FAIL: beads.md missing 'Beads Git Workflow' section"
+        echo "FAIL: yf-rules.md missing session protocol"
         exit 1
       fi
     assertions:
@@ -81,14 +81,14 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: beads.md does NOT contain "Beads Are Local"
-  - name: "beads_no_local_section"
+  # Case 6: yf-rules.md does NOT contain "Beads Are Local"
+  - name: "rules_no_local_section"
     run: |
-      if grep -q 'Beads Are Local' "$PLUGIN_DIR/plugins/yf/rules/beads.md"; then
-        echo "FAIL: beads.md still contains 'Beads Are Local' section"
+      if grep -q 'Beads Are Local' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
+        echo "FAIL: yf-rules.md still contains 'Beads Are Local' section"
         exit 1
       fi
-      echo "OK: beads.md does not contain 'Beads Are Local'"
+      echo "OK: yf-rules.md does not contain 'Beads Are Local'"
     assertions:
       - type: exit_code
         value: "0"
@@ -109,13 +109,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 8: install-beads-push-hook.sh exists
-  - name: "push_hook_installer_exists"
+  # Case 8: beads push hook function inlined in plugin-preflight.sh
+  - name: "push_hook_function_exists"
     run: |
-      if [ -f "$PLUGIN_DIR/plugins/yf/scripts/install-beads-push-hook.sh" ]; then
-        echo "OK: install-beads-push-hook.sh exists"
+      if grep -q "install_beads_push_hook" "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh"; then
+        echo "OK: install_beads_push_hook function inlined in plugin-preflight.sh"
       else
-        echo "FAIL: install-beads-push-hook.sh not found"
+        echo "FAIL: install_beads_push_hook function not found"
         exit 1
       fi
     assertions:

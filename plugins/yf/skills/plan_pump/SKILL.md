@@ -53,7 +53,7 @@ This returns ready tasks for the plan (empty if not in Executing state).
 
 For each ready bead, check the pump state:
 ```bash
-plugins/yf/scripts/pump-state.sh is-dispatched <bead-id>
+plugins/yf/scripts/dispatch-state.sh pump is-dispatched <bead-id>
 ```
 
 Skip beads that have already been dispatched (prevents double-dispatch on re-pump).
@@ -117,7 +117,7 @@ Independent beads (no dependency between them) are dispatched concurrently. Form
 
 After launching each Task call:
 ```bash
-plugins/yf/scripts/pump-state.sh mark-dispatched <bead-id>
+plugins/yf/scripts/dispatch-state.sh pump mark-dispatched <bead-id>
 ```
 
 ### Step 7: Report
@@ -139,12 +139,12 @@ Parallel dispatch calls launched: 3
 
 When subagents return (Task tool calls complete), the caller (execute_plan) should:
 1. Check if the bead was closed by the subagent
-2. Mark done in pump state: `pump-state.sh mark-done <bead-id>`
+2. Mark done in pump state: `dispatch-state.sh pump mark-done <bead-id>`
 3. Re-pump to pick up newly unblocked beads
 
 ## Error Handling
 
 - If `plan-exec.sh next` returns empty -> no work to dispatch (not an error)
 - If a bead has no agent label -> dispatch as `general-purpose`
-- If pump-state.sh fails -> skip tracking (dispatch anyway, risk double-dispatch vs missing dispatch)
+- If dispatch-state.sh fails -> skip tracking (dispatch anyway, risk double-dispatch vs missing dispatch)
 - If bd commands fail -> report error, skip that bead, continue with others

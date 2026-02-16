@@ -4,10 +4,10 @@ setup:
   - "mkdir -p .claude/rules .yoshiko-flow"
 
 steps:
-  # Case 1: plan-intake.md source exists in yf plugin
+  # Case 1: consolidated yf-rules.md source exists in yf plugin
   - name: "source_file_exists"
     run: |
-      if [ -f "$PLUGIN_DIR/plugins/yf/rules/plan-intake.md" ]; then
+      if [ -f "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" ]; then
         echo "OK: source exists"
       else
         echo "FAIL: source not found"
@@ -49,10 +49,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Rule references /yf:plan_intake skill
+  # Case 4: Rules reference /yf:plan_intake skill
   - name: "rule_references_skill"
     run: |
-      if grep -q '/yf:plan_intake' "$PLUGIN_DIR/plugins/yf/rules/plan-intake.md"; then
+      if grep -q '/yf:plan_intake' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
         echo "OK: rule references skill"
       else
         echo "FAIL: rule does not reference skill"
@@ -64,10 +64,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: Rule contains key detection triggers
+  # Case 5: Rules contain plan intake detection section
   - name: "has_detection_section"
     run: |
-      if grep -q "## Detection" "$PLUGIN_DIR/plugins/yf/rules/plan-intake.md"; then
+      if grep -q "Detection" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
         echo "OK: detection section present"
       else
         echo "FAIL: missing detection section"
@@ -79,10 +79,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: Rule references plan_create_beads
+  # Case 6: Rules reference plan_create_beads
   - name: "references_plan_create_beads"
     run: |
-      if grep -q "plan_create_beads" "$PLUGIN_DIR/plugins/yf/rules/plan-intake.md"; then
+      if grep -q "plan_create_beads" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
         echo "OK: references plan_create_beads"
       else
         echo "FAIL: missing plan_create_beads reference"
@@ -94,10 +94,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Rule references plan_execute
+  # Case 7: Rules reference plan_execute
   - name: "references_plan_execute"
     run: |
-      if grep -q "plan_execute" "$PLUGIN_DIR/plugins/yf/rules/plan-intake.md"; then
+      if grep -q "plan_execute" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
         echo "OK: references plan_execute"
       else
         echo "FAIL: missing plan_execute reference"
@@ -109,10 +109,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: Rule references yf capture
+  # Case 8: Rules reference chronicle_capture
   - name: "references_chronicle_capture"
     run: |
-      if grep -q "yf:chronicle_capture" "$PLUGIN_DIR/plugins/yf/rules/plan-intake.md"; then
+      if grep -q "yf:chronicle_capture" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
         echo "OK: references yf:chronicle_capture"
       else
         echo "FAIL: missing yf:chronicle_capture reference"
@@ -124,25 +124,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: Rule has non-triggers section
-  - name: "has_non_triggers"
-    run: |
-      if grep -q "## Non-Triggers" "$PLUGIN_DIR/plugins/yf/rules/plan-intake.md"; then
-        echo "OK: non-triggers section present"
-      else
-        echo "FAIL: missing non-triggers section"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 7: Rule is in preflight.json artifacts
+  # Case 9: yf-rules.md is in preflight.json artifacts
   - name: "in_artifact_manifest"
     run: |
-      if jq -e '.artifacts.rules[] | select(.source == "rules/plan-intake.md")' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json" >/dev/null 2>&1; then
+      if jq -e '.artifacts.rules[] | select(.source == "rules/yf-rules.md")' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json" >/dev/null 2>&1; then
         echo "OK: in artifact manifest"
       else
         echo "FAIL: not in artifact manifest"
@@ -154,7 +139,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 8: Preflight syncs the rule
+  # Case 10: Preflight syncs the consolidated rule
   - name: "preflight_syncs_rule"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
@@ -162,7 +147,7 @@ steps:
       mkdir -p "$WORK_DIR/.claude/rules" "$WORK_DIR/docs/plans" "$WORK_DIR/docs/diary"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
-      if [ -f "$WORK_DIR/.claude/rules/yf/plan-intake.md" ]; then
+      if [ -f "$WORK_DIR/.claude/rules/yf/yf-rules.md" ]; then
         echo "OK: rule synced by preflight"
       else
         echo "FAIL: rule not synced"
@@ -172,17 +157,17 @@ steps:
       - type: exit_code
         value: "0"
       - type: output_contains
-        value: "plan-intake.md"
+        value: "yf-rules.md"
       - type: output_contains
         value: "OK"
 
-  # Case 9: beads.md contains chronicle capture step
-  - name: "beads_has_chronicle_step"
+  # Case 11: consolidated rules contain chronicle capture step
+  - name: "rules_has_chronicle_step"
     run: |
-      if grep -q "yf:chronicle_capture topic:session-close" "$PLUGIN_DIR/plugins/yf/rules/beads.md"; then
-        echo "OK: BEADS.md has chronicle capture step"
+      if grep -q "yf:chronicle_capture topic:session-close" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
+        echo "OK: rules have chronicle capture step"
       else
-        echo "FAIL: BEADS.md missing chronicle capture"
+        echo "FAIL: rules missing chronicle capture"
         exit 1
       fi
     assertions:
@@ -191,7 +176,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 10: plan_execute has chronicle capture on completion
+  # Case 12: plan_execute has chronicle capture on completion
   - name: "plan_execute_has_chronicle_capture"
     run: |
       if grep -q "yf:chronicle_capture topic:completion" "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md"; then
@@ -206,7 +191,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 11: plan_execute has diary generation on completion
+  # Case 13: plan_execute has diary generation on completion
   - name: "plan_execute_has_diary_generation"
     run: |
       if grep -q "yf:chronicle_diary" "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md"; then
@@ -221,13 +206,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 12: BEADS.md has diary generation step
-  - name: "beads_has_diary_step"
+  # Case 14: consolidated rules have diary generation step
+  - name: "rules_has_diary_step"
     run: |
-      if grep -q "yf:chronicle_diary" "$PLUGIN_DIR/plugins/yf/rules/beads.md"; then
-        echo "OK: BEADS.md has diary generation step"
+      if grep -q "yf:chronicle_diary" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
+        echo "OK: rules have diary generation step"
       else
-        echo "FAIL: BEADS.md missing diary generation"
+        echo "FAIL: rules missing diary generation"
         exit 1
       fi
     assertions:

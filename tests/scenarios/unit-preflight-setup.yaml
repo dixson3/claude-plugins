@@ -83,10 +83,10 @@ steps:
       rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
       rm -rf "$WORK_DIR/.claude/rules/yf"
       # Create a regular file (simulating old copy mode)
-      mkdir -p "$WORK_DIR/.claude/rules/yf" && cp "$PLUGIN_DIR/plugins/yf/rules/beads.md" "$WORK_DIR/.claude/rules/yf/beads.md"
+      mkdir -p "$WORK_DIR/.claude/rules/yf" && cp "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" "$WORK_DIR/.claude/rules/yf/yf-rules.md"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
-      if [ -L "$WORK_DIR/.claude/rules/yf/beads.md" ]; then
+      if [ -L "$WORK_DIR/.claude/rules/yf/yf-rules.md" ]; then
         echo "OK: regular file migrated to symlink"
       else
         echo "FAIL: not a symlink after migration"

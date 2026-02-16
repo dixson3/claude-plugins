@@ -27,13 +27,13 @@ steps:
       - type: output_contains
         value: "Reactive"
 
-  # Case 4: swarm-state.sh mark-retrying works
+  # Case 4: dispatch-state.sh" swarm mark-retrying works
   - name: "mark_retrying"
     run: |
       rm -f .yoshiko-flow/swarm-state.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-retrying marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" is-dispatched marketplace-abc 2>/dev/null || true
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-retrying marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched marketplace-abc 2>/dev/null || true
     assertions:
       - type: output_contains
         value: "not-dispatched"
@@ -42,36 +42,38 @@ steps:
   - name: "mark_retrying_idempotent"
     run: |
       rm -f .yoshiko-flow/swarm-state.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-retrying marketplace-nonexistent
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-retrying marketplace-nonexistent
     assertions:
       - type: output_contains
         value: "marked-retrying"
       - type: exit_code
         value: "0"
 
-  # Case 6: swarm-reactive rule exists
-  - name: "reactive_rule_exists"
+  # Case 6: consolidated yf-rules.md contains reactive bugfix section
+  - name: "rules_has_reactive_bugfix"
     run: |
-      test -f "$PLUGIN_DIR/plugins/yf/rules/swarm-reactive.md" && echo "exists"
+      grep -q "Reactive Bugfix" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" && echo "OK: reactive bugfix in consolidated rules"
     assertions:
+      - type: exit_code
+        value: "0"
       - type: output_contains
-        value: "exists"
+        value: "OK"
 
-  # Case 7: Reactive rule documents design-BLOCK exclusion
-  - name: "reactive_design_block_excluded"
+  # Case 7: consolidated rules document design-BLOCK exclusion
+  - name: "rules_design_block_excluded"
     run: |
-      grep -c "design" "$PLUGIN_DIR/plugins/yf/rules/swarm-reactive.md"
+      grep -c "design" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
     assertions:
       - type: exit_code
         value: "0"
 
-  # Case 8: preflight.json includes reactive rule
-  - name: "preflight_has_reactive_rule"
+  # Case 8: preflight.json includes consolidated rule file
+  - name: "preflight_has_yf_rules"
     run: |
-      grep "swarm-reactive" "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json"
+      grep "yf-rules" "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json"
     assertions:
       - type: output_contains
-        value: "swarm-reactive.md"
+        value: "yf-rules.md"
 
   # Case 9: swarm_react documents depth check guard rail
   - name: "react_depth_check"
@@ -117,13 +119,13 @@ steps:
   - name: "mark_retrying_clears_dispatched"
     run: |
       rm -f .yoshiko-flow/swarm-state.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-dispatched marketplace-retry-test
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-retry-test
       # Verify dispatched
-      R1=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" is-dispatched marketplace-retry-test)
+      R1=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched marketplace-retry-test)
       # Mark for retry
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-retrying marketplace-retry-test
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-retrying marketplace-retry-test
       # Should no longer be dispatched
-      R2=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" is-dispatched marketplace-retry-test 2>/dev/null || true)
+      R2=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched marketplace-retry-test 2>/dev/null || true)
       echo "before=$R1 after=$R2"
       echo "$R1" | grep -q "dispatched" && echo "$R2" | grep -q "not-dispatched" && echo "OK: retrying clears dispatched"
     assertions:

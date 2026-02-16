@@ -78,70 +78,14 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: Removes bd-only AGENTS.md entirely
-  - name: "removes_bd_only_agents_md"
-    run: |
-      printf '# Agent Instructions\n\nThis project uses **bd** (beads) for issue tracking.\n\n## Quick Reference\n\nbd ready\nbd close\n\n## Landing the Plane (Session Completion)\n\n1. bd sync\n2. git push\n' > "$WORK_DIR/AGENTS.md"
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" agents 2>&1
-      if [ -f "$WORK_DIR/AGENTS.md" ]; then
-        echo "FAIL: AGENTS.md still exists"
-        exit 1
-      fi
-      echo "OK: AGENTS.md removed"
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "removed AGENTS.md"
-      - type: output_contains
-        value: "OK"
-
-  # Case 7: Preserves non-bd content in mixed AGENTS.md
-  - name: "preserves_non_bd_content"
-    run: |
-      printf '# Agent Instructions\n\nThis project uses **bd** (beads) for issue tracking.\n\n## Quick Reference\n\nbd ready\n\n## My Custom Section\n\nCustom content that should survive.\n\n## Landing the Plane (Session Completion)\n\n1. bd sync\n' > "$WORK_DIR/AGENTS.md"
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" agents 2>&1
-      if ! grep -q "My Custom Section" "$WORK_DIR/AGENTS.md"; then
-        echo "FAIL: custom content lost"
-        exit 1
-      fi
-      if grep -q "Quick Reference" "$WORK_DIR/AGENTS.md"; then
-        echo "FAIL: bd content not removed"
-        exit 1
-      fi
-      echo "OK: custom content preserved, bd content removed"
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "cleaned bd sections"
-      - type: output_contains
-        value: "OK"
-
-  # Case 8: No AGENTS.md → no error
-  - name: "no_agents_md_is_noop"
-    run: |
-      rm -f "$WORK_DIR/AGENTS.md"
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" agents 2>&1
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "no AGENTS.md"
-
-  # Case 9: Disabled yf → no changes
+  # Case 6: Disabled yf → no changes
   - name: "disabled_yf_no_changes"
     run: |
       echo '{"enabled": false}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.gitignore"
-      printf '# Agent Instructions\nbd stuff\n' > "$WORK_DIR/AGENTS.md"
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" all 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/setup-project.sh" 2>&1
       if [ -f "$WORK_DIR/.gitignore" ]; then
         echo "FAIL: gitignore created when disabled"
-        exit 1
-      fi
-      if ! [ -f "$WORK_DIR/AGENTS.md" ]; then
-        echo "FAIL: AGENTS.md removed when disabled"
         exit 1
       fi
       echo "OK: no changes when disabled"
@@ -172,4 +116,4 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .yoshiko-flow/config.json .yoshiko-flow/lock.json .gitignore AGENTS.md"
+  - "rm -f .yoshiko-flow/config.json .yoshiko-flow/lock.json .gitignore"

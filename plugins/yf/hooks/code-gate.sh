@@ -60,26 +60,65 @@ if [[ ! -f "$GATE_FILE" ]]; then
     date "+%s" > "$NUDGE_FILE" 2>/dev/null || true
   ) || true
 
-  # ── Beads safety net: warn if active plan has no beads ──────────────
-  # Fail-open: entire check runs in a subshell so errors never block edits
-  INTAKE_MARKER="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/plan-intake-ok"
+  # ── Beads safety net: BLOCK if active plan has no beads ─────────────
   PLANS_DIR="${CLAUDE_PROJECT_DIR:-.}/docs/plans"
-  if [[ ! -f "$INTAKE_MARKER" ]] && [[ -d "$PLANS_DIR" ]] && ls "$PLANS_DIR"/plan-*.md >/dev/null 2>&1; then
-    (
-      set +e
-      command -v bd >/dev/null 2>&1 || exit 0
-      LATEST_PLAN=$(ls -t "$PLANS_DIR"/plan-*.md 2>/dev/null | head -1)
-      [[ -n "$LATEST_PLAN" ]] || exit 0
-      grep -q 'Status: Completed' "$LATEST_PLAN" 2>/dev/null && exit 0
-      PLAN_IDX=$(basename "$LATEST_PLAN" | sed -n 's/^plan-\([0-9]*\).*/\1/p')
-      [[ -n "$PLAN_IDX" ]] || exit 0
-      EPIC_COUNT=$(bd list -l "plan:$PLAN_IDX" --type=epic --limit=1 --json 2>/dev/null \
-        | jq 'length' 2>/dev/null) || EPIC_COUNT="0"
-      if [[ "$EPIC_COUNT" = "0" ]]; then
-        echo "WARNING: Plan $PLAN_IDX exists but has no beads. Run /yf:plan_intake to set up the lifecycle."
-      fi
-    ) || true
-    touch "$INTAKE_MARKER"
+  SKIP_FILE="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/plan-intake-skip"
+  CACHE_FILE="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/.beads-check-cache"
+
+  if [[ ! -f "$SKIP_FILE" ]] && [[ -d "$PLANS_DIR" ]] && ls "$PLANS_DIR"/plan-*.md >/dev/null 2>&1; then
+    # Read tool input to check exempt files (same exemptions as plan-gate)
+    TOOL_INPUT_PEEK=$(cat)
+    FILE_PATH_PEEK=$(echo "$TOOL_INPUT_PEEK" | jq -r '.tool_input.file_path // empty' 2>/dev/null) || FILE_PATH_PEEK=""
+    case "$FILE_PATH_PEEK" in
+      */docs/plans/*|*/docs/research/*|*/docs/decisions/*|*/docs/specifications/*) ;; # exempt
+      */.claude/*|*/.yoshiko-flow/*|*/CHANGELOG.md|*/MEMORY.md) ;;
+      */.claude-plugin/*.json|*/README.md|*/.beads/*) ;;
+      *)
+        # Non-exempt file — check beads
+        BEADS_RESULT=""
+        CACHE_VALID=false
+        if [[ -f "$CACHE_FILE" ]]; then
+          CACHE_TS=$(head -1 "$CACHE_FILE" 2>/dev/null || echo "0")
+          CACHE_VAL=$(tail -1 "$CACHE_FILE" 2>/dev/null || echo "")
+          NOW_EPOCH=$(date "+%s")
+          if [[ -n "$CACHE_TS" ]] && [[ $((NOW_EPOCH - CACHE_TS)) -lt 60 ]]; then
+            BEADS_RESULT="$CACHE_VAL"
+            CACHE_VALID=true
+          fi
+        fi
+
+        if ! $CACHE_VALID; then
+          BEADS_RESULT=$(
+            set +e
+            command -v bd >/dev/null 2>&1 || { echo "skip"; exit 0; }
+            LATEST_PLAN=$(ls -t "$PLANS_DIR"/plan-*.md 2>/dev/null | head -1)
+            [[ -n "$LATEST_PLAN" ]] || { echo "skip"; exit 0; }
+            grep -q 'Status: Completed' "$LATEST_PLAN" 2>/dev/null && { echo "skip"; exit 0; }
+            PLAN_IDX=$(basename "$LATEST_PLAN" | sed -n 's/^plan-\([0-9]*\).*/\1/p')
+            [[ -n "$PLAN_IDX" ]] || { echo "skip"; exit 0; }
+            EPIC_COUNT=$(bd list -l "plan:$PLAN_IDX" --type=epic --limit=1 --json 2>/dev/null \
+              | jq 'length' 2>/dev/null) || EPIC_COUNT="0"
+            if [[ "$EPIC_COUNT" = "0" ]]; then
+              echo "block:$PLAN_IDX"
+            else
+              echo "skip"
+            fi
+          ) || BEADS_RESULT="skip"
+          # Write cache
+          mkdir -p "$(dirname "$CACHE_FILE")" 2>/dev/null || true
+          printf '%s\n%s\n' "$(date '+%s')" "$BEADS_RESULT" > "$CACHE_FILE" 2>/dev/null || true
+        fi
+
+        if [[ "$BEADS_RESULT" == block:* ]]; then
+          BLOCKED_IDX="${BEADS_RESULT#block:}"
+          jq -n --arg idx "$BLOCKED_IDX" '{
+            "decision": "block",
+            "reason": ("BLOCKED: Plan " + $idx + " exists but has no beads. Run /yf:plan_intake to set up the lifecycle, or create .yoshiko-flow/plan-intake-skip to bypass.")
+          }'
+          exit 2
+        fi
+        ;;
+    esac
   fi
 
   # ── Chronicle safety net: warn if active plan has beads but no chronicle ──

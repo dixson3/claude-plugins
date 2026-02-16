@@ -39,10 +39,10 @@ Parse the molecule to get all steps with their:
 A step is ready when:
 1. Its status is `open`
 2. All steps in its `needs` array are `closed`
-3. It has NOT been dispatched (check swarm-state.sh)
+3. It has NOT been dispatched (check dispatch-state.sh)
 
 ```bash
-bash plugins/yf/scripts/swarm-state.sh is-dispatched <step-id>
+bash plugins/yf/scripts/dispatch-state.sh swarm is-dispatched <step-id>
 ```
 
 ### Step 3: Parse Step Annotations
@@ -110,7 +110,7 @@ Instead of a bare Task call, invoke the nested formula:
 The nested swarm:
 - Receives upstream FINDINGS from the parent formula's earlier steps as context
 - Posts CHANGES/TESTS/REVIEW comments on the **outermost** parent bead (single audit trail)
-- Uses scoped state tracking: `<parent-mol-id>/<step-id>` prefix in swarm-state.sh
+- Uses scoped state tracking: `<parent-mol-id>/<step-id>` prefix in dispatch-state.sh
 
 If `depth >= 2`, ignore the `compose` field and dispatch as a normal bare Task call.
 
@@ -118,14 +118,14 @@ If `depth >= 2`, ignore the `compose` field and dispatch as a normal bare Task c
 
 After launching each Task call:
 ```bash
-bash plugins/yf/scripts/swarm-state.sh mark-dispatched <step-id>
+bash plugins/yf/scripts/dispatch-state.sh swarm mark-dispatched <step-id>
 ```
 
 ### Step 6: Wait and Process Returns
 
 When Task calls return:
 1. Verify the agent posted a comment on the parent bead
-2. Mark done in swarm state: `bash plugins/yf/scripts/swarm-state.sh mark-done <step-id>`
+2. Mark done in swarm state: `bash plugins/yf/scripts/dispatch-state.sh swarm mark-done <step-id>`
 3. Check if the step bead was closed by the agent; if not, close it
 
 ### Step 6b: Reactive Failure Check
@@ -218,7 +218,7 @@ All steps closed.
 
 - If a Task call fails: report error, mark step as done (not re-dispatched), continue with other steps
 - If an agent doesn't post a comment: note the gap but continue
-- If swarm-state.sh fails: log warning, continue (risk double-dispatch vs missing dispatch)
+- If dispatch-state.sh fails: log warning, continue (risk double-dispatch vs missing dispatch)
 - If molecule not found: report error and exit
 
 ## Important

@@ -16,15 +16,22 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Artifacts declared in preflight.json has at least 9 rules
-  - name: "artifacts_at_least_9_rules"
+  # Case 2: Artifacts declared in preflight.json has consolidated rule
+  - name: "artifacts_has_consolidated_rule"
     run: |
       RULE_COUNT=$(jq -r '(.artifacts.rules // []) | length' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
-      if [ "$RULE_COUNT" -lt 9 ]; then
-        echo "FAIL: expected at least 9 artifact rules, got $RULE_COUNT"
+      if [ "$RULE_COUNT" -lt 1 ]; then
+        echo "FAIL: expected at least 1 artifact rule, got $RULE_COUNT"
         exit 1
       fi
-      echo "OK: $RULE_COUNT artifact rules declared"
+      # Verify it's the consolidated file
+      RULE_NAME=$(jq -r '.artifacts.rules[0].source' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
+      if [ "$RULE_NAME" = "rules/yf-rules.md" ]; then
+        echo "OK: consolidated yf-rules.md declared"
+      else
+        echo "FAIL: unexpected rule: $RULE_NAME"
+        exit 1
+      fi
     assertions:
       - type: exit_code
         value: "0"
@@ -35,7 +42,7 @@ steps:
   - name: "rule_files_exist"
     run: |
       MISSING=""
-      for rule in beads.md engage-the-plan.md plan-intake.md watch-for-chronicle-worthiness.md; do
+      for rule in yf-rules.md; do
         if [ ! -f "$PLUGIN_DIR/plugins/yf/rules/$rule" ]; then
           MISSING="$MISSING $rule"
         fi

@@ -5,6 +5,30 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.19.0] - 2026-02-16
+
+### Changed
+
+- **Rule consolidation**: 24 separate rule files consolidated into a single `yf-rules.md` organized by priority — hard enforcement, plan lifecycle, swarm execution, session protocol, and advisory monitoring (~210 lines, down from ~1400). Stale symlinks auto-cleaned by preflight.
+- **code-gate.sh beads safety net upgraded**: Advisory warning replaced with blocking enforcement (exit 2). When a non-completed plan file exists without beads, Edit/Write on implementation files is blocked. Includes 60-second TTL cache, exempt file patterns, and `.yoshiko-flow/plan-intake-skip` escape hatch. Addresses GitHub issue #11.
+- **dispatch-state.sh**: Merged `pump-state.sh` and `swarm-state.sh` into unified `dispatch-state.sh <pump|swarm> <command>`. All skill callers updated.
+- **plugin-preflight.sh pruned**: Removed ~93 lines of migration logic (yf.json rename, .claude/ directory migration, chronicler/archivist field pruning, beads git workflow migration, legacy flat rule cleanup). Inlined `install-beads-push-hook.sh` as a function.
+- **setup-project.sh simplified**: Removed `cleanup_agents` function and AGENTS.md management. Now only handles gitignore.
+
+### Removed
+
+- 24 individual rule files in `plugins/yf/rules/` (replaced by consolidated `yf-rules.md`)
+- `plugins/yf/scripts/pump-state.sh` (merged into `dispatch-state.sh`)
+- `plugins/yf/scripts/swarm-state.sh` (merged into `dispatch-state.sh`)
+- `plugins/yf/scripts/install-beads-push-hook.sh` (inlined into `plugin-preflight.sh`)
+- `tests/scenarios/unit-migration.yaml` (tested removed migration paths)
+- `tests/scenarios/unit-pump-state.yaml` (replaced by `unit-dispatch-state.yaml`)
+- `tests/scenarios/unit-swarm-state.yaml` (merged into `unit-dispatch-state.yaml`)
+
+### Fixed
+
+- **GitHub issue #11**: Agent no longer bypasses `plan-intake` when user says "Implement the following plan." The `code-gate.sh` hook now blocks implementation edits until beads are created via the plan intake lifecycle.
+
 ## [2.18.1] - 2026-02-14
 
 ### Fixed

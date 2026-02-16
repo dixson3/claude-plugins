@@ -112,9 +112,9 @@ steps:
   # Case 7: Archive watch rule documents research and decision triggers
   - name: "archive_watch_rule_triggers"
     run: |
-      RULE="$PLUGIN_DIR/plugins/yf/rules/watch-for-archive-worthiness.md"
-      R=$(grep -c 'Research Triggers' "$RULE")
-      D=$(grep -c 'Decision Triggers' "$RULE")
+      RULE="$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
+      R=$(grep -c 'research' "$RULE")
+      D=$(grep -c 'decision' "$RULE")
       echo "research_triggers=$R decision_triggers=$D"
       [ "$R" -ge 1 ] && [ "$D" -ge 1 ] && echo "OK: both trigger types documented"
     assertions:

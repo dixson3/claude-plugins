@@ -26,18 +26,20 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Engineer rules installed as symlinks
+  # Case 2: Consolidated rule file installed as symlink
   - name: "engineer_rules_installed"
     run: |
-      FAIL=false
-      for rule in engineer-reconcile-on-plan.md watch-for-spec-drift.md engineer-suggest-on-completion.md; do
-        if [ ! -L "$WORK_DIR/.claude/rules/yf/$rule" ]; then
-          echo "FAIL: $rule not installed or not a symlink"
-          FAIL=true
-        fi
-      done
-      if $FAIL; then exit 1; fi
-      echo "OK: all engineer rules installed"
+      if [ ! -L "$WORK_DIR/.claude/rules/yf/yf-rules.md" ]; then
+        echo "FAIL: yf-rules.md not installed or not a symlink"
+        exit 1
+      fi
+      # Verify consolidated rules contain engineer content
+      if grep -q 'Specification Drift' "$WORK_DIR/.claude/rules/yf/yf-rules.md"; then
+        echo "OK: consolidated rule installed with engineer content"
+      else
+        echo "FAIL: yf-rules.md missing engineer content"
+        exit 1
+      fi
     assertions:
       - type: exit_code
         value: "0"
@@ -147,7 +149,7 @@ steps:
   # Case 12: Watch-for-spec-drift rule covers PRD, EDD, and IG
   - name: "spec_drift_covers_all_types"
     run: |
-      RULE="$PLUGIN_DIR/plugins/yf/rules/watch-for-spec-drift.md"
+      RULE="$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
       PRD=$(grep -c 'PRD' "$RULE")
       EDD=$(grep -c 'EDD' "$RULE")
       IG=$(grep -c 'IG' "$RULE")

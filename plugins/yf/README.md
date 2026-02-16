@@ -332,10 +332,9 @@ All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to 
 | `plugin-preflight.sh` | Symlink-based artifact sync engine |
 | `yf-config.sh` | Sourceable shell library for config access |
 | `plan-exec.sh` | Deterministic state transitions for plan execution |
-| `pump-state.sh` | Tracks dispatched/done beads to prevent double-dispatch |
+| `dispatch-state.sh` | Unified dispatch state tracking for pump and swarm (prevents double-dispatch) |
 | `archive-suggest.sh` | Scans git commits for research/decision archive candidates |
 | `chronicle-check.sh` | Auto-creates draft chronicle beads from significant git activity (detects wisp squashes) |
-| `swarm-state.sh` | Tracks dispatched/done swarm steps to prevent double-dispatch |
 | `session-recall.sh` | Outputs open chronicle summaries on SessionStart for context recovery |
 | `setup-project.sh` | Manages `.gitignore` sentinel block and AGENTS.md cleanup |
 

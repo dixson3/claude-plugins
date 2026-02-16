@@ -138,12 +138,12 @@ If the review blocked, leave the parent bead open and report the block.
 
 For top-level swarms (depth 0):
 ```bash
-bash plugins/yf/scripts/swarm-state.sh clear
+bash plugins/yf/scripts/dispatch-state.sh swarm clear
 ```
 
 For nested swarms (depth > 0), use scoped clear to only remove sub-swarm state:
 ```bash
-bash plugins/yf/scripts/swarm-state.sh clear --scope <mol-id>
+bash plugins/yf/scripts/dispatch-state.sh swarm clear --scope <mol-id>
 ```
 
 ### Step 6: Report

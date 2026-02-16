@@ -35,13 +35,13 @@ steps:
   - name: "broken_symlink_recreated"
     run: |
       # Create a broken symlink
-      rm -f "$WORK_DIR/.claude/rules/yf/beads.md"
-      mkdir -p "$WORK_DIR/.claude/rules/yf" && ln -sf "/nonexistent/NONEXISTENT.md" "$WORK_DIR/.claude/rules/yf/beads.md"
+      rm -f "$WORK_DIR/.claude/rules/yf/yf-rules.md"
+      mkdir -p "$WORK_DIR/.claude/rules/yf" && ln -sf "/nonexistent/NONEXISTENT.md" "$WORK_DIR/.claude/rules/yf/yf-rules.md"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       # Should have been updated to correct target
-      LINK=$(readlink "$WORK_DIR/.claude/rules/yf/beads.md")
-      if echo "$LINK" | grep -q "beads.md"; then
+      LINK=$(readlink "$WORK_DIR/.claude/rules/yf/yf-rules.md")
+      if echo "$LINK" | grep -q "yf-rules.md"; then
         echo "OK: broken symlink fixed: $LINK"
       else
         echo "FAIL: symlink not fixed: $LINK"
@@ -60,16 +60,16 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
       # Replace a symlink with a regular file (simulating old copy)
-      rm -f "$WORK_DIR/.claude/rules/yf/beads.md"
-      mkdir -p "$WORK_DIR/.claude/rules/yf" && cp "$PLUGIN_DIR/plugins/yf/rules/beads.md" "$WORK_DIR/.claude/rules/yf/beads.md"
+      rm -f "$WORK_DIR/.claude/rules/yf/yf-rules.md"
+      mkdir -p "$WORK_DIR/.claude/rules/yf" && cp "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" "$WORK_DIR/.claude/rules/yf/yf-rules.md"
       # Verify it's a regular file
-      if [ -L "$WORK_DIR/.claude/rules/yf/beads.md" ]; then
+      if [ -L "$WORK_DIR/.claude/rules/yf/yf-rules.md" ]; then
         echo "FAIL: should be regular file before test"
         exit 1
       fi
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
-      if [ -L "$WORK_DIR/.claude/rules/yf/beads.md" ]; then
+      if [ -L "$WORK_DIR/.claude/rules/yf/yf-rules.md" ]; then
         echo "OK: regular file replaced by symlink"
       else
         echo "FAIL: still a regular file"
@@ -109,8 +109,8 @@ steps:
   # Case 5: Symlinks resolve to readable content
   - name: "symlinks_resolve_to_content"
     run: |
-      CONTENT=$(cat "$WORK_DIR/.claude/rules/yf/beads.md" 2>/dev/null | head -1)
-      if echo "$CONTENT" | grep -q "Agent Instructions"; then
+      CONTENT=$(cat "$WORK_DIR/.claude/rules/yf/yf-rules.md" 2>/dev/null | head -1)
+      if echo "$CONTENT" | grep -q "Yoshiko Flow"; then
         echo "OK: symlink resolves to content"
       else
         echo "FAIL: cannot read through symlink: $CONTENT"
@@ -126,8 +126,8 @@ steps:
   - name: "fast_path_detects_non_symlink"
     run: |
       # Replace one symlink with a regular file
-      rm -f "$WORK_DIR/.claude/rules/yf/beads.md"
-      echo "# dummy" > "$WORK_DIR/.claude/rules/yf/beads.md"
+      rm -f "$WORK_DIR/.claude/rules/yf/yf-rules.md"
+      echo "# dummy" > "$WORK_DIR/.claude/rules/yf/yf-rules.md"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       if echo "$OUTPUT" | grep -q "^preflight: up to date"; then

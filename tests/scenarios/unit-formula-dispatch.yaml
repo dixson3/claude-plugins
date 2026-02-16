@@ -55,7 +55,7 @@ steps:
   # Case 6: swarm-formula-dispatch rule references the pump
   - name: "formula_dispatch_rule_references_pump"
     run: |
-      grep -c 'pump\|plan_pump\|plan_execute' "$PLUGIN_DIR/plugins/yf/rules/swarm-formula-dispatch.md"
+      grep -c 'pump\|plan_pump\|plan_execute' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
     assertions:
       - type: exit_code
         value: "0"

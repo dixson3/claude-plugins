@@ -19,18 +19,18 @@ steps:
       - type: output_contains
         value: "yf:swarm_select_formula"
 
-  # Case 3: Rule file exists
-  - name: "rule_file_exists"
+  # Case 3: Consolidated rules contain formula selection content
+  - name: "rules_has_formula_selection"
     run: |
-      test -f "$PLUGIN_DIR/plugins/yf/rules/swarm-formula-select.md" && echo "exists"
+      grep -q "Formula-Labeled Beads" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" && echo "exists"
     assertions:
       - type: output_contains
         value: "exists"
 
-  # Case 4: Rule documents the heuristic table
-  - name: "rule_has_heuristic_table"
+  # Case 4: Consolidated rules document formula dispatch
+  - name: "rules_has_formula_dispatch"
     run: |
-      grep -c "feature-build\|bugfix\|research-spike\|code-review\|build-test" "$PLUGIN_DIR/plugins/yf/rules/swarm-formula-select.md"
+      grep -c "formula.*swarm_run\|swarm_run.*formula" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
     assertions:
       - type: exit_code
         value: "0"
@@ -51,10 +51,10 @@ steps:
       - type: exit_code
         value: "0"
 
-  # Case 7: preflight.json includes the new rule
+  # Case 7: preflight.json includes consolidated rule file
   - name: "preflight_has_rule"
     run: |
-      grep "swarm-formula-select" "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json"
+      grep "yf-rules" "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json"
     assertions:
       - type: output_contains
-        value: "swarm-formula-select.md"
+        value: "yf-rules.md"

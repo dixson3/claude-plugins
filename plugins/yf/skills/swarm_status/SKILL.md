@@ -12,7 +12,7 @@ Shows the current state of active swarm executions.
 ### Step 1: Check Dispatch State
 
 ```bash
-bash plugins/yf/scripts/swarm-state.sh pending
+bash plugins/yf/scripts/dispatch-state.sh swarm pending
 ```
 
 If no pending dispatches, report "No active swarm dispatches."

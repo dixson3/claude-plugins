@@ -1,0 +1,164 @@
+name: "Unit: dispatch-state.sh"
+setup:
+  - "mkdir -p .yoshiko-flow"
+
+steps:
+  # === PUMP STORE ===
+
+  # Case 1: Pump — Missing file, is-dispatched returns not-dispatched
+  - name: "pump_missing_file_not_dispatched"
+    run: |
+      rm -f .yoshiko-flow/task-pump.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump is-dispatched marketplace-abc 2>/dev/null || true
+    assertions:
+      - type: output_contains
+        value: "not-dispatched"
+
+  # Case 2: Pump — Mark dispatched then check
+  - name: "pump_mark_then_check_dispatched"
+    run: |
+      rm -f .yoshiko-flow/task-pump.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump is-dispatched marketplace-abc
+    assertions:
+      - type: output_contains
+        value: "dispatched"
+      - type: exit_code
+        value: "0"
+
+  # Case 3: Pump — Duplicate mark is idempotent
+  - name: "pump_duplicate_mark_idempotent"
+    run: |
+      rm -f .yoshiko-flow/task-pump.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump is-dispatched marketplace-abc
+    assertions:
+      - type: output_contains
+        value: "dispatched"
+
+  # Case 4: Pump — Mark done removes from dispatched
+  - name: "pump_mark_done_removes_dispatched"
+    run: |
+      rm -f .yoshiko-flow/task-pump.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-done marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump is-dispatched marketplace-abc 2>/dev/null || true
+    assertions:
+      - type: output_contains
+        value: "not-dispatched"
+
+  # Case 5: Pump — Pending lists dispatched but not done
+  - name: "pump_pending_lists_dispatched"
+    run: |
+      rm -f .yoshiko-flow/task-pump.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-def
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-done marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump pending
+    assertions:
+      - type: output_contains
+        value: "marketplace-def"
+
+  # Case 6: Pump — Clear resets all state
+  - name: "pump_clear_resets_all"
+    run: |
+      rm -f .yoshiko-flow/task-pump.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump clear
+      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump pending)
+      if [ -z "$RESULT" ]; then echo "empty"; else echo "not-empty"; fi
+    assertions:
+      - type: output_contains
+        value: "empty"
+
+  # Case 7: Pump — mark-retrying is a no-op
+  - name: "pump_mark_retrying_noop"
+    run: |
+      rm -f .yoshiko-flow/task-pump.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-retrying marketplace-abc
+    assertions:
+      - type: output_contains
+        value: "no-op"
+      - type: exit_code
+        value: "0"
+
+  # === SWARM STORE ===
+
+  # Case 8: Swarm — Missing file, is-dispatched returns not-dispatched
+  - name: "swarm_missing_file_not_dispatched"
+    run: |
+      rm -f .yoshiko-flow/swarm-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched marketplace-abc 2>/dev/null || true
+    assertions:
+      - type: output_contains
+        value: "not-dispatched"
+
+  # Case 9: Swarm — Mark dispatched then check
+  - name: "swarm_mark_then_check_dispatched"
+    run: |
+      rm -f .yoshiko-flow/swarm-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched marketplace-abc
+    assertions:
+      - type: output_contains
+        value: "dispatched"
+      - type: exit_code
+        value: "0"
+
+  # Case 10: Swarm — Mark done removes from dispatched
+  - name: "swarm_mark_done_removes_dispatched"
+    run: |
+      rm -f .yoshiko-flow/swarm-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-done marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched marketplace-abc 2>/dev/null || true
+    assertions:
+      - type: output_contains
+        value: "not-dispatched"
+
+  # Case 11: Swarm — Pending lists dispatched but not done
+  - name: "swarm_pending_lists_dispatched"
+    run: |
+      rm -f .yoshiko-flow/swarm-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-def
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-done marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm pending
+    assertions:
+      - type: output_contains
+        value: "marketplace-def"
+
+  # Case 12: Swarm — Clear resets all state
+  - name: "swarm_clear_resets_all"
+    run: |
+      rm -f .yoshiko-flow/swarm-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm clear
+      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm pending)
+      if [ -z "$RESULT" ]; then echo "empty"; else echo "not-empty"; fi
+    assertions:
+      - type: output_contains
+        value: "empty"
+
+  # Case 13: Swarm — mark-retrying removes from dispatched
+  - name: "swarm_mark_retrying_works"
+    run: |
+      rm -f .yoshiko-flow/swarm-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-retrying marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched marketplace-abc 2>/dev/null || true
+    assertions:
+      - type: output_contains
+        value: "not-dispatched"
+
+  # Case 14: Invalid store name exits with error
+  - name: "invalid_store_exits_error"
+    run: |
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" invalid is-dispatched foo 2>&1 || true
+    assertions:
+      - type: output_contains
+        value: "Usage"
+
+teardown:
+  - "rm -f .yoshiko-flow/task-pump.json .yoshiko-flow/swarm-state.json"

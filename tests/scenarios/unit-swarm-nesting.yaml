@@ -27,30 +27,32 @@ steps:
       - type: output_contains
         value: "compose"
 
-  # Case 4: swarm-nesting rule exists
-  - name: "nesting_rule_exists"
+  # Case 4: consolidated yf-rules.md contains nesting section
+  - name: "rules_has_nesting"
     run: |
-      test -f "$PLUGIN_DIR/plugins/yf/rules/swarm-nesting.md" && echo "exists"
+      grep -q "Nesting Depth" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" && echo "OK: nesting in consolidated rules"
     assertions:
+      - type: exit_code
+        value: "0"
       - type: output_contains
-        value: "exists"
+        value: "OK"
 
   # Case 5: Nesting rule documents max depth 2
   - name: "nesting_max_depth"
     run: |
-      grep "depth.*2\|Maximum.*2\|max.*2" "$PLUGIN_DIR/plugins/yf/rules/swarm-nesting.md" | head -1
+      grep "depth.*2\|Maximum.*2\|max.*2" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" | head -1
     assertions:
       - type: exit_code
         value: "0"
 
-  # Case 6: swarm-state.sh scoped clear works
+  # Case 6: dispatch-state.sh" swarm scoped clear works
   - name: "scoped_clear"
     run: |
       rm -f .yoshiko-flow/swarm-state.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-dispatched "parent-mol/step-a"
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-dispatched "other-step"
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" clear --scope "parent-mol"
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" pending
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched "parent-mol/step-a"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched "other-step"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm clear --scope "parent-mol"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm pending
     assertions:
       - type: output_contains
         value: "other-step"
@@ -59,22 +61,22 @@ steps:
   - name: "scoped_clear_removes_scoped"
     run: |
       rm -f .yoshiko-flow/swarm-state.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-dispatched "parent-mol/step-a"
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" mark-dispatched "parent-mol/step-b"
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" clear --scope "parent-mol"
-      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/swarm-state.sh" pending)
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched "parent-mol/step-a"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched "parent-mol/step-b"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm clear --scope "parent-mol"
+      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm pending)
       if [ -z "$RESULT" ]; then echo "empty"; else echo "not-empty: $RESULT"; fi
     assertions:
       - type: output_contains
         value: "empty"
 
-  # Case 8: preflight.json includes nesting rule
-  - name: "preflight_has_nesting_rule"
+  # Case 8: preflight.json includes consolidated rule file
+  - name: "preflight_has_yf_rules"
     run: |
-      grep "swarm-nesting" "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json"
+      grep "yf-rules" "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json"
     assertions:
       - type: output_contains
-        value: "swarm-nesting.md"
+        value: "yf-rules.md"
 
 teardown:
   - "rm -f .yoshiko-flow/swarm-state.json"

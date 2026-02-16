@@ -46,10 +46,10 @@ steps:
       - type: exit_code
         value: "0"
 
-  # Case 5: pump-state.sh script is valid bash
-  - name: "pump_state_valid_bash"
+  # Case 5: dispatch-state.sh script is valid bash
+  - name: "dispatch_state_valid_bash"
     run: |
-      bash -n "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh"
+      bash -n "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh"
     assertions:
       - type: exit_code
         value: "0"

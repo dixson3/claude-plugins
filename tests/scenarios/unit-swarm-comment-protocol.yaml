@@ -117,14 +117,14 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 8: Comment protocol rule documents all 4 protocol prefixes
+  # Case 8: Consolidated rules document all 4 protocol prefixes
   - name: "protocol_rule_has_all_prefixes"
     run: |
-      RULE="$PLUGIN_DIR/plugins/yf/rules/swarm-comment-protocol.md"
-      FINDINGS=$(grep -c '### FINDINGS:' "$RULE")
-      CHANGES=$(grep -c '### CHANGES:' "$RULE")
-      REVIEW=$(grep -c '### REVIEW:' "$RULE")
-      TESTS=$(grep -c '### TESTS:' "$RULE")
+      RULE="$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
+      FINDINGS=$(grep -c 'FINDINGS' "$RULE")
+      CHANGES=$(grep -c 'CHANGES' "$RULE")
+      REVIEW=$(grep -c 'REVIEW' "$RULE")
+      TESTS=$(grep -c 'TESTS' "$RULE")
       echo "findings=$FINDINGS changes=$CHANGES review=$REVIEW tests=$TESTS"
       [ "$FINDINGS" -ge 1 ] && [ "$CHANGES" -ge 1 ] && [ "$REVIEW" -ge 1 ] && [ "$TESTS" -ge 1 ] && echo "OK"
     assertions:
@@ -155,10 +155,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 12: swarm-spec-bridge rule exists
-  - name: "spec_bridge_rule_exists"
+  # Case 12: consolidated rules contain spec bridge content
+  - name: "spec_bridge_in_rules"
     run: |
-      test -f "$PLUGIN_DIR/plugins/yf/rules/swarm-spec-bridge.md" && echo "OK"
+      grep -q 'engineer_suggest_updates' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" && echo "OK"
     assertions:
       - type: output_contains
         value: "OK"
@@ -187,10 +187,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 16: swarm-archive-bridge fires after any formula
-  - name: "archive_bridge_any_formula"
+  # Case 16: consolidated rules contain archive bridge content
+  - name: "archive_bridge_in_rules"
     run: |
-      grep -q 'any formula' "$PLUGIN_DIR/plugins/yf/rules/swarm-archive-bridge.md" && echo "OK"
+      grep -q 'archive_capture' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" && echo "OK"
     assertions:
       - type: output_contains
         value: "OK"

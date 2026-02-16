@@ -2,117 +2,123 @@ name: "Unit: code-gate.sh beads safety net"
 
 setup:
   - "mkdir -p .claude .yoshiko-flow docs/plans"
-  - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/plan-intake-ok"
+  - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/plan-intake-skip .yoshiko-flow/.beads-check-cache"
 
 steps:
-  # Case 1: No plan files → no warning, exits 0
-  - name: "no_plans_no_warning"
+  # Case 1: No plan files → no block, exits 0
+  - name: "no_plans_no_block"
     run: |
-      rm -f .yoshiko-flow/plan-intake-ok
+      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip
       rm -f docs/plans/plan-*.md
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
         CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      EXIT=$?
       echo "$OUTPUT"
-      if echo "$OUTPUT" | grep -q "WARNING"; then
-        echo "FAIL: unexpected warning"
+      if [ "$EXIT" -ne 0 ]; then
+        echo "FAIL: unexpected non-zero exit ($EXIT)"
         exit 1
       fi
-      echo "OK: no warning"
+      echo "OK: no block"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 2: Plan file with beads → no warning
-  - name: "plan_with_beads_no_warning"
+  # Case 2: Plan file with beads → no block
+  - name: "plan_with_beads_no_block"
     run: |
-      rm -f .yoshiko-flow/plan-intake-ok
+      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
       mkdir -p "$WORK_DIR/mock_bin"
       printf '#!/bin/bash\necho '\''[{"id":"beads-001"}]'\''' > "$WORK_DIR/mock_bin/bd"
       chmod +x "$WORK_DIR/mock_bin/bd"
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
         PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      EXIT=$?
       echo "$OUTPUT"
-      if echo "$OUTPUT" | grep -q "WARNING"; then
-        echo "FAIL: unexpected warning"
+      if [ "$EXIT" -ne 0 ]; then
+        echo "FAIL: unexpected non-zero exit ($EXIT)"
         exit 1
       fi
-      echo "OK: no warning"
+      echo "OK: no block"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 3: Plan file without beads → warning containing /yf:plan_intake
-  - name: "plan_without_beads_warns"
+  # Case 3: Plan file without beads → BLOCKED (exit 2)
+  - name: "plan_without_beads_blocks"
     run: |
-      rm -f .yoshiko-flow/plan-intake-ok
+      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
       mkdir -p "$WORK_DIR/mock_bin"
       printf '#!/bin/bash\necho '\''[]'\''' > "$WORK_DIR/mock_bin/bd"
       chmod +x "$WORK_DIR/mock_bin/bd"
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
-        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1 || true)
       echo "$OUTPUT"
-      if echo "$OUTPUT" | grep -q "yf:plan_intake"; then
-        echo "OK: warning mentions yf:plan_intake"
+      if echo "$OUTPUT" | grep -q "BLOCKED"; then
+        echo "OK: blocked as expected"
       else
-        echo "FAIL: warning missing yf:plan_intake"
+        echo "FAIL: expected BLOCKED"
         exit 1
       fi
     assertions:
-      - type: exit_code
-        value: "0"
       - type: output_contains
-        value: "WARNING"
+        value: "BLOCKED"
       - type: output_contains
         value: "yf:plan_intake"
 
-  # Case 4: Completed plan → no warning
-  - name: "completed_plan_no_warning"
+  # Case 4: Completed plan → no block
+  - name: "completed_plan_no_block"
     run: |
-      rm -f .yoshiko-flow/plan-intake-ok
+      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip
       printf '# Plan 99\n**Status: Completed**' > docs/plans/plan-99.md
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
         CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      EXIT=$?
       echo "$OUTPUT"
-      if echo "$OUTPUT" | grep -q "WARNING"; then
-        echo "FAIL: unexpected warning for completed plan"
+      if [ "$EXIT" -ne 0 ]; then
+        echo "FAIL: unexpected non-zero exit ($EXIT)"
         exit 1
       fi
-      echo "OK: no warning for completed plan"
+      echo "OK: no block for completed plan"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 5: Marker file suppresses repeat warning
-  - name: "marker_suppresses_warning"
+  # Case 5: Escape hatch (plan-intake-skip) bypasses block
+  - name: "escape_hatch_bypasses_block"
     run: |
+      rm -f .yoshiko-flow/.beads-check-cache
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
-      touch .yoshiko-flow/plan-intake-ok
+      touch .yoshiko-flow/plan-intake-skip
+      mkdir -p "$WORK_DIR/mock_bin"
+      printf '#!/bin/bash\necho '\''[]'\''' > "$WORK_DIR/mock_bin/bd"
+      chmod +x "$WORK_DIR/mock_bin/bd"
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
-        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      EXIT=$?
       echo "$OUTPUT"
-      if echo "$OUTPUT" | grep -q "WARNING"; then
-        echo "FAIL: marker did not suppress warning"
+      if [ "$EXIT" -ne 0 ]; then
+        echo "FAIL: escape hatch did not bypass block"
         exit 1
       fi
-      echo "OK: marker suppressed warning"
+      echo "OK: escape hatch bypassed"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 6: Gate active takes priority over intake check (gate blocks, no intake warning)
+  # Case 6: Gate active takes priority over intake check (gate blocks, no intake check)
   - name: "gate_takes_priority"
     run: |
-      rm -f .yoshiko-flow/plan-intake-ok
+      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
       echo "99" > .yoshiko-flow/plan-gate
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
@@ -128,6 +134,52 @@ steps:
       - type: output_contains
         value: "BLOCKED"
 
+  # Case 7: Exempt file (docs/plans/*) allowed even when plan has no beads
+  - name: "exempt_file_allowed"
+    run: |
+      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip
+      printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
+      mkdir -p "$WORK_DIR/mock_bin"
+      printf '#!/bin/bash\necho '\''[]'\''' > "$WORK_DIR/mock_bin/bd"
+      chmod +x "$WORK_DIR/mock_bin/bd"
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/docs/plans/plan-99.md"}}' | \
+        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      EXIT=$?
+      echo "$OUTPUT"
+      if [ "$EXIT" -ne 0 ]; then
+        echo "FAIL: exempt file was blocked"
+        exit 1
+      fi
+      echo "OK: exempt file allowed"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: Cache TTL — second check within 60s uses cached result
+  - name: "cache_ttl_respected"
+    run: |
+      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip .yoshiko-flow/plan-gate
+      printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
+      # Prime the cache with a "skip" result
+      printf '%s\nskip\n' "$(date '+%s')" > .yoshiko-flow/.beads-check-cache
+      # Even with no bd in PATH, should use cache and not block
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        PATH="/usr/bin:/bin" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      EXIT=$?
+      echo "$OUTPUT"
+      if [ "$EXIT" -ne 0 ]; then
+        echo "FAIL: cache was not used (exit $EXIT)"
+        exit 1
+      fi
+      echo "OK: cache TTL respected"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
-  - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/plan-intake-ok docs/plans/plan-99.md"
+  - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/plan-intake-skip .yoshiko-flow/.beads-check-cache docs/plans/plan-99.md"
   - "rm -rf mock_bin"

@@ -48,17 +48,9 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
-# --- Migration: yf.json → config.json within .yoshiko-flow/ ---
+# --- Ensure .yoshiko-flow directory exists ---
 if [ ! -d "$YF_DIR" ]; then
   mkdir -p "$YF_DIR"
-fi
-OLD_YF_JSON="$YF_DIR/yf.json"
-if [ -f "$OLD_YF_JSON" ] && [ ! -f "$CONFIG_FILE" ]; then
-  mv "$OLD_YF_JSON" "$CONFIG_FILE"
-  echo "preflight: renamed .yoshiko-flow/yf.json → config.json"
-elif [ -f "$OLD_YF_JSON" ] && [ -f "$CONFIG_FILE" ]; then
-  rm -f "$OLD_YF_JSON"
-  echo "preflight: removed stale .yoshiko-flow/yf.json"
 fi
 # --- Ensure .yoshiko-flow/.gitignore has correct content ---
 EXPECTED_GI_MARKER='!config.json'
@@ -70,45 +62,6 @@ if [ ! -f "$YF_DIR/.gitignore" ] || ! grep -qF "$EXPECTED_GI_MARKER" "$YF_DIR/.g
 !config.json
 GITIGNORE_EOF
 fi
-# --- Migration: .claude/ → .yoshiko-flow/ ---
-OLD_CONFIG="$PROJECT_DIR/.claude/yf.json"
-# Migrate old .claude/yf.json → split config + lock
-if [ -f "$OLD_CONFIG" ] && [ ! -f "$CONFIG_FILE" ]; then
-  # Extract config-only keys → yf.json
-  jq '{enabled, config}' "$OLD_CONFIG" > "$CONFIG_FILE" 2>/dev/null || cp "$OLD_CONFIG" "$CONFIG_FILE"
-  # Extract lock keys → lock.json
-  jq '{updated, preflight}' "$OLD_CONFIG" > "$LOCK_FILE" 2>/dev/null || echo '{}' > "$LOCK_FILE"
-  rm -f "$OLD_CONFIG"
-  echo "preflight: migrated .claude/yf.json → .yoshiko-flow/"
-elif [ -f "$OLD_CONFIG" ] && [ -f "$CONFIG_FILE" ]; then
-  # Destination already exists — just remove the orphaned old config
-  rm -f "$OLD_CONFIG"
-  echo "preflight: removed orphaned .claude/yf.json"
-fi
-# Migrate state files (move if destination missing, delete if destination exists)
-for OLD_STATE in .task-pump.json .plan-gate .plan-intake-ok; do
-  OLD_PATH="$PROJECT_DIR/.claude/$OLD_STATE"
-  NEW_NAME="${OLD_STATE#.}"
-  NEW_PATH="$YF_DIR/$NEW_NAME"
-  if [ -e "$OLD_PATH" ] && [ ! -e "$NEW_PATH" ]; then
-    mv "$OLD_PATH" "$NEW_PATH"
-    echo "preflight: migrated .claude/$OLD_STATE → .yoshiko-flow/$NEW_NAME"
-  elif [ -e "$OLD_PATH" ] && [ -e "$NEW_PATH" ]; then
-    rm -f "$OLD_PATH"
-    echo "preflight: removed orphaned .claude/$OLD_STATE"
-  fi
-done
-# Clean up .claude/.gitignore if it only contains yf-era entries
-OLD_CLAUDE_GI="$PROJECT_DIR/.claude/.gitignore"
-if [ -f "$OLD_CLAUDE_GI" ]; then
-  # Check if every non-empty, non-comment line is a known yf artifact
-  NON_YF_LINES=$(grep -v '^$' "$OLD_CLAUDE_GI" | grep -v '^#' | grep -vE '^(yf\.local\.json|yf\.json)$' || true)
-  if [ -z "$NON_YF_LINES" ]; then
-    rm -f "$OLD_CLAUDE_GI"
-    echo "preflight: removed stale .claude/.gitignore"
-  fi
-fi
-
 # --- Source the config library ---
 . "$SCRIPT_DIR/yf-config.sh"
 
@@ -127,21 +80,6 @@ if yf_config_exists; then
   MERGED=$(yf_merged_config)
   YF_ENABLED=$(echo "$MERGED" | jq -r 'if .enabled == null then true else .enabled end' 2>/dev/null)
   ARTIFACT_DIR=$(echo "$MERGED" | jq -r '.config.artifact_dir // "docs"' 2>/dev/null)
-
-  # --- Prune deprecated config fields ---
-  NEEDS_PRUNE=false
-  if echo "$MERGED" | jq -e '.config.chronicler_enabled' >/dev/null 2>&1; then
-    NEEDS_PRUNE=true
-  fi
-  if echo "$MERGED" | jq -e '.config.archivist_enabled' >/dev/null 2>&1; then
-    NEEDS_PRUNE=true
-  fi
-  if $NEEDS_PRUNE; then
-    jq 'del(.config.chronicler_enabled, .config.archivist_enabled)' "$CONFIG_FILE" > "$CONFIG_FILE.tmp" \
-      && mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
-    echo "preflight: pruned deprecated chronicler_enabled/archivist_enabled from config"
-    MERGED=$(yf_merged_config)
-  fi
 fi
 
 # --- Disabled: remove all yf symlinks/files ---
@@ -332,55 +270,53 @@ j=0; while [ $j -lt "$SETUP_COUNT" ]; do
   PLUGIN_LOCK=$(echo "$PLUGIN_LOCK" | jq ".artifacts.setup += [{\"name\": \"$SETUP_NAME\", \"completed\": $COMPLETED}]")
 j=$((j + 1)); done
 
-# --- Beads git workflow migration ---
-BEADS_MIGRATION_COMPLETE=$(jq -r '.preflight.plugins.yf.beads_migration_complete // false' "$LOCK_FILE" 2>/dev/null || echo "false")
+# --- Install beads pre-push hook (idempotent) ---
+install_beads_push_hook() {
+  local proj_dir="$1"
+  local git_dir="$proj_dir/.git"
+  local hooks_dir="$git_dir/hooks"
+  local hook_file="$hooks_dir/pre-push"
+  local sentinel="# --- BEADS-SYNC-PUSH ---"
 
-if [ -d "$PROJECT_DIR/.beads" ] && [ "$BEADS_MIGRATION_COMPLETE" != "true" ]; then
-  # Check if .beads/ is in the yf-managed gitignore block (legacy local-only)
-  NEEDS_MIGRATION=false
-  if [ -f "$PROJECT_DIR/.gitignore" ] && grep -qF "# >>> yf-managed >>>" "$PROJECT_DIR/.gitignore"; then
-    if awk '/# >>> yf-managed >>>/,/# <<< yf-managed <<</' "$PROJECT_DIR/.gitignore" | grep -q '\.beads/'; then
-      NEEDS_MIGRATION=true
-    fi
+  [ -d "$git_dir" ] || return 0
+  [ -f "$hook_file" ] && grep -qF "$sentinel" "$hook_file" && return 0
+
+  mkdir -p "$hooks_dir"
+  local snippet
+  snippet="
+$sentinel
+# Auto-push beads-sync branch when pushing any branch.
+# Fail-open: beads-sync push failure does not block the main push.
+_beads_sync_push() {
+  local remote=\"\$1\"
+  local sync_branch=\"beads-sync\"
+  if ! git rev-parse --verify \"\$sync_branch\" >/dev/null 2>&1; then
+    return 0
   fi
-
-  if $NEEDS_MIGRATION; then
-    echo "preflight: migrating beads to git-tracked model..."
-
-    # Configure sync branch
-    (cd "$PROJECT_DIR" && bd config set sync.branch beads-sync) 2>&1 || echo "preflight: warn: failed to set sync.branch" >&2
-
-    # Enable mass-delete protection
-    (cd "$PROJECT_DIR" && bd config set sync.require_confirmation_on_mass_delete true) 2>&1 || echo "preflight: warn: failed to set mass-delete protection" >&2
-
-    # Install beads git hooks
-    (cd "$PROJECT_DIR" && bd hooks install) 2>&1 || echo "preflight: warn: failed to install beads hooks" >&2
-
-    # Install pre-push hook for beads-sync auto-push
-    bash "$SCRIPT_DIR/install-beads-push-hook.sh" "$PROJECT_DIR" 2>&1 || echo "preflight: warn: failed to install beads push hook" >&2
-
-    # Run doctor to verify
-    (cd "$PROJECT_DIR" && bd doctor) 2>&1 || echo "preflight: warn: bd doctor reported issues" >&2
-
-    # Record migration complete in lock
-    PLUGIN_LOCK=$(echo "$PLUGIN_LOCK" | jq '.beads_migration_complete = true')
-
-    echo "preflight: beads git workflow migration complete"
-    echo ""
-    echo "preflight: ACTION REQUIRED — To enable beads git tracking, run:"
-    echo "  git add .beads/"
-    echo "  git commit -m \"chore: enable beads git-tracking\""
-    echo "  git push  # pre-push hook will create beads-sync branch"
+  local local_ref remote_ref
+  local_ref=\$(git rev-parse \"\$sync_branch\" 2>/dev/null)
+  remote_ref=\$(git rev-parse \"refs/remotes/\$remote/\$sync_branch\" 2>/dev/null || echo \"\")
+  if [ \"\$local_ref\" != \"\$remote_ref\" ]; then
+    git push \"\$remote\" \"\$sync_branch\" >/dev/null 2>&1 || true
   fi
-fi
+}
+_beads_sync_push \"\$1\"
+$sentinel"
 
-# Install beads pre-push hook unconditionally (idempotent)
+  if [ -f "$hook_file" ]; then
+    printf '%s\n' "$snippet" >> "$hook_file"
+  else
+    printf '#!/bin/bash\n%s\n' "$snippet" > "$hook_file"
+  fi
+  chmod +x "$hook_file"
+}
+
 if [ -d "$PROJECT_DIR/.beads" ]; then
-  bash "$SCRIPT_DIR/install-beads-push-hook.sh" "$PROJECT_DIR" 2>&1 || echo "preflight: warn: failed to install beads push hook" >&2
+  install_beads_push_hook "$PROJECT_DIR" 2>&1 || echo "preflight: warn: failed to install beads push hook" >&2
 fi
 
-# --- Project setup (gitignore + AGENTS.md cleanup) ---
-bash "$SCRIPT_DIR/setup-project.sh" all 2>&1 || true
+# --- Project setup (gitignore) ---
+bash "$SCRIPT_DIR/setup-project.sh" 2>&1 || true
 
 # --- Rules: create symlinks ---
 RULE_COUNT=0
@@ -449,14 +385,6 @@ for OLD_TARGET in $LOCK_RULE_TARGETS; do
       fi
       ;;
   esac
-done
-
-# --- Remove legacy flat yf-* rules from pre-subdirectory era ---
-for F in "$PROJECT_DIR/.claude/rules"/yf-*.md; do
-    [ -e "$F" ] || [ -L "$F" ] || continue
-    rm -f "$F"
-    SUMMARY_REMOVE=$((SUMMARY_REMOVE + 1))
-    echo "preflight: $PLUGIN_NAME — removed legacy flat rule $(basename "$F")"
 done
 
 # --- Chmod scripts and hooks ---

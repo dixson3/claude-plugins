@@ -49,7 +49,7 @@ Extract the `plan:<idx>` label and root epic ID.
 
 Clear any stale pump state from a previous execution:
 ```bash
-plugins/yf/scripts/pump-state.sh clear
+plugins/yf/scripts/dispatch-state.sh pump clear
 ```
 
 ### Step 3: Pump Loop
@@ -61,7 +61,7 @@ Repeat until no more tasks:
 Call `/yf:task_pump` with the plan index. The pump:
 
 1. Calls `plan-exec.sh next <root-epic-id>` to get ready beads
-2. Filters out already-dispatched beads via `pump-state.sh is-dispatched`
+2. Filters out already-dispatched beads via `dispatch-state.sh pump is-dispatched`
 3. Classifies each bead into **formula track** (has `formula:<name>` label → dispatch via `/yf:swarm_run`) or **agent track** (has `agent:<name>` label only → dispatch via bare Task tool)
 4. Returns two groups: formula beads (for swarm dispatch) and agent beads (for bare Task dispatch)
 
@@ -116,14 +116,14 @@ Then follow the same workflow: assess scope, break down if needed, implement, cl
 
 Mark each dispatched bead:
 ```bash
-plugins/yf/scripts/pump-state.sh mark-dispatched <bead-id>
+plugins/yf/scripts/dispatch-state.sh pump mark-dispatched <bead-id>
 ```
 
 #### 3d. Wait and Loop
 
 After dispatching a batch:
 1. Wait for all dispatched Task tool calls to return
-2. Mark completed beads: `pump-state.sh mark-done <bead-id>`
+2. Mark completed beads: `dispatch-state.sh pump mark-done <bead-id>`
 3. Loop back to Step 3a — newly unblocked beads become ready
 
 ### Step 3e: Qualification Gate

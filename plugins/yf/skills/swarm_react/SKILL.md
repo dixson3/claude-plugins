@@ -107,7 +107,7 @@ This fires automatically (not advisory) because mid-swarm context is lost after 
 
 After bugfix completes, mark the original failed step for retry:
 ```bash
-bash plugins/yf/scripts/swarm-state.sh mark-retrying <step_id>
+bash plugins/yf/scripts/dispatch-state.sh swarm mark-retrying <step_id>
 ```
 
 The dispatch loop will re-dispatch this step on its next iteration.

@@ -7,8 +7,8 @@ steps:
   - name: "no_double_dispatch"
     run: |
       rm -f .yoshiko-flow/task-pump.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" is-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump is-dispatched marketplace-abc
     assertions:
       - type: output_contains
         value: "dispatched"
@@ -19,11 +19,11 @@ steps:
   - name: "multiple_beads_independent"
     run: |
       rm -f .yoshiko-flow/task-pump.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-def
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-done marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-def
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-done marketplace-abc
       # abc should be done, def should still be dispatched
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" is-dispatched marketplace-def
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump is-dispatched marketplace-def
     assertions:
       - type: output_contains
         value: "dispatched"
@@ -32,10 +32,10 @@ steps:
   - name: "done_not_in_pending"
     run: |
       rm -f .yoshiko-flow/task-pump.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-def
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-done marketplace-abc
-      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" pending)
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-def
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-done marketplace-abc
+      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump pending)
       echo "$RESULT" | grep -c "marketplace-def"
     assertions:
       - type: output_contains
@@ -45,9 +45,9 @@ steps:
   - name: "clear_between_cycles"
     run: |
       rm -f .yoshiko-flow/task-pump.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" clear
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/pump-state.sh" is-dispatched marketplace-abc 2>/dev/null || true
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump clear
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump is-dispatched marketplace-abc 2>/dev/null || true
     assertions:
       - type: output_contains
         value: "not-dispatched"
