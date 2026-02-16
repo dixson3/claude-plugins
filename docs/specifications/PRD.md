@@ -24,7 +24,7 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 
 - TC-001: All shell scripts must be bash 3.2 compatible (macOS default)
 - TC-002: Scripts use jq for JSON processing (external dependency)
-- TC-003: beads-cli >= 0.44.0 required for issue tracking (external dependency)
+- TC-003: beads-cli >= 0.50.0 required for issue tracking (external dependency); `dolt` backend required (default since 0.50.0)
 - TC-004: Plugin must work within Claude Code's plugin system (plugin.json strict schema, auto-discovered skills/agents)
 - TC-005: Hooks must be fail-open (exit 0 always) -- never block user operations on internal errors
 - TC-006: Rules are behavioral guidance (agent compliance) -- hooks provide mechanical enforcement
@@ -63,7 +63,7 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 | REQ-024 | Plans must be reconcilable against existing specifications before execution, with configurable enforcement mode | P1 | Engineer | Plan 34 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/engineer_reconcile/SKILL.md` |
 | REQ-025 | Specification drift must be detectable during work via advisory watch rule | P2 | Engineer | Plan 34 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/rules/watch-for-spec-drift.md` |
 | REQ-026 | Closed beads must be automatically pruned at plan completion (plan-scoped) and after git push (global) with soft-delete tombstones | P2 | Beads Integration | Plan 32 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/plan-prune.sh` |
-| REQ-027 | Beads state must be git-tracked via `beads-sync` branch with automated JSONL sync via git hooks | P1 | Beads Integration | Plan 27 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/install-beads-push-hook.sh` |
+| REQ-027 | Beads must be initialized with `dolt` backend (default), `beads-sync` branch, standard `bd hooks install` hooks, and no AGENTS.md (plugin provides beads rules via custom rule file). Custom pre-push hooks are prohibited — all sync uses standard beads hooks. | P1 | Beads Integration | Plan 27 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/.claude-plugin/preflight.json` |
 | REQ-028 | Setup must be zero-question with automatic installation of rules, directories, and beads configuration | P0 | Core | Plan 33 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/setup/SKILL.md` |
 | REQ-029 | Project `.gitignore` must be automatically managed with sentinel-bracketed block for yf ephemeral files | P1 | Core | Plan 23 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/setup-project.sh` |
 | REQ-030 | All new work must include automated test scenarios in YAML format, runnable via `bash tests/run-tests.sh --unit-only` | P0 | Testing | Plan 06 | `/Users/james/workspace/dixson3/d3-claude-plugins/tests/run-tests.sh` |
@@ -118,7 +118,7 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 ### 4.7 Beads Integration
 
 - FS-026: Beads is the source of truth for all plan work; Claude TaskCreate/TaskList is NOT used for plan work
-- FS-027: Git-tracked beads with beads-sync branch; pre-push hook auto-pushes sync branch
+- FS-027: Git-tracked beads with `dolt` backend, `beads-sync` branch, and standard `bd hooks install` hooks (pre-commit, post-merge, pre-push, post-checkout, prepare-commit-msg). No custom pre-push hook — standard beads hooks handle all sync. No AGENTS.md generated — the plugin provides beads workflow context via its own rule file and `bd prime` hook injection.
 - FS-028: Automatic pruning: plan-scoped on completion, global on push, configurable thresholds
 - FS-029: Safety net hook warns on destructive `bd delete` operations without plan lifecycle or chronicle capture
 

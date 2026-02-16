@@ -10,22 +10,22 @@ Beads-cli is the external persistence layer that provides git-backed issue track
 
 **Actor**: System (preflight setup)
 
-**Preconditions**: beads-cli >= 0.44.0 installed. Git repository initialized.
+**Preconditions**: beads-cli >= 0.50.0 installed. Git repository initialized.
 
 **Flow**:
 1. Preflight checks `test -d .beads` (setup command guard)
-2. If `.beads/` does not exist: runs `bd init`
+2. If `.beads/` does not exist: runs `bd init` (uses `dolt` backend by default since 0.50.0)
 3. Configures sync branch: `bd config set sync.branch beads-sync`
 4. Enables mass-delete protection: `bd config set sync.require_confirmation_on_mass_delete true`
-5. Installs git hooks: `bd hooks install`
-6. Runs `install-beads-push-hook.sh` to add pre-push hook for beads-sync auto-push
-7. Beads manages its own `.beads/.gitignore`
+5. Installs standard beads git hooks: `bd hooks install` (pre-commit, post-merge, pre-push, post-checkout, prepare-commit-msg)
+6. No AGENTS.md is created — the plugin provides beads workflow context via its own rule file (`yf-rules.md`) and `bd prime` hook injection at session start
+7. No custom pre-push hook — standard beads hooks handle all sync including `beads-sync` branch auto-push
+8. Beads manages its own `.beads/.gitignore`
 
-**Postconditions**: Beads initialized with git tracking. Sync branch configured. Push hook installed.
+**Postconditions**: Beads initialized with `dolt` backend. Sync branch configured. Standard beads hooks installed. No AGENTS.md.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/.claude-plugin/preflight.json`
-- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/install-beads-push-hook.sh`
 
 ### UC-026: Bead Lifecycle During Plan Execution
 
