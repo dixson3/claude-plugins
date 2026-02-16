@@ -65,7 +65,3 @@ sync-branch: "beads-sync"
 # - linear.api-key
 # - github.org
 # - github.repo
-
-# daemon.auto-sync: true  # Disabled — beads is local-only (Plan 18)
-
-sync.require_confirmation_on_mass_delete: true
