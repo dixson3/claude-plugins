@@ -165,10 +165,11 @@ When ending a work session:
 3. Generate diary (if open chronicles): `/yf:chronicle_diary`
 4. Run quality gates (if code changed)
 5. Update issue status — close finished work
-6. Sync beads: `bd sync`
-7. Commit code changes
-8. Push only when user explicitly requests
-9. Hand off context for next session
+6. Session prune (automatic via SessionEnd hook; manual: `bash plugins/yf/scripts/session-prune.sh all`)
+7. Sync beads: `bd sync`
+8. Commit code changes
+9. Push only when user explicitly requests
+10. Hand off context for next session
 
 ---
 

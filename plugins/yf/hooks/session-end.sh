@@ -35,6 +35,9 @@ bash "$SCRIPT_DIR/scripts/chronicle-check.sh" check 2>/dev/null || true
 # --- Run staleness check for long sessions with no recent chronicles ---
 bash "$SCRIPT_DIR/scripts/chronicle-staleness.sh" 2>/dev/null || true
 
+# --- Session prune: clean stale beads, ephemeral files, stale drafts ---
+bash "$SCRIPT_DIR/scripts/session-prune.sh" all 2>/dev/null || true
+
 # --- Query open chronicles ---
 CHRONICLES=$( (set +e; bd list --label=ys:chronicle --status=open --format=json 2>/dev/null) || echo "[]")
 COUNT=$(echo "$CHRONICLES" | jq 'length' 2>/dev/null || echo "0")

@@ -1,0 +1,250 @@
+name: "Unit: session-prune.sh — dynamic cleanup at session close"
+
+setup:
+  - "git init"
+  - "mkdir -p .yoshiko-flow"
+  - "echo '# test' > CLAUDE.md"
+  - "git add -A && git commit -m 'init'"
+  - "bd init 2>/dev/null || true"
+
+steps:
+  # Case 1: Yesterday's date-stamped files removed, today's preserved
+  - name: "ephemeral_removes_stale_datefiles"
+    run: |
+      TODAY=$(date +%Y%m%d)
+      # Calculate yesterday portably (macOS)
+      YESTERDAY=$(date -v-1d +%Y%m%d 2>/dev/null || date -d "yesterday" +%Y%m%d 2>/dev/null || echo "20250101")
+      touch "$WORK_DIR/.yoshiko-flow/.chronicle-drafted-$YESTERDAY"
+      touch "$WORK_DIR/.yoshiko-flow/.chronicle-staleness-$YESTERDAY"
+      touch "$WORK_DIR/.yoshiko-flow/.chronicle-transition-$YESTERDAY"
+      touch "$WORK_DIR/.yoshiko-flow/.chronicle-plan-$YESTERDAY"
+      touch "$WORK_DIR/.yoshiko-flow/.chronicle-drafted-$TODAY"
+      touch "$WORK_DIR/.yoshiko-flow/.chronicle-staleness-$TODAY"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" ephemeral 2>&1
+      # Yesterday's files should be gone
+      STALE=0
+      [ -f "$WORK_DIR/.yoshiko-flow/.chronicle-drafted-$YESTERDAY" ] && STALE=$((STALE + 1))
+      [ -f "$WORK_DIR/.yoshiko-flow/.chronicle-staleness-$YESTERDAY" ] && STALE=$((STALE + 1))
+      [ -f "$WORK_DIR/.yoshiko-flow/.chronicle-transition-$YESTERDAY" ] && STALE=$((STALE + 1))
+      [ -f "$WORK_DIR/.yoshiko-flow/.chronicle-plan-$YESTERDAY" ] && STALE=$((STALE + 1))
+      # Today's files should remain
+      FRESH=0
+      [ -f "$WORK_DIR/.yoshiko-flow/.chronicle-drafted-$TODAY" ] && FRESH=$((FRESH + 1))
+      [ -f "$WORK_DIR/.yoshiko-flow/.chronicle-staleness-$TODAY" ] && FRESH=$((FRESH + 1))
+      if [ "$STALE" -eq 0 ] && [ "$FRESH" -eq 2 ]; then
+        echo "OK: stale removed, fresh preserved"
+      else
+        echo "FAIL: stale=$STALE (want 0), fresh=$FRESH (want 2)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: All 5 session sentinels removed
+  - name: "ephemeral_removes_sentinels"
+    run: |
+      for f in .chronicle-nudge .beads-check-cache plan-chronicle-ok plan-intake-ok plan-intake-skip; do
+        touch "$WORK_DIR/.yoshiko-flow/$f"
+      done
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" ephemeral 2>&1
+      REMAINING=0
+      for f in .chronicle-nudge .beads-check-cache plan-chronicle-ok plan-intake-ok plan-intake-skip; do
+        [ -f "$WORK_DIR/.yoshiko-flow/$f" ] && REMAINING=$((REMAINING + 1))
+      done
+      if [ "$REMAINING" -eq 0 ]; then
+        echo "OK: all sentinels removed"
+      else
+        echo "FAIL: $REMAINING sentinels remain"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Protected files untouched
+  - name: "ephemeral_preserves_protected"
+    run: |
+      for f in config.json .gitignore lock.json plan-gate task-pump.json swarm-state.json; do
+        echo "protected" > "$WORK_DIR/.yoshiko-flow/$f"
+      done
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" ephemeral 2>&1
+      MISSING=0
+      for f in config.json .gitignore lock.json plan-gate task-pump.json swarm-state.json; do
+        [ -f "$WORK_DIR/.yoshiko-flow/$f" ] || MISSING=$((MISSING + 1))
+      done
+      if [ "$MISSING" -eq 0 ]; then
+        echo "OK: all protected files preserved"
+      else
+        echo "FAIL: $MISSING protected files missing"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Config gate disabled — files untouched
+  - name: "config_gate_disabled"
+    run: |
+      echo '{"enabled":true,"config":{"auto_prune":{"on_session_close":false}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      touch "$WORK_DIR/.yoshiko-flow/.chronicle-nudge"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" ephemeral 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "disabled by config" && [ -f "$WORK_DIR/.yoshiko-flow/.chronicle-nudge" ]; then
+        echo "OK: disabled by config, files untouched"
+      else
+        echo "FAIL: should be disabled (output=$OUTPUT)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: No auto_prune key defaults to enabled
+  - name: "config_default_enabled"
+    run: |
+      echo '{"enabled":true}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      touch "$WORK_DIR/.yoshiko-flow/.chronicle-nudge"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" ephemeral 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "disabled by config"; then
+        echo "FAIL: should default to enabled"
+        exit 1
+      fi
+      if [ ! -f "$WORK_DIR/.yoshiko-flow/.chronicle-nudge" ]; then
+        echo "OK: defaults to enabled, sentinel removed"
+      else
+        echo "FAIL: sentinel still exists"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: --dry-run outputs preview, files remain
+  - name: "dry_run_no_delete"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      YESTERDAY=$(date -v-1d +%Y%m%d 2>/dev/null || date -d "yesterday" +%Y%m%d 2>/dev/null || echo "20250101")
+      touch "$WORK_DIR/.yoshiko-flow/.chronicle-drafted-$YESTERDAY"
+      touch "$WORK_DIR/.yoshiko-flow/.chronicle-nudge"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" ephemeral --dry-run 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "Dry run" && \
+         [ -f "$WORK_DIR/.yoshiko-flow/.chronicle-drafted-$YESTERDAY" ] && \
+         [ -f "$WORK_DIR/.yoshiko-flow/.chronicle-nudge" ]; then
+        echo "OK: dry run preserved files"
+      else
+        echo "FAIL: files should not be deleted in dry run"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: All subcommands exit 0 (fail-open)
+  - name: "always_exit_zero"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" beads 2>&1
+      RC1=$?
+      bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" ephemeral 2>&1
+      RC2=$?
+      bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" drafts 2>&1
+      RC3=$?
+      bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" all 2>&1
+      RC4=$?
+      bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" invalid 2>&1
+      RC5=$?
+      if [ "$RC1" -eq 0 ] && [ "$RC2" -eq 0 ] && [ "$RC3" -eq 0 ] && [ "$RC4" -eq 0 ] && [ "$RC5" -eq 0 ]; then
+        echo "OK: all exit 0"
+      else
+        echo "FAIL: rc1=$RC1 rc2=$RC2 rc3=$RC3 rc4=$RC4 rc5=$RC5"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: beads subcommand emits expected output with configurable threshold
+  - name: "beads_runs_cleanup"
+    run: |
+      echo '{"enabled":true,"config":{"auto_prune":{"older_than_days":14}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" beads 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "session-prune beads:" && echo "$OUTPUT" | grep -q "14d"; then
+        echo "OK: beads cleanup ran with configured threshold"
+      else
+        echo "FAIL: unexpected output: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: drafts subcommand runs (no stale path since beads are fresh)
+  - name: "drafts_closes_stale"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" drafts 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "session-prune drafts:"; then
+        echo "OK: drafts subcommand ran"
+      else
+        echo "FAIL: unexpected output: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: Missing .yoshiko-flow directory handled gracefully
+  - name: "ephemeral_no_yf_dir"
+    run: |
+      export CLAUDE_PROJECT_DIR="/tmp/nonexistent-yf-test-$$"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" ephemeral 2>&1)
+      RC=$?
+      echo "$OUTPUT"
+      if [ "$RC" -eq 0 ] && echo "$OUTPUT" | grep -q "no .yoshiko-flow"; then
+        echo "OK: handles missing directory gracefully"
+      else
+        echo "FAIL: should handle missing dir (rc=$RC, output=$OUTPUT)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .yoshiko-flow/config.json"
+  - "rm -f .yoshiko-flow/.chronicle-drafted-* .yoshiko-flow/.chronicle-staleness-* .yoshiko-flow/.chronicle-transition-* .yoshiko-flow/.chronicle-plan-*"
+  - "rm -f .yoshiko-flow/.chronicle-nudge .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-chronicle-ok .yoshiko-flow/plan-intake-ok .yoshiko-flow/plan-intake-skip"
