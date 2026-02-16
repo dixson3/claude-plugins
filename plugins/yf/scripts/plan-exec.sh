@@ -28,7 +28,7 @@ fi
 # Get the plan label from an issue
 get_plan_label() {
     local issue_id="$1"
-    bd label list "$issue_id" --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1
+    bd label list "$issue_id" --json 2>/dev/null | jq -r '(. // [])[] | select(startswith("plan:"))' | head -1
 }
 
 # Find the root epic for a plan label
@@ -41,20 +41,20 @@ find_root_epic() {
 find_open_gate() {
     local root_epic="$1"
     bd gate list --json 2>/dev/null | jq -r --arg parent "$root_epic" \
-        '.[] | select(.parent == $parent and (.labels // [] | any(. == "plan-exec"))) | .id' | head -1
+        '(. // [])[] | select(.parent == $parent and (.labels // [] | any(. == "plan-exec"))) | .id' | head -1
 }
 
 # Get plan label from root epic
 get_epic_plan_label() {
     local root_epic="$1"
-    bd label list "$root_epic" --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1
+    bd label list "$root_epic" --json 2>/dev/null | jq -r '(. // [])[] | select(startswith("plan:"))' | head -1
 }
 
 # Get all task IDs for a plan (non-epic, non-gate)
 get_plan_tasks() {
     local plan_label="$1"
     local status_filter="${2:-open}"
-    bd list -l "$plan_label" --status="$status_filter" --type=task --limit=0 --json 2>/dev/null | jq -r '.[].id'
+    bd list -l "$plan_label" --status="$status_filter" --type=task --limit=0 --json 2>/dev/null | jq -r '(. // [])[].id'
 }
 
 # Close chronicle gates when plan completes (diary can now generate)
@@ -62,7 +62,7 @@ close_chronicle_gates() {
     local plan_label="$1"
     local gate_ids
     gate_ids=$(bd list -l "ys:chronicle-gate,$plan_label" --status=open --type=gate --limit=0 --json 2>/dev/null \
-        | jq -r '.[].id' 2>/dev/null) || true
+        | jq -r '(. // [])[].id' 2>/dev/null) || true
     if [[ -n "$gate_ids" ]]; then
         while IFS= read -r gate_id; do
             bd close "$gate_id" --reason="Plan execution completed, diary ready" 2>/dev/null || true
@@ -169,7 +169,7 @@ case "$COMMAND" in
         START_SHA=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
         if [[ "$START_SHA" != "unknown" ]]; then
             # Remove any existing start-sha label first
-            EXISTING_SHA=$(bd label list "$ROOT_EPIC" --json 2>/dev/null | jq -r '.[] | select(startswith("start-sha:"))' 2>/dev/null | head -1)
+            EXISTING_SHA=$(bd label list "$ROOT_EPIC" --json 2>/dev/null | jq -r '(. // [])[] | select(startswith("start-sha:"))' 2>/dev/null | head -1)
             if [[ -n "$EXISTING_SHA" ]]; then
                 bd label remove "$ROOT_EPIC" "$EXISTING_SHA" 2>/dev/null || true
             fi
@@ -271,7 +271,7 @@ case "$COMMAND" in
             fi
         elif [[ -n "$GATE_ID" ]]; then
             # Check if this was ever started
-            LABELS=$(bd label list "$ROOT_EPIC" --json 2>/dev/null | jq -r '.[]' 2>/dev/null)
+            LABELS=$(bd label list "$ROOT_EPIC" --json 2>/dev/null | jq -r '(. // [])[]' 2>/dev/null)
             if echo "$LABELS" | grep -q "exec:paused"; then
                 echo "paused"
             else
