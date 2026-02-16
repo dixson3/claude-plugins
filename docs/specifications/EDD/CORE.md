@@ -93,11 +93,11 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Context**: v2.5.0 (Plan 18) made `.beads/` local-only and gitignored. This was later reversed in v2.12.0 (Plan 27) because cross-session and cross-machine persistence of issue state required git tracking.
 
-**Decision**: `.beads/` is git-tracked with a dedicated `beads-sync` branch. Beads manages its own `.beads/.gitignore` (tracking JSONL, config, metadata; ignoring db files and daemon state). A pre-push hook auto-pushes the sync branch.
+**Decision**: `.beads/` is git-tracked with a dedicated `beads-sync` branch. Beads manages its own `.beads/.gitignore` (tracking JSONL, config, metadata; ignoring db files and daemon state). Standard beads hooks (installed via `bd hooks install`) handle sync including auto-pushing the sync branch on `git push`.
 
-**Rationale**: The beads-sync branch keeps code branches clean while enabling issue state persistence. The pre-push hook is fail-open -- if it fails, the push proceeds normally.
+**Rationale**: The beads-sync branch keeps code branches clean while enabling issue state persistence. Standard beads hooks are fail-open -- if they fail, the push proceeds normally.
 
-**Consequences**: Requires `bd hooks install` during setup. Migration logic handles legacy local-only deployments. The `.beads/` directory is no longer in the project-level gitignore managed block.
+**Consequences**: Requires `bd hooks install` during setup. No custom pre-push hook -- standard beads hooks handle all sync (see REQ-027). Migration logic handles legacy local-only deployments. The `.beads/` directory is no longer in the project-level gitignore managed block.
 
 **Source**: Plan 27, diary `26-02-13.17-52.beads-git-workflow.md`
 
@@ -131,9 +131,9 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Decision**: Use beads formulas to define reusable multi-agent workflow templates. Formulas are instantiated as wisps (ephemeral molecules). Agents communicate via structured comments on the parent bead. Results survive wisp squashing.
 
-**Rationale**: Formulas are reusable templates. Wisps keep orchestration ephemeral (not synced via git). Comments provide a readable audit trail. Five formulas cover common patterns: feature-build, research-spike, code-review, bugfix, build-test.
+**Rationale**: Formulas are reusable templates. Wisps keep orchestration ephemeral (not synced via git). Comments provide a readable audit trail. Six formulas cover common patterns: feature-build, research-spike, code-review, bugfix, build-test, code-implement (see DD-013).
 
-**Consequences**: Requires beads formula/wisp/molecule support (>= 0.44.0). SUBAGENT annotations in formula descriptions are parsed by the dispatch skill (not by beads). Formula JSON files live at `plugins/yf/formulas/`.
+**Consequences**: Requires beads-cli >= 0.50.0 (see TC-003). SUBAGENT annotations in formula descriptions are parsed by the dispatch skill (not by beads). Formula JSON files live at `plugins/yf/formulas/`.
 
 **Source**: Plan 28, diary `26-02-13.22-30.swarm-execution.md`
 
@@ -161,7 +161,7 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Source**: Plan 33, diary `26-02-14.14-30.simplify-setup.md`
 
-### DD-009: Advisory Specification Reconciliation (Default)
+### DD-009: Blocking Specification Reconciliation (Default)
 
 **Context**: The engineer capability reconciles plans against existing specifications. The enforcement mode needed to be configurable.
 
@@ -220,6 +220,18 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 **Consequences**: Additional overhead per coding task (4 agent invocations vs 1). Only justified for non-trivial implementation tasks — atomic tasks use bare agent dispatch. The `swarm_select_formula` heuristic distinguishes code-implement from feature-build by technology/language context.
 
 **Source**: Plan 35, Phase 5
+
+### DD-014: Specifications as Anchor Documents
+
+**Context**: Specifications are living documents that drift when plans add new capabilities, tests reference only implementation details, and structural consistency goes unchecked. Manual reviews caught systemic drift but no gates prevented recurrence.
+
+**Decision**: Specifications are the contract. Plans conform to specs, not vice versa. New capabilities require spec additions before or during implementation. All spec changes require explicit operator approval. A mechanical sanity check script validates six structural dimensions. Default sanity check mode is `blocking`, consistent with reconciliation default (DD-009).
+
+**Rationale**: Conservative default treats specs as anchor documents. Blocking mode catches drift at lifecycle boundaries (plan intake and completion) rather than after the fact. Advisory mode remains available for projects with pre-existing inconsistencies.
+
+**Consequences**: The plan intake checklist (Step 1.5) adds operator approval gates that may slow plan startup. The structural checks are fail-open (exit 0 always) and configurable via `.config.engineer.sanity_check_mode`.
+
+**Source**: Plan 40
 
 ## Non-Functional Requirements
 

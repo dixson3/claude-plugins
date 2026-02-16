@@ -150,9 +150,35 @@ After qualification passes (or is advisory/disabled):
 
    - If count > 0: stub exists. Optionally invoke `/yf:chronicle_capture topic:completion` to create an enriched chronicle with execution details.
    - If count = 0: invoke `/yf:chronicle_capture topic:completion` as a fallback to preserve the execution summary.
-2. **Generate diary**: Invoke `/yf:chronicle_diary plan:<idx>` to process all plan chronicles into diary entries. Note the output — capture generated file paths and chronicle counts.
-3. **Process archives**: Invoke `/yf:archive_process plan:<idx>` to process plan-scoped archive beads into permanent documentation. Note the output — capture generated file paths.
-3.5. **Suggest spec updates**: If specification files exist under `<artifact_dir>/specifications/`, invoke `/yf:engineer_suggest_updates plan_idx:<idx>` to generate advisory update suggestions. Include suggestions in the completion report.
+2. **Generate diary**: Invoke `/yf:chronicle_diary plan:<idx>` to process
+   all open chronicles into diary entries. This must run before any
+   pruning so chronicle content is preserved.
+
+3. **Process archives**: Invoke `/yf:archive_process plan:<idx>`.
+
+3.25. **Structural staleness check**: Run the mechanical consistency
+   checks to catch any drift introduced during plan execution:
+   ```bash
+   bash plugins/yf/scripts/spec-sanity-check.sh all
+   ```
+   Include results in the completion report. If issues found, list them
+   as warnings with recommended fixes.
+
+3.5. **Spec self-reconciliation**: Reconcile specifications with
+   themselves — verify:
+   - PRD requirements trace to EDD design decisions
+   - EDD decisions trace to IG use cases
+   - test-coverage.md reflects all current spec items (REQ, DD, NFR, UC)
+   - No orphaned entries (IDs in coverage but not in source spec)
+   - No stale entries (removed capabilities still listed)
+
+   Use `/yf:engineer_suggest_updates plan_idx:<idx>` for advisory
+   suggestions, then output the sanity check report alongside.
+
+3.75. **Prune deprecated artifacts**: If the plan or its spec changes
+   deprecated any tests, functionality, or spec entries (identified
+   at intake step 1.5d), verify those removals were completed. If not,
+   flag as open items in the completion report.
 4. **Update plan file** status to "Completed"
 5. **Close root epic** if not already closed
 6. **Collect summary data** for the completion report:

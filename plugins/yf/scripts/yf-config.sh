@@ -62,3 +62,14 @@ yf_is_prune_on_push() { _yf_check_flag '.config.auto_prune.on_push'; }
 
 # yf_is_prune_on_session_close — returns 0 if session-close pruning enabled
 yf_is_prune_on_session_close() { _yf_check_flag '.config.auto_prune.on_session_close'; }
+
+# yf_sanity_check_mode — returns sanity check mode (blocking|advisory|disabled)
+yf_sanity_check_mode() {
+  local mode
+  mode=$(yf_read_field '.config.engineer.sanity_check_mode' 2>/dev/null)
+  if [ -z "$mode" ] || [ "$mode" = "null" ]; then
+    echo "blocking"
+  else
+    echo "$mode"
+  fi
+}

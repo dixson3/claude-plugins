@@ -45,7 +45,7 @@ The engineer capability synthesizes and maintains specification documents -- PRD
 5. EDD check: plan approach vs DD-xxx/NFR-xxx -- flags technology/architecture conflicts
 6. IG check: plan tasks vs UC-xxx use cases -- flags affected features
 7. Output: structured report with `PASS` or `NEEDS-RECONCILIATION`
-8. In gate mode with `blocking` config: presents conflicts via AskUserQuestion
+8. In gate mode with `blocking` config (default — see DD-009): presents conflicts via AskUserQuestion
 9. In gate mode with `advisory` config: outputs report, proceeds
 10. In gate mode with `disabled` config: skips entirely
 
@@ -93,3 +93,45 @@ The engineer capability synthesizes and maintains specification documents -- PRD
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/engineer_suggest_updates/SKILL.md`
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/rules/engineer-suggest-on-completion.md`
+
+### UC-033: Plan Intake Specification Integrity Gate
+
+**Actor**: System (auto-chain step 1.5) or Manual intake
+
+**Preconditions**: Specification files exist. A plan has been saved.
+
+**Flow**:
+1. Check specs exist: `test -d "${ARTIFACT_DIR}/specifications"`
+2. **1.5a** Contradiction check: compare plan against PRD/EDD/IG items; if contradictions found, present to operator via AskUserQuestion
+3. **1.5b** New capability check: identify untraced functionality; if found, propose spec additions with operator approval
+4. **1.5c** Test-spec alignment check: verify test plan references spec items (REQ-xxx, UC-xxx, DD-xxx) not just implementation
+5. **1.5d** Test deprecation check: identify tests that would become invalid from proposed changes
+6. **1.5e** Chronicle changes: create chronicle entries for spec and capability changes
+7. **1.5f** Structural consistency: run `spec-sanity-check.sh all`; in blocking mode present issues, in advisory mode report and proceed
+8. Run spec reconciliation: `/yf:engineer_reconcile plan_file:<path> mode:gate`
+
+**Postconditions**: Plan validated against specs. Operator approved any spec changes. Chronicle entries created for changes.
+
+**Key Files**:
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/plan_intake/SKILL.md`
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/spec-sanity-check.sh`
+
+### UC-034: Plan Completion Spec Self-Reconciliation
+
+**Actor**: System (plan completion)
+
+**Preconditions**: Plan execution completed. Specification files exist.
+
+**Flow**:
+1. Generate diary from plan chronicles (`/yf:chronicle_diary plan:<idx>`)
+2. Process archives (`/yf:archive_process plan:<idx>`)
+3. Run structural staleness check: `spec-sanity-check.sh all` — include results in completion report
+4. Reconcile specs with themselves: verify PRD→EDD→IG traceability, test-coverage consistency, no orphaned/stale entries
+5. Use `/yf:engineer_suggest_updates plan_idx:<idx>` for advisory suggestions
+6. Verify deprecated artifacts (identified at intake 1.5d) were removed; flag any remaining as open items
+
+**Postconditions**: Completion report includes sanity check results, self-reconciliation verdict, and deprecated artifact status.
+
+**Key Files**:
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/plan_execute/SKILL.md`
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/spec-sanity-check.sh`

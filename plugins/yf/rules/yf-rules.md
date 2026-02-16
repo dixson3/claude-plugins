@@ -51,6 +51,20 @@ If found, dispatch via `/yf:swarm_run formula:<name> feature:"<title>" parent_be
 2. If formula label: dispatch via `/yf:swarm_run`
 3. If no formula label: dispatch via bare Task tool with `subagent_type` from `agent:<name>` label
 
+### 1.4 Specifications Are Anchor Documents
+
+When `<artifact_dir>/specifications/` exists, specifications define the contract. All plans, tests, and implementations conform to the spec — not the reverse.
+
+- **No contraction**: No plan may remove, weaken, or contradict existing REQ, DD, NFR, or UC entries without explicit operator approval.
+- **New capability requires spec coverage**: Functionality not traced to existing spec entries must have spec additions (new REQs, new UCs, new DDs) written as part of the implementing plan — not after.
+- **Tests align to specs first**: Test cases reference specification items (REQ-xxx, UC-xxx, DD-xxx) as their primary basis. Implementation-only tests are insufficient.
+- **Spec changes require approval**: All additions, modifications, and deprecations to spec files require explicit operator approval via AskUserQuestion before writing.
+- **When in doubt, read the spec. When the spec is silent, extend it.**
+
+Skills: `/yf:engineer_reconcile`, `/yf:engineer_update`, `/yf:engineer_suggest_updates`
+
+Enforcement: The plan intake checklist (Step 1.5 in `plan_intake/SKILL.md`) and plan completion checklist (Steps 3.25–3.75 in `plan_execute/SKILL.md`) operationalize these principles at lifecycle boundaries. The structural consistency script (`spec-sanity-check.sh`) provides mechanical backstop checks.
+
 ---
 
 ## 2. PLAN LIFECYCLE
@@ -60,6 +74,7 @@ If found, dispatch via `/yf:swarm_run formula:<name> feature:"<title>" parent_be
 When ExitPlanMode completes and you see "Auto-chaining plan lifecycle..." in hook output, execute automatically without waiting for user input:
 
 1. **Format plan file** — standard structure (# Plan, Status, Date, Overview, Implementation Sequence, Completion Criteria). Plan files in `docs/plans/` are exempt from the plan gate.
+1.5. **Specification integrity gate** — If `<artifact_dir>/specifications/` exists, run the intake checklist (Rule 1.4): contradiction check, new capability check, test-spec alignment, test deprecation, chronicle spec/functionality changes, structural consistency (`bash plugins/yf/scripts/spec-sanity-check.sh all`). All spec changes require explicit operator approval. Then proceed with reconciliation.
 2. **Reconcile with specifications** — If `<artifact_dir>/specifications/` exists, invoke `/yf:engineer_reconcile plan_file:<path> mode:gate`. If conflicts detected, present to operator. If no specs, skip.
 3. **Update MEMORY.md** — Add plan reference under "Current Plans".
 4. **Create beads** — Invoke `/yf:plan_create_beads` with the plan file.
@@ -101,8 +116,9 @@ When `plan-exec.sh status` returns "completed", the report MUST include:
 3. **Diary Entries** — list files from `docs/diary/`
 4. **Archive Summary** — total, processed, open; list files from `docs/research/`, `docs/decisions/`
 5. **Qualification Summary** — REVIEW verdict, config mode, issues
-6. **Specification Status** — PRD/EDD/IG/TODO existence, reconciliation verdict
+6. **Specification Status** — PRD/EDD/IG/TODO existence, sanity check result (pass/N issues), self-reconciliation verdict, any spec changes made during this plan
 7. **Open Items Warning** — warn if chronicles or archives remain open
+8. **Deprecated Artifacts** — list any tests, functionality, or spec entries marked for deprecation at intake and whether removal was completed
 
 Spec check (shared by all spec-aware sections):
 ```bash

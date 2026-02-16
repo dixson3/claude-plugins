@@ -34,7 +34,7 @@ Beads-cli is the external persistence layer that provides git-backed issue track
 **Preconditions**: Plan beads hierarchy created via `plan_create_beads`.
 
 **Flow**:
-1. `plan_create_beads` creates root epic, phase epics, task beads, gates
+1. `plan_create_beads` creates root epic, phase epics, task beads, gates (note: `bd create --type=gate` may fail in some beads-cli versions — gates are created as tasks with `ys:gate` labels as workaround; see TODO-015)
 2. Dependencies wired via `bd dep add`
 3. Agent labels assigned via `/yf:plan_select_agent`
 4. Formula labels assigned via `/yf:swarm_select_formula` (Step 8b)

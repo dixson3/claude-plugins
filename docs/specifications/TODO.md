@@ -9,7 +9,7 @@
 | TODO-003 | End-to-end validation of auto-formula selection during a real `plan_create_beads` run | P2 | Diary 26-02-13.23-25 (Next Steps) | Open |
 | TODO-004 | Test nested composition with feature-build composing build-test end-to-end | P2 | Diary 26-02-13.23-25 (Next Steps) | Open |
 | TODO-005 | Verify reactive bugfix triggers correctly on REVIEW:BLOCK in a real swarm execution | P2 | Diary 26-02-13.23-25 (Next Steps) | Open |
-| TODO-006 | Verify formula cooking with `bd cook --dry-run` for all 5 formulas | P2 | Diary 26-02-13.22-30 (Next Steps) | Open |
+| TODO-006 | Verify formula cooking with `bd cook --dry-run` for all 6 formulas (feature-build, research-spike, code-review, bugfix, build-test, code-implement) | P2 | Diary 26-02-13.22-30 (Next Steps) | Open |
 | TODO-007 | Verify reconciliation behavior on a project with existing specification documents | P2 | Diary 26-02-14.18-00 (Next Steps) | Open |
 | TODO-008 | Monitor beads-sync branch strategy in multi-session workflows for sync reliability | P2 | Diary 26-02-13.17-52 (Next Steps) | Open |
 | TODO-009 | Validate automatic migration for legacy local-only beads deployments in external projects | P2 | Diary 26-02-13.17-52 (Next Steps) | Open |
@@ -29,6 +29,7 @@
 | TODO-023 | End-to-end test: code-implement formula dispatched from plan pump via swarm_run | P2 | Plan 35 Phase 5 (coder capability) | Open |
 | TODO-024 | End-to-end test: code-researcher checks existing IGs before researching standards | P2 | Plan 35 Phase 5 (coder capability) | Open |
 | TODO-025 | End-to-end test: reactive bugfix triggers on REVIEW:BLOCK within code-implement swarm | P2 | Plan 35 Phase 5 (coder capability) | Open |
+| TODO-026 | E2E validation of intake integrity gate during real plan with spec changes | P2 | Plan 40 (spec integrity gates) | Open |
 
 ## Completed Items
 

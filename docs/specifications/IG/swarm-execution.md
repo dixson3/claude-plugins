@@ -43,7 +43,7 @@ Swarm execution runs structured, parallel agent workflows using formula template
 **Flow**:
 1. `/yf:swarm_select_formula` reads task title and description
 2. Skill checks for existing `formula:*` label (respects author override)
-3. Skill matches against heuristic table: implement->feature-build, fix->bugfix, research->research-spike, review->code-review, test->build-test
+3. Skill matches against heuristic table: implement->feature-build, fix->bugfix, research->research-spike, review->code-review, test->build-test, code/write/program+language->code-implement (see UC-030 in IG/coder.md for the code-implement refinement)
 4. Skill assesses atomicity: single-file, single-concern tasks skip formula assignment
 5. If match found: adds `formula:<name>` label to bead
 6. During plan pump, `swarm-formula-dispatch` rule detects the label and dispatches through swarm

@@ -5,6 +5,21 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.20.0] - 2026-02-16
+
+### Added
+
+- **Specification integrity gates**: Two gatekeeping checklists — plan intake (6-part: contradiction, new capability, test-spec alignment, test deprecation, chronicle changes, structural consistency) and plan completion (staleness check, spec self-reconciliation, deprecated artifact verification) — enforce specs as anchor documents at lifecycle boundaries.
+- **spec-sanity-check.sh**: Mechanical consistency script validating six structural dimensions (count parity, ID contiguity, coverage arithmetic, UC range alignment, test file existence, formula count). Fail-open, configurable via `sanity_check_mode`.
+- **Rule 1.4 — Specifications Are Anchor Documents**: Hard enforcement rule establishing that plans conform to specs (not vice versa), new capabilities require spec coverage, tests align to specs first, and all spec changes require operator approval.
+- **yf_sanity_check_mode()** config helper in `yf-config.sh` (default: `blocking`).
+- **Spec entries**: REQ-033, FS-038, FS-039, DD-014, UC-033, UC-034, TODO-026.
+- **14 new test steps** in `unit-spec-sanity.yaml` covering all six checks with pass/fail scenarios.
+
+### Fixed
+
+- **test-coverage.md**: Stale reference to removed `unit-swarm-state.yaml` updated to `unit-dispatch-state.yaml`.
+
 ## [2.19.0] - 2026-02-16
 
 ### Changed

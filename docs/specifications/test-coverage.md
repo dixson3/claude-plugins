@@ -22,7 +22,7 @@ Maps each specification item to its test coverage. Status key: **tested** (behav
 | REQ-014 | Decision archive capture | unit-archive-suggest.yaml | existence-only |
 | REQ-015 | Git history scan for archives | unit-archive-suggest.yaml | existence-only |
 | REQ-016 | Formula workflow templates | unit-swarm-comment-protocol.yaml | tested |
-| REQ-017 | Swarm dispatch loop | unit-swarm-state.yaml | existence-only |
+| REQ-017 | Swarm dispatch loop | unit-dispatch-state.yaml | existence-only |
 | REQ-018 | Structured swarm comments | unit-swarm-comment-protocol.yaml | tested |
 | REQ-019 | Formula auto-assignment | unit-swarm-formula-select.yaml | tested |
 | REQ-020 | Nested composition depth 2 | unit-swarm-nesting.yaml | tested |
@@ -37,23 +37,29 @@ Maps each specification item to its test coverage. Status key: **tested** (behav
 | REQ-029 | Gitignore management | unit-setup-project.yaml | tested |
 | REQ-030 | YAML test scenarios | unit-yf-structure.yaml | existence-only |
 | REQ-031 | Go test harness | unit-yf-structure.yaml | existence-only |
+| REQ-032 | Standards-driven code implementation | — | untested |
+| REQ-033 | Spec integrity gates at intake/completion | unit-spec-sanity.yaml | tested |
 
 ## Design Decisions (DD-xxx)
 
+Aligned to EDD/CORE.md DD-001 through DD-013.
+
 | ID | Summary | Test File | Status |
 |----|---------|-----------|--------|
-| DD-001 | Beads as persistent store | unit-pump-dispatch.yaml | tested |
-| DD-002 | Symlink rule management | unit-preflight-symlinks.yaml | tested |
-| DD-003 | Layered enforcement | unit-code-gate.yaml | tested |
-| DD-004 | Always-on chronicler | unit-chronicle-check.yaml | tested |
-| DD-005 | beads-sync branch | unit-beads-git.yaml | tested |
-| DD-006 | Wisps for formula instances | unit-swarm-state.yaml | existence-only |
-| DD-007 | Comment protocol | unit-swarm-comment-protocol.yaml | tested |
-| DD-008 | Heuristic formula selection | unit-swarm-formula-select.yaml | tested |
-| DD-009 | Preflight artifact declarations | unit-preflight.yaml | existence-only |
-| DD-010 | Git hooks for beads sync | unit-beads-git.yaml | existence-only |
-| DD-011 | Spec synthesis from context | unit-engineer.yaml | existence-only |
-| DD-012 | Reconciliation modes | unit-engineer.yaml | existence-only |
+| DD-001 | Beads as persistent task store | unit-pump-dispatch.yaml | tested |
+| DD-002 | Symlink-based rule management | unit-preflight-symlinks.yaml | tested |
+| DD-003 | Beads-sync branch strategy | unit-beads-git.yaml | tested |
+| DD-004 | Auto-chain lifecycle on ExitPlanMode | unit-exit-plan-gate.yaml | existence-only |
+| DD-005 | Hook + rule mechanism for plan enforcement | unit-code-gate.yaml | tested |
+| DD-006 | Formula-driven swarm with wisps | unit-dispatch-state.yaml | existence-only |
+| DD-007 | Heuristic-based formula auto-selection | unit-swarm-formula-select.yaml | tested |
+| DD-008 | Zero-question setup with always-on capabilities | unit-setup-project.yaml | tested |
+| DD-009 | Blocking specification reconciliation (default) | unit-engineer.yaml | existence-only |
+| DD-010 | Plugin consolidation (historical) | unit-preflight.yaml | existence-only |
+| DD-011 | Soft-delete bead pruning | unit-plan-prune.yaml | tested |
+| DD-012 | State directory migration (.claude/ -> .yoshiko-flow/) | unit-preflight.yaml | existence-only |
+| DD-013 | Standards-driven code implementation formula | — | untested |
+| DD-014 | Specifications as anchor documents | unit-spec-sanity.yaml | tested |
 
 ## Non-Functional Requirements (NFR-xxx)
 
@@ -61,61 +67,72 @@ Maps each specification item to its test coverage. Status key: **tested** (behav
 |----|---------|-----------|--------|
 | NFR-001 | Preflight <50ms fast path | unit-preflight.yaml | existence-only |
 | NFR-002 | Fail-open hooks | unit-code-gate.yaml | existence-only |
-| NFR-003 | Zero-config setup | unit-setup-project.yaml | existence-only |
-| NFR-004 | Bash 3.2 compatibility | (all script tests) | existence-only |
+| NFR-003 | Bash 3.2 compatibility | (all script tests) | existence-only |
+| NFR-004 | Zero git footprint | unit-preflight-symlinks.yaml | existence-only |
 | NFR-005 | Idempotent operations | unit-plan-intake.yaml | existence-only |
-| NFR-006 | Plan gate < 10ms check | unit-code-gate.yaml | existence-only |
-| NFR-007 | Graceful degradation | unit-preflight-disabled.yaml | existence-only |
+| NFR-006 | Test coverage minimum | unit-yf-structure.yaml | existence-only |
+| NFR-007 | Migration safety | unit-preflight.yaml | existence-only |
 
 ## Use Cases (UC-xxx)
 
-| ID | Summary | Test File | Status |
-|----|---------|-----------|--------|
-| UC-001 | Plugin installation | unit-preflight-setup.yaml | tested |
-| UC-002 | Plan creation and execution | unit-plan-exec-gate.yaml | existence-only |
-| UC-003 | Formula dispatch integration | unit-formula-dispatch.yaml | tested |
-| UC-004 | Auto-chain lifecycle | unit-exit-plan-gate.yaml | existence-only |
-| UC-005 | Plan intake (pasted) | unit-plan-intake.yaml | tested |
-| UC-006 | Full swarm lifecycle | — | untested |
-| UC-007 | Formula auto-selection | unit-swarm-formula-select.yaml | tested |
-| UC-008 | Reactive bugfix | unit-swarm-reactive.yaml | existence-only |
-| UC-009 | Nested composition | unit-swarm-nesting.yaml | tested |
-| UC-010 | Qualification gate | unit-swarm-qualify.yaml | existence-only |
-| UC-011 | Chronicle capture | unit-chronicle-check.yaml | tested |
-| UC-012 | Session recall | unit-session-recall.yaml | tested |
-| UC-013 | Diary generation | unit-plan-exec-chronicle.yaml | existence-only |
-| UC-014 | Archive capture | unit-archive-suggest.yaml | existence-only |
-| UC-015 | Archive processing | — | untested |
-| UC-016 | Archive suggestion | unit-archive-suggest.yaml | existence-only |
-| UC-017 | Git history archive scan | unit-archive-suggest.yaml | existence-only |
-| UC-018 | Spec synthesis | unit-engineer.yaml | existence-only |
-| UC-019 | Plan reconciliation | unit-engineer.yaml | existence-only |
-| UC-020 | Spec drift detection | unit-engineer.yaml | existence-only |
-| UC-021 | Spec update suggestions | unit-engineer.yaml | existence-only |
-| UC-022 | Bead pruning on completion | unit-plan-prune.yaml | tested |
-| UC-023 | Beads git sync | unit-beads-git.yaml | tested |
-| UC-024 | Zero-question setup | unit-setup-project.yaml | tested |
-| UC-025 | Code-gate enforcement | unit-code-gate.yaml | tested |
-| UC-026 | Plan intake with gate | unit-code-gate-intake.yaml | tested |
-| UC-027 | Pre-push chronicle check | unit-pre-push-chronicle-check.yaml | tested |
-| UC-028 | Pre-push archive check | unit-pre-push-archive.yaml | tested |
+Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–009), chronicler (UC-010–013), archivist (UC-014–017), engineer (UC-018–021, UC-033–034), marketplace (UC-022–024), beads-integration (UC-025–028), coder (UC-029–032).
+
+| ID | Summary | IG Source | Test File | Status |
+|----|---------|-----------|-----------|--------|
+| UC-001 | Auto-chain via ExitPlanMode | plan-lifecycle | unit-exit-plan-gate.yaml | existence-only |
+| UC-002 | Manual plan intake (pasted plan) | plan-lifecycle | unit-plan-intake.yaml | tested |
+| UC-003 | Task pump dispatch | plan-lifecycle | unit-formula-dispatch.yaml | tested |
+| UC-004 | Plan completion | plan-lifecycle | unit-plan-exec-gate.yaml | existence-only |
+| UC-005 | Code gate enforcement | plan-lifecycle | unit-code-gate.yaml | tested |
+| UC-006 | Full swarm lifecycle | swarm-execution | — | untested |
+| UC-007 | Formula auto-selection | swarm-execution | unit-swarm-formula-select.yaml | tested |
+| UC-008 | Reactive bugfix on failure | swarm-execution | unit-swarm-reactive.yaml | existence-only |
+| UC-009 | Nested formula composition | swarm-execution | unit-swarm-nesting.yaml | tested |
+| UC-010 | Chronicle capture | chronicler | unit-chronicle-check.yaml | tested |
+| UC-011 | Session recall | chronicler | unit-session-recall.yaml | tested |
+| UC-012 | Automatic draft creation | chronicler | unit-chronicle-check.yaml | existence-only |
+| UC-013 | Diary generation | chronicler | unit-plan-exec-chronicle.yaml | existence-only |
+| UC-014 | Archive research findings | archivist | unit-archive-suggest.yaml | existence-only |
+| UC-015 | Archive design decisions | archivist | unit-archive-suggest.yaml | existence-only |
+| UC-016 | Process archives into docs | archivist | — | untested |
+| UC-017 | Git history archive scan | archivist | unit-archive-suggest.yaml | existence-only |
+| UC-018 | Spec synthesis from context | engineer | unit-engineer.yaml | existence-only |
+| UC-019 | Plan-spec reconciliation | engineer | unit-engineer.yaml | existence-only |
+| UC-020 | Individual spec entry update | engineer | unit-engineer.yaml | existence-only |
+| UC-021 | Post-completion spec suggestions | engineer | unit-engineer.yaml | existence-only |
+| UC-022 | Plugin registration | marketplace | unit-yf-structure.yaml | existence-only |
+| UC-023 | Preflight artifact sync | marketplace | unit-preflight.yaml, unit-preflight-symlinks.yaml | tested |
+| UC-024 | Running tests | marketplace | unit-yf-structure.yaml | existence-only |
+| UC-025 | Beads setup and git workflow | beads-integration | unit-beads-git.yaml | tested |
+| UC-026 | Bead lifecycle during plan execution | beads-integration | unit-plan-exec-gate.yaml | existence-only |
+| UC-027 | Automatic bead pruning | beads-integration | unit-plan-prune.yaml | tested |
+| UC-028 | Session close protocol | beads-integration | unit-pre-push-chronicle-check.yaml | existence-only |
+| UC-029 | Standards-driven code implementation | coder | — | untested |
+| UC-030 | Code-implement formula selection | coder | — | untested |
+| UC-031 | IG-first standards research | coder | — | untested |
+| UC-032 | Standards compliance review | coder | — | untested |
+| UC-033 | Plan intake spec integrity gate | engineer | unit-spec-sanity.yaml | tested |
+| UC-034 | Plan completion spec self-reconciliation | engineer | unit-spec-sanity.yaml | existence-only |
 
 ## Coverage Summary
 
 | Category | Total | Tested | Existence-Only | Untested |
 |----------|-------|--------|----------------|----------|
-| REQ | 31 | 14 | 17 | 0 |
-| DD | 12 | 8 | 4 | 0 |
+| REQ | 33 | 15 | 17 | 1 |
+| DD | 14 | 9 | 3 | 2 |
 | NFR | 7 | 0 | 7 | 0 |
-| UC | 28 | 14 | 12 | 2 |
-| **Total** | **78** | **36** | **40** | **2** |
+| UC | 34 | 11 | 17 | 6 |
+| **Total** | **88** | **35** | **44** | **9** |
 
 ## Priority Gaps
 
-Items needing behavioral test upgrades (from existence-only):
+Items needing behavioral test upgrades (from existence-only) or initial coverage:
 
-1. **UC-008** — Reactive bugfix eligibility (depth check, label dedup, design-BLOCK exclusion)
-2. **UC-018-021** — Engineer spec synthesis, reconciliation, drift, and update suggestions
-3. **UC-014-017** — Archivist capture, process, suggestion, and git scan behavioral tests
-4. **REQ-021** — Reactive bugfix guard rails (depth limit, retry budget)
-5. **REQ-022** — Qualification gate config modes (blocking/advisory/disabled)
+1. **REQ-032, UC-029-032** — Coder capability: no test coverage at all (see TODO-023, TODO-024, TODO-025)
+2. **DD-013** — Standards-driven code implementation formula: no test coverage
+3. **UC-008** — Reactive bugfix eligibility (depth check, label dedup, design-BLOCK exclusion)
+4. **UC-018-021** — Engineer spec synthesis, reconciliation, drift, and update suggestions
+5. **UC-014-017** — Archivist capture, process, suggestion, and git scan behavioral tests
+6. **REQ-021** — Reactive bugfix guard rails (depth limit, retry budget)
+7. **REQ-022** — Qualification gate config modes (blocking/advisory/disabled)
+8. **NFR-001-007** — All NFRs have existence-only coverage; no behavioral assertions

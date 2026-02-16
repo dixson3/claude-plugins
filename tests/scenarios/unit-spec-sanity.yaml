@@ -1,0 +1,269 @@
+name: "Unit: spec-sanity-check.sh — specification consistency checks"
+
+setup:
+  - "mkdir -p .yoshiko-flow plugins/yf/formulas"
+  - "echo '{\"enabled\":true}' > .yoshiko-flow/config.json"
+
+steps:
+  # Case 1: No specs directory → SKIP, exit 0
+  - name: "exits_when_no_specs"
+    run: |
+      rm -rf "$WORK_DIR/docs/specifications"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" all 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q "SKIP" && echo "$OUTPUT" | grep -q "SANITY_ISSUES=0" && echo "OK: skipped when no specs" || { echo "FAIL"; exit 1; }
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Config disabled → silent exit 0
+  - name: "exits_when_disabled"
+    run: |
+      echo '{"enabled":true,"config":{"engineer":{"sanity_check_mode":"disabled"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      mkdir -p "$WORK_DIR/docs/specifications"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" all 2>&1)
+      echo "output_len=${#OUTPUT}"
+      echo "OK: silent exit"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Setup synthetic specs for remaining tests
+  - name: "setup_synthetic_specs"
+    run: |
+      echo '{"enabled":true}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      mkdir -p "$WORK_DIR/docs/specifications/EDD" "$WORK_DIR/docs/specifications/IG"
+      mkdir -p "$WORK_DIR/tests/scenarios"
+
+      # PRD: 3 REQs
+      printf '# PRD\n| ID | Req |\n| REQ-001 | First |\n| REQ-002 | Second |\n| REQ-003 | Third |\n\n## Functional Specifications\n- FS-011: Two formula templates shipped: alpha-one, beta-two (see FS-034)\n' > "$WORK_DIR/docs/specifications/PRD.md"
+
+      # EDD: 2 DDs + 1 NFR
+      printf '# EDD\n### DD-001: First\n### DD-002: Second\n### NFR-001: Perf\n' > "$WORK_DIR/docs/specifications/EDD/CORE.md"
+
+      # IG: 2 UCs
+      printf '# IG\n### UC-001: First\n### UC-002: Second\n' > "$WORK_DIR/docs/specifications/IG/test-feature.md"
+
+      # Coverage: matching
+      printf '# Test Coverage\n## Requirements (REQ-xxx)\n| ID | Summary | Test File | Status |\n| REQ-001 | First | — | untested |\n| REQ-002 | Second | — | untested |\n| REQ-003 | Third | — | untested |\n\n## Design Decisions (DD-xxx)\n| ID | Summary | Test File | Status |\n| DD-001 | First | — | untested |\n| DD-002 | Second | — | untested |\n\n## Non-Functional Requirements (NFR-xxx)\n| ID | Summary | Test File | Status |\n| NFR-001 | Perf | — | untested |\n\n## Use Cases (UC-xxx)\nAligned to IG files: test-feature (UC-001–002).\n| ID | Summary | IG Source | Test File | Status |\n| UC-001 | First | test-feature | — | untested |\n| UC-002 | Second | test-feature | — | untested |\n\n## Coverage Summary\n| Category | Total | Tested | Existence-Only | Untested |\n|----------|-------|--------|----------------|----------|\n| REQ | 3 | 0 | 0 | 3 |\n| DD | 2 | 0 | 0 | 2 |\n| NFR | 1 | 0 | 0 | 1 |\n| UC | 2 | 0 | 0 | 2 |\n| **Total** | **8** | **0** | **0** | **8** |\n' > "$WORK_DIR/docs/specifications/test-coverage.md"
+
+      # 2 matching formulas
+      echo '{}' > "$WORK_DIR/plugins/yf/formulas/alpha-one.formula.json"
+      echo '{}' > "$WORK_DIR/plugins/yf/formulas/beta-two.formula.json"
+
+      echo "OK: synthetic specs created"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Count parity PASS
+  - name: "count_parity_pass"
+    run: |
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" counts 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q '\[PASS\] Count parity' && echo "OK: counts pass" || { echo "FAIL"; exit 1; }
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "[PASS]"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Count parity FAIL — coverage has 2 REQ rows but PRD has 3
+  - name: "count_parity_fail"
+    run: |
+      printf '# Test Coverage\n## Requirements (REQ-xxx)\n| ID | Summary | Test File | Status |\n| REQ-001 | First | — | untested |\n| REQ-002 | Second | — | untested |\n\n## Design Decisions (DD-xxx)\n| ID | Summary | Test File | Status |\n| DD-001 | First | — | untested |\n| DD-002 | Second | — | untested |\n\n## Non-Functional Requirements (NFR-xxx)\n| ID | Summary | Test File | Status |\n| NFR-001 | Perf | — | untested |\n\n## Use Cases (UC-xxx)\nAligned to IG files: test-feature (UC-001–002).\n| ID | Summary | IG Source | Test File | Status |\n| UC-001 | First | test-feature | — | untested |\n| UC-002 | Second | test-feature | — | untested |\n\n## Coverage Summary\n| Category | Total | Tested | Existence-Only | Untested |\n|----------|-------|--------|----------------|----------|\n| REQ | 2 | 0 | 0 | 2 |\n| DD | 2 | 0 | 0 | 2 |\n| NFR | 1 | 0 | 0 | 1 |\n| UC | 2 | 0 | 0 | 2 |\n| **Total** | **7** | **0** | **0** | **7** |\n' > "$WORK_DIR/docs/specifications/test-coverage.md"
+
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" counts 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q '\[FAIL\] Count parity' && echo "OK: mismatch detected" || { echo "FAIL"; exit 1; }
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "[FAIL]"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: ID contiguity PASS
+  - name: "contiguity_pass"
+    run: |
+      # Restore full coverage
+      printf '# Test Coverage\n## Requirements (REQ-xxx)\n| ID | Summary | Test File | Status |\n| REQ-001 | First | — | untested |\n| REQ-002 | Second | — | untested |\n| REQ-003 | Third | — | untested |\n\n## Design Decisions (DD-xxx)\n| ID | Summary | Test File | Status |\n| DD-001 | First | — | untested |\n| DD-002 | Second | — | untested |\n\n## Non-Functional Requirements (NFR-xxx)\n| ID | Summary | Test File | Status |\n| NFR-001 | Perf | — | untested |\n\n## Use Cases (UC-xxx)\nAligned to IG files: test-feature (UC-001–002).\n| ID | Summary | IG Source | Test File | Status |\n| UC-001 | First | test-feature | — | untested |\n| UC-002 | Second | test-feature | — | untested |\n\n## Coverage Summary\n| Category | Total | Tested | Existence-Only | Untested |\n|----------|-------|--------|----------------|----------|\n| REQ | 3 | 0 | 0 | 3 |\n| DD | 2 | 0 | 0 | 2 |\n| NFR | 1 | 0 | 0 | 1 |\n| UC | 2 | 0 | 0 | 2 |\n| **Total** | **8** | **0** | **0** | **8** |\n' > "$WORK_DIR/docs/specifications/test-coverage.md"
+
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" contiguity 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q '\[PASS\] ID contiguity' && echo "OK: contiguous" || { echo "FAIL"; exit 1; }
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "[PASS]"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: ID contiguity FAIL — gap in REQ sequence
+  - name: "contiguity_fail"
+    run: |
+      # PRD with gap: REQ-001, REQ-003 (no REQ-002)
+      printf '# PRD\n| ID | Req |\n| REQ-001 | First |\n| REQ-003 | Third |\n\n## Functional Specifications\n- FS-011: Two formula templates shipped: alpha-one, beta-two (see FS-034)\n' > "$WORK_DIR/docs/specifications/PRD.md"
+
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" contiguity 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q '\[FAIL\] ID contiguity' && echo "$OUTPUT" | grep -q 'Gap in REQ' && echo "OK: gap detected" || { echo "FAIL"; exit 1; }
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "[FAIL]"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: Coverage arithmetic PASS
+  - name: "arithmetic_pass"
+    run: |
+      # Restore 3-REQ PRD
+      printf '# PRD\n| ID | Req |\n| REQ-001 | First |\n| REQ-002 | Second |\n| REQ-003 | Third |\n\n## Functional Specifications\n- FS-011: Two formula templates shipped: alpha-one, beta-two (see FS-034)\n' > "$WORK_DIR/docs/specifications/PRD.md"
+
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" arithmetic 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q '\[PASS\] Coverage arithmetic' && echo "OK: balanced" || { echo "FAIL"; exit 1; }
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "[PASS]"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: Coverage arithmetic FAIL — totals don't balance
+  - name: "arithmetic_fail"
+    run: |
+      # REQ row: 3 != 1+1+0
+      printf '# Test Coverage\n## Requirements (REQ-xxx)\n| ID | Summary | Test File | Status |\n| REQ-001 | First | — | untested |\n| REQ-002 | Second | — | untested |\n| REQ-003 | Third | — | untested |\n\n## Design Decisions (DD-xxx)\n| ID | Summary | Test File | Status |\n| DD-001 | First | — | untested |\n| DD-002 | Second | — | untested |\n\n## Non-Functional Requirements (NFR-xxx)\n| ID | Summary | Test File | Status |\n| NFR-001 | Perf | — | untested |\n\n## Use Cases (UC-xxx)\nAligned to IG files: test-feature (UC-001–002).\n| ID | Summary | IG Source | Test File | Status |\n| UC-001 | First | test-feature | — | untested |\n| UC-002 | Second | test-feature | — | untested |\n\n## Coverage Summary\n| Category | Total | Tested | Existence-Only | Untested |\n|----------|-------|--------|----------------|----------|\n| REQ | 3 | 1 | 1 | 0 |\n| DD | 2 | 0 | 0 | 2 |\n| NFR | 1 | 0 | 0 | 1 |\n| UC | 2 | 0 | 0 | 2 |\n| **Total** | **8** | **1** | **1** | **5** |\n' > "$WORK_DIR/docs/specifications/test-coverage.md"
+
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" arithmetic 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q '\[FAIL\] Coverage arithmetic' && echo "OK: imbalance detected" || { echo "FAIL"; exit 1; }
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "[FAIL]"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: Test file refs PASS
+  - name: "test_refs_pass"
+    run: |
+      touch "$WORK_DIR/tests/scenarios/unit-fake-test.yaml"
+      # Coverage with reference to existing test file
+      printf '# Test Coverage\n## Requirements (REQ-xxx)\n| ID | Summary | Test File | Status |\n| REQ-001 | First | unit-fake-test.yaml | tested |\n| REQ-002 | Second | — | untested |\n| REQ-003 | Third | — | untested |\n\n## Design Decisions (DD-xxx)\n| ID | Summary | Test File | Status |\n| DD-001 | First | — | untested |\n| DD-002 | Second | — | untested |\n\n## Non-Functional Requirements (NFR-xxx)\n| ID | Summary | Test File | Status |\n| NFR-001 | Perf | — | untested |\n\n## Use Cases (UC-xxx)\nAligned to IG files: test-feature (UC-001–002).\n| ID | Summary | IG Source | Test File | Status |\n| UC-001 | First | test-feature | — | untested |\n| UC-002 | Second | test-feature | — | untested |\n\n## Coverage Summary\n| Category | Total | Tested | Existence-Only | Untested |\n|----------|-------|--------|----------------|----------|\n| REQ | 3 | 1 | 0 | 2 |\n| DD | 2 | 0 | 0 | 2 |\n| NFR | 1 | 0 | 0 | 1 |\n| UC | 2 | 0 | 0 | 2 |\n| **Total** | **8** | **1** | **0** | **7** |\n' > "$WORK_DIR/docs/specifications/test-coverage.md"
+
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" test-refs 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q '\[PASS\] Test file existence' && echo "OK: refs pass" || { echo "FAIL"; exit 1; }
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "[PASS]"
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: Test file refs FAIL — missing file
+  - name: "test_refs_fail"
+    run: |
+      printf '# Test Coverage\n## Requirements (REQ-xxx)\n| ID | Summary | Test File | Status |\n| REQ-001 | First | unit-nonexistent.yaml | tested |\n| REQ-002 | Second | — | untested |\n| REQ-003 | Third | — | untested |\n\n## Design Decisions (DD-xxx)\n| ID | Summary | Test File | Status |\n| DD-001 | First | — | untested |\n| DD-002 | Second | — | untested |\n\n## Non-Functional Requirements (NFR-xxx)\n| ID | Summary | Test File | Status |\n| NFR-001 | Perf | — | untested |\n\n## Use Cases (UC-xxx)\nAligned to IG files: test-feature (UC-001–002).\n| ID | Summary | IG Source | Test File | Status |\n| UC-001 | First | test-feature | — | untested |\n| UC-002 | Second | test-feature | — | untested |\n\n## Coverage Summary\n| Category | Total | Tested | Existence-Only | Untested |\n|----------|-------|--------|----------------|----------|\n| REQ | 3 | 1 | 0 | 2 |\n| DD | 2 | 0 | 0 | 2 |\n| NFR | 1 | 0 | 0 | 1 |\n| UC | 2 | 0 | 0 | 2 |\n| **Total** | **8** | **1** | **0** | **7** |\n' > "$WORK_DIR/docs/specifications/test-coverage.md"
+
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" test-refs 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q '\[FAIL\] Test file existence' && echo "$OUTPUT" | grep -q 'Missing' && echo "OK: missing detected" || { echo "FAIL"; exit 1; }
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "[FAIL]"
+      - type: output_contains
+        value: "OK"
+
+  # Case 11: Formula count PASS
+  - name: "formula_count_pass"
+    run: |
+      # Restore balanced coverage
+      printf '# Test Coverage\n## Requirements (REQ-xxx)\n| ID | Summary | Test File | Status |\n| REQ-001 | First | — | untested |\n| REQ-002 | Second | — | untested |\n| REQ-003 | Third | — | untested |\n\n## Design Decisions (DD-xxx)\n| ID | Summary | Test File | Status |\n| DD-001 | First | — | untested |\n| DD-002 | Second | — | untested |\n\n## Non-Functional Requirements (NFR-xxx)\n| ID | Summary | Test File | Status |\n| NFR-001 | Perf | — | untested |\n\n## Use Cases (UC-xxx)\nAligned to IG files: test-feature (UC-001–002).\n| ID | Summary | IG Source | Test File | Status |\n| UC-001 | First | test-feature | — | untested |\n| UC-002 | Second | test-feature | — | untested |\n\n## Coverage Summary\n| Category | Total | Tested | Existence-Only | Untested |\n|----------|-------|--------|----------------|----------|\n| REQ | 3 | 0 | 0 | 3 |\n| DD | 2 | 0 | 0 | 2 |\n| NFR | 1 | 0 | 0 | 1 |\n| UC | 2 | 0 | 0 | 2 |\n| **Total** | **8** | **0** | **0** | **8** |\n' > "$WORK_DIR/docs/specifications/test-coverage.md"
+
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" formulas 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q '\[PASS\] Formula count' && echo "OK: formula match" || { echo "FAIL"; exit 1; }
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "[PASS]"
+      - type: output_contains
+        value: "OK"
+
+  # Case 12: Formula count FAIL
+  - name: "formula_count_fail"
+    run: |
+      echo '{}' > "$WORK_DIR/plugins/yf/formulas/gamma-three.formula.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" formulas 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q '\[FAIL\] Formula count' && echo "OK: mismatch detected" || { echo "FAIL"; exit 1; }
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "[FAIL]"
+      - type: output_contains
+        value: "OK"
+
+  # Case 13: "all" subcommand with consistent set
+  - name: "all_subcommand_pass"
+    run: |
+      rm -f "$WORK_DIR/plugins/yf/formulas/gamma-three.formula.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" all 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q 'SANITY_ISSUES=0' && echo "OK: all pass" || { echo "FAIL"; exit 1; }
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "SANITY_ISSUES=0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 14: Always exits 0 regardless of failures
+  - name: "always_exits_zero"
+    run: |
+      printf '# PRD\n| ID | Req |\n| REQ-001 | First |\n| REQ-005 | Fifth |\n\n## Functional Specifications\n- FS-011: One formula: only-one (see FS-034)\n' > "$WORK_DIR/docs/specifications/PRD.md"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" all 2>&1
+      EXIT_CODE=$?
+      [ "$EXIT_CODE" -eq 0 ] && echo "OK: always exits 0" || { echo "FAIL: exit code $EXIT_CODE"; exit 1; }
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

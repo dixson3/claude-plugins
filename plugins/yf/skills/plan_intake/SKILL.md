@@ -46,6 +46,62 @@ ls docs/plans/plan-*.md
 
 - **If plan file already exists**: Use the existing file.
 
+### Step 1.5: Specification Integrity Gate
+
+If specifications exist (`<artifact_dir>/specifications/`), run this checklist
+before creating beads. All spec changes require explicit operator approval.
+
+**1.5a. Contradiction check:**
+Read the plan file and compare against PRD requirements (REQ-xxx),
+EDD design decisions (DD-xxx), and IG use cases (UC-xxx). If the plan
+contradicts any existing spec item, present the contradiction to the
+operator via AskUserQuestion with options:
+- "Revise the plan to resolve" (recommended)
+- "Update the specification (explain why)"
+- "Acknowledge and proceed"
+
+If operator chooses spec update, draft the change and get explicit approval
+before modifying the spec file.
+
+**1.5b. New capability check:**
+Identify any plan tasks that describe functionality not traced to existing
+REQ/UC/DD entries. If found, present to operator:
+- "Add specification entries for new capabilities" (recommended)
+- "Proceed without spec coverage"
+
+If adding specs: draft new REQ, UC, and/or DD entries. Get operator approval.
+Write entries using `/yf:engineer_update`. Update test-coverage.md with
+new rows (status: untested).
+
+**1.5c. Test-spec alignment check:**
+Review the plan's testing approach. Tests must reference specification
+items (REQ-xxx, UC-xxx, DD-xxx) as their primary basis, not just
+implementation details. If the plan describes tests only in implementation
+terms, restructure the test plan to align with spec items first.
+
+**1.5d. Test deprecation check:**
+If the plan or any proposed spec change deprecates existing functionality,
+identify test scenarios in test-coverage.md that would become invalid.
+Plan their removal or update as part of the implementation.
+
+**1.5e. Chronicle spec and functionality changes:**
+For any specification additions, modifications, or deprecations identified
+in steps 1.5a-d, create chronicle entries:
+- `bash plugins/yf/scripts/plan-chronicle.sh intake "spec-change" "<summary>"`
+For any deprecated or newly added functionality:
+- `bash plugins/yf/scripts/plan-chronicle.sh intake "capability-change" "<summary>"`
+
+**1.5f. Structural consistency:**
+Run `bash plugins/yf/scripts/spec-sanity-check.sh all` to verify spec
+files are internally consistent before reconciling the plan against them.
+If issues found and mode is `blocking` (default): present to operator.
+If issues found and mode is `advisory`: output report, proceed.
+
+Then run spec reconciliation:
+- Invoke `/yf:engineer_reconcile plan_file:<path> mode:gate`
+
+This closes the gap where manual intake previously had no spec checks at all.
+
 ### Step 2: Ensure Beads Exist
 
 Check if beads have been created for this plan:

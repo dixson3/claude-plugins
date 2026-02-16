@@ -69,6 +69,7 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 | REQ-030 | All new work must include automated test scenarios in YAML format, runnable via `bash tests/run-tests.sh --unit-only` | P0 | Testing | Plan 06 | `/Users/james/workspace/dixson3/d3-claude-plugins/tests/run-tests.sh` |
 | REQ-031 | Go test harness must support both unit tests (shell-only) and integration tests (Claude sessions via --resume) | P1 | Testing | Plan 06 | `/Users/james/workspace/dixson3/d3-claude-plugins/tests/harness/` |
 | REQ-032 | Code implementation must support standards-driven workflows with dedicated research, coding, testing, and review agents via the `code-implement` formula | P1 | Coder | Plan 35 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/formulas/code-implement.formula.json` |
+| REQ-033 | Specification integrity gates must run at plan intake (contradiction check, new capability check, test-spec alignment, test deprecation, change chronicles, structural consistency) and plan completion (diary generation, staleness checks, spec self-reconciliation) | P1 | Engineer | Plan 40 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/spec-sanity-check.sh` |
 
 ## 4. Functional Specifications
 
@@ -90,9 +91,9 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 
 ### 4.3 Swarm Execution
 
-- FS-011: Five formula templates shipped: feature-build, research-spike, code-review, bugfix, build-test
+- FS-011: Six formula templates shipped: feature-build, research-spike, code-review, bugfix, build-test, code-implement (see FS-034)
 - FS-012: Formula instantiation creates ephemeral wisps; results persist as comments on parent bead
-- FS-013: Three specialized agents: researcher (read-only, FINDINGS), reviewer (read-only, REVIEW), tester (TESTS)
+- FS-013: Seven specialized swarm agents: researcher (read-only, FINDINGS), reviewer (read-only, REVIEW), tester (TESTS) for general formulas; code-researcher (read-only), code-writer (full-capability), code-tester (limited-write), code-reviewer (read-only) for the code-implement formula (see FS-034)
 - FS-014: Implicit formula triggers: auto-select at bead creation, nested composition, reactive bugfix, qualification gate, planning research advisory
 
 ### 4.4 Chronicler
@@ -114,13 +115,15 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 - FS-023: Reconciliation fires automatically in auto-chain between plan save and beads creation
 - FS-024: No specs means no enforcement -- zero cost for projects that do not opt in
 - FS-025: Single watch rule covers PRD, EDD, and IG drift monitoring
+- FS-038: Mechanical sanity check script validates six structural dimensions (count parity, ID contiguity, coverage arithmetic, UC range alignment, test file existence, formula count) with configurable enforcement mode; intake gate enforces spec-as-anchor-document principle with operator approval for all changes
+- FS-039: Plan completion includes spec self-reconciliation (PRD→EDD→IG traceability, test-coverage consistency, orphaned/stale entry detection) and deprecated artifact pruning verification
 
 ### 4.7 Beads Integration
 
 - FS-026: Beads is the source of truth for all plan work; Claude TaskCreate/TaskList is NOT used for plan work
 - FS-027: Git-tracked beads with `dolt` backend, `beads-sync` branch, and standard `bd hooks install` hooks (pre-commit, post-merge, pre-push, post-checkout, prepare-commit-msg). No custom pre-push hook — standard beads hooks handle all sync. No AGENTS.md generated — the plugin provides beads workflow context via its own rule file and `bd prime` hook injection.
 - FS-028: Automatic pruning: plan-scoped on completion, global on push, configurable thresholds
-- FS-029: Safety net hook warns on destructive `bd delete` operations without plan lifecycle or chronicle capture
+- FS-029: Safety net hook (REQ-027, DD-005) warns on destructive `bd delete` operations without plan lifecycle or chronicle capture
 
 ### 4.8 Testing
 

@@ -45,7 +45,7 @@ The marketplace provides the plugin architecture for Claude Code -- plugin regis
 6. Remove dangling symlinks not in current manifest
 7. Create directories listed in `preflight.json`
 8. Run setup commands (e.g., `bd init`)
-9. Run `setup-project.sh` for gitignore and AGENTS.md management
+9. Run `setup-project.sh` for gitignore management (no AGENTS.md is created — see REQ-027; legacy AGENTS.md files are removed if present)
 10. Write lock state to `.yoshiko-flow/lock.json`
 
 **Postconditions**: Rule symlinks installed. Directories created. Lock updated.
