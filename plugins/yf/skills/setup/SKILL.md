@@ -36,16 +36,6 @@ Then run preflight:
 CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}" bash "${CLAUDE_PLUGIN_ROOT}/scripts/plugin-preflight.sh"
 ```
 
-Report:
-
-```
-Yoshiko Flow enabled.
-  Artifact directory: docs
-  Chronicler: always on
-  Archivist: always on
-  Config: .yoshiko-flow/config.json
-```
-
 ### `disable` argument
 
 Disable yf and remove rules:
@@ -62,14 +52,6 @@ fi
 ```
 
 Then run preflight (which removes all rules when disabled).
-
-Report:
-
-```
-Yoshiko Flow disabled.
-  Rules removed.
-  Re-enable with /yf:setup
-```
 
 ### `artifact_dir:<name>` argument
 
@@ -90,16 +72,6 @@ fi
 ```
 
 Then run preflight.
-
-Report:
-
-```
-Yoshiko Flow enabled.
-  Artifact directory: <name>
-  Chronicler: always on
-  Archivist: always on
-  Config: .yoshiko-flow/config.json
-```
 
 ## Important
 

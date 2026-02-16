@@ -109,15 +109,14 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 8: beads push hook function inlined in plugin-preflight.sh
-  - name: "push_hook_function_exists"
+  # Case 8: custom beads push hook removed from plugin-preflight.sh (bd hooks manage pre-push)
+  - name: "no_custom_push_hook"
     run: |
-      if grep -q "install_beads_push_hook" "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh"; then
-        echo "OK: install_beads_push_hook function inlined in plugin-preflight.sh"
-      else
-        echo "FAIL: install_beads_push_hook function not found"
+      if grep -q "install_beads_push_hook\|BEADS-SYNC-PUSH" "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh"; then
+        echo "FAIL: custom beads push hook still present in plugin-preflight.sh"
         exit 1
       fi
+      echo "OK: custom beads push hook removed, bd hooks manage pre-push"
     assertions:
       - type: exit_code
         value: "0"

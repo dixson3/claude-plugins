@@ -270,51 +270,6 @@ j=0; while [ $j -lt "$SETUP_COUNT" ]; do
   PLUGIN_LOCK=$(echo "$PLUGIN_LOCK" | jq ".artifacts.setup += [{\"name\": \"$SETUP_NAME\", \"completed\": $COMPLETED}]")
 j=$((j + 1)); done
 
-# --- Install beads pre-push hook (idempotent) ---
-install_beads_push_hook() {
-  local proj_dir="$1"
-  local git_dir="$proj_dir/.git"
-  local hooks_dir="$git_dir/hooks"
-  local hook_file="$hooks_dir/pre-push"
-  local sentinel="# --- BEADS-SYNC-PUSH ---"
-
-  [ -d "$git_dir" ] || return 0
-  [ -f "$hook_file" ] && grep -qF "$sentinel" "$hook_file" && return 0
-
-  mkdir -p "$hooks_dir"
-  local snippet
-  snippet="
-$sentinel
-# Auto-push beads-sync branch when pushing any branch.
-# Fail-open: beads-sync push failure does not block the main push.
-_beads_sync_push() {
-  local remote=\"\$1\"
-  local sync_branch=\"beads-sync\"
-  if ! git rev-parse --verify \"\$sync_branch\" >/dev/null 2>&1; then
-    return 0
-  fi
-  local local_ref remote_ref
-  local_ref=\$(git rev-parse \"\$sync_branch\" 2>/dev/null)
-  remote_ref=\$(git rev-parse \"refs/remotes/\$remote/\$sync_branch\" 2>/dev/null || echo \"\")
-  if [ \"\$local_ref\" != \"\$remote_ref\" ]; then
-    git push \"\$remote\" \"\$sync_branch\" >/dev/null 2>&1 || true
-  fi
-}
-_beads_sync_push \"\$1\"
-$sentinel"
-
-  if [ -f "$hook_file" ]; then
-    printf '%s\n' "$snippet" >> "$hook_file"
-  else
-    printf '#!/bin/bash\n%s\n' "$snippet" > "$hook_file"
-  fi
-  chmod +x "$hook_file"
-}
-
-if [ -d "$PROJECT_DIR/.beads" ]; then
-  install_beads_push_hook "$PROJECT_DIR" 2>&1 || echo "preflight: warn: failed to install beads push hook" >&2
-fi
-
 # --- Project setup (gitignore) ---
 bash "$SCRIPT_DIR/setup-project.sh" 2>&1 || true
 
