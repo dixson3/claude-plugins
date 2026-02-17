@@ -134,5 +134,59 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 14: mark-retrying after mark-done is a no-op (step already completed)
+  - name: "mark_retrying_after_done_noop"
+    run: |
+      rm -f .yoshiko-flow/swarm-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-done-test
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-done marketplace-done-test
+      # mark-retrying on a done step — entry already removed, should succeed silently
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-retrying marketplace-done-test
+      # Verify step is still not in pending
+      PENDING=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm pending)
+      echo "pending=$PENDING"
+      echo "$PENDING" | grep -qv "marketplace-done-test" && echo "OK: retrying after done is no-op"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 15: Full retry cycle — dispatch, retry, re-dispatch succeeds
+  - name: "full_retry_cycle"
+    run: |
+      rm -f .yoshiko-flow/swarm-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-cycle-test
+      # Verify dispatched
+      R1=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched marketplace-cycle-test)
+      # Mark retrying
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-retrying marketplace-cycle-test
+      # Re-dispatch
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-cycle-test
+      R2=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched marketplace-cycle-test)
+      echo "before=$R1 after=$R2"
+      [ "$R1" = "dispatched" ] && [ "$R2" = "dispatched" ] && echo "OK: full retry cycle works"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 16: mark-retrying is no-op for pump store
+  - name: "mark_retrying_pump_noop"
+    run: |
+      rm -f .yoshiko-flow/task-pump.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched pump-test
+      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-retrying pump-test)
+      echo "result=$RESULT"
+      # Pump retrying is a no-op, entry should still be dispatched
+      R=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump is-dispatched pump-test)
+      [ "$RESULT" = "no-op" ] && [ "$R" = "dispatched" ] && echo "OK: pump retrying is no-op"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
-  - "rm -f .yoshiko-flow/swarm-state.json"
+  - "rm -f .yoshiko-flow/swarm-state.json .yoshiko-flow/task-pump.json"

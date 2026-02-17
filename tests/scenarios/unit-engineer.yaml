@@ -160,3 +160,78 @@ steps:
         value: "0"
       - type: output_contains
         value: "OK"
+
+  # Case 13: Default reconciliation mode is "blocking"
+  - name: "reconciliation_default_blocking"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      MODE=$(yf_read_field '.config.engineer.reconciliation_mode' 2>/dev/null)
+      # Null/empty → "blocking" by convention
+      if [ -z "$MODE" ] || [ "$MODE" = "null" ]; then
+        MODE="blocking"
+      fi
+      echo "mode=$MODE"
+      [ "$MODE" = "blocking" ] && echo "OK: default reconciliation mode is blocking"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 14: Config with reconciliation_mode: disabled reads correctly
+  - name: "reconciliation_disabled_reads"
+    run: |
+      echo '{"enabled":true,"config":{"engineer":{"reconciliation_mode":"disabled"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      MODE=$(yf_read_field '.config.engineer.reconciliation_mode')
+      echo "mode=$MODE"
+      [ "$MODE" = "disabled" ] && echo "OK: disabled mode reads correctly"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 15: spec-sanity-check.sh with valid specs exits 0
+  - name: "spec_sanity_valid_exit_0"
+    run: |
+      # Create valid synthetic specs matching each other
+      echo '{"enabled":true}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      mkdir -p "$WORK_DIR/docs/specifications/EDD" "$WORK_DIR/docs/specifications/IG"
+      mkdir -p "$WORK_DIR/plugins/yf/formulas" "$WORK_DIR/tests/scenarios"
+      printf '# PRD\n| ID | Req |\n| REQ-001 | First |\n\n## Functional Specifications\n- FS-011: One formula shipped: test-formula (see FS-034)\n' > "$WORK_DIR/docs/specifications/PRD.md"
+      printf '# EDD\n### DD-001: First\n### NFR-001: Perf\n' > "$WORK_DIR/docs/specifications/EDD/CORE.md"
+      printf '# IG\n### UC-001: First\n' > "$WORK_DIR/docs/specifications/IG/test.md"
+      echo '{}' > "$WORK_DIR/plugins/yf/formulas/test-formula.formula.json"
+      printf '# Test Coverage\n## Requirements (REQ-xxx)\n| ID | Summary | Test File | Status |\n| REQ-001 | First | — | untested |\n\n## Design Decisions (DD-xxx)\n| ID | Summary | Test File | Status |\n| DD-001 | First | — | untested |\n\n## Non-Functional Requirements (NFR-xxx)\n| ID | Summary | Test File | Status |\n| NFR-001 | Perf | — | untested |\n\n## Use Cases (UC-xxx)\nAligned to IG files: test (UC-001).\n| ID | Summary | IG Source | Test File | Status |\n| UC-001 | First | test | — | untested |\n\n## Coverage Summary\n| Category | Total | Tested | Existence-Only | Untested |\n|----------|-------|--------|----------------|----------|\n| REQ | 1 | 0 | 0 | 1 |\n| DD | 1 | 0 | 0 | 1 |\n| NFR | 1 | 0 | 0 | 1 |\n| UC | 1 | 0 | 0 | 1 |\n| **Total** | **4** | **0** | **0** | **4** |\n' > "$WORK_DIR/docs/specifications/test-coverage.md"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" all 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q "SANITY_ISSUES=0" && echo "OK: valid specs pass"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "SANITY_ISSUES=0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 16: spec-sanity-check.sh with mismatched counts reports failures
+  - name: "spec_sanity_mismatch_reports_fail"
+    run: |
+      # PRD has 2 REQs but coverage only lists 1
+      printf '# PRD\n| ID | Req |\n| REQ-001 | First |\n| REQ-002 | Second |\n\n## Functional Specifications\n- FS-011: One formula shipped: test-formula (see FS-034)\n' > "$WORK_DIR/docs/specifications/PRD.md"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" counts 2>&1)
+      echo "$OUTPUT"
+      echo "$OUTPUT" | grep -q '\[FAIL\]' && echo "OK: mismatch detected"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "[FAIL]"
+      - type: output_contains
+        value: "OK"

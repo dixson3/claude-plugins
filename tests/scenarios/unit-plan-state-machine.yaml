@@ -1,0 +1,108 @@
+name: "Unit: plan-exec.sh — plan state machine transitions"
+
+setup:
+  - "git init"
+  - "mkdir -p .claude .yoshiko-flow docs/plans"
+  - "echo '# test' > CLAUDE.md"
+  - "git add -A && git commit -m 'init'"
+  - "bd init 2>/dev/null || true"
+  - |
+    ROOT=$(bd create --title="State Machine Test Epic" --type=epic --priority=2 -l ys:plan,plan:99 --silent)
+    echo "$ROOT" > .test-epic-id
+    T1=$(bd create --type=task --title="Task A" --parent="$ROOT" -l ys:plan,plan:99 --priority=2 --silent)
+    echo "$T1" > .test-task1-id
+    T2=$(bd create --type=task --title="Task B" --parent="$ROOT" -l ys:plan,plan:99 --priority=2 --silent)
+    echo "$T2" > .test-task2-id
+
+steps:
+  # Case 1: Missing args → exit 1
+  - name: "missing_args_exit_1"
+    run: |
+      bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" 2>&1
+      true
+    assertions:
+      - type: output_contains
+        value: "Usage:"
+
+  # Case 2: Unknown command → exit 1
+  - name: "unknown_command_exit_1"
+    run: |
+      bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" badcommand foo 2>&1 || true
+    assertions:
+      - type: output_contains
+        value: "Unknown command"
+
+  # Case 3: start outputs "State: executing"
+  - name: "start_outputs_executing"
+    run: |
+      ROOT=$(cat .test-epic-id)
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT" 2>&1
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "State: executing"
+
+  # Case 4: start records start-sha label on epic
+  - name: "start_records_sha"
+    run: |
+      ROOT=$(cat .test-epic-id)
+      EXPECTED=$(git rev-parse HEAD)
+      LABELS=$(bd label list "$ROOT" --json 2>/dev/null)
+      SHA_LABEL=$(echo "$LABELS" | jq -r '.[] | select(startswith("start-sha:"))' | head -1)
+      RECORDED="${SHA_LABEL#start-sha:}"
+      echo "expected=$EXPECTED recorded=$RECORDED"
+      [ "$EXPECTED" = "$RECORDED" ] && echo "OK: start-sha matches HEAD"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: start removes plan-gate file (unblocks edits)
+  - name: "start_removes_gate_file"
+    run: |
+      echo '99' > "$WORK_DIR/.yoshiko-flow/plan-gate"
+      ROOT=$(cat .test-epic-id)
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT" 2>&1
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: file_not_exists
+        path: ".yoshiko-flow/plan-gate"
+      - type: output_contains
+        value: "Plan gate removed"
+
+  # Case 6: start is idempotent (double start succeeds)
+  - name: "start_idempotent"
+    run: |
+      ROOT=$(cat .test-epic-id)
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT" 2>&1
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "State: executing"
+
+  # Case 7: completed state when all tasks closed (including auto-created chronicles)
+  - name: "completed_when_tasks_closed"
+    run: |
+      ROOT=$(cat .test-epic-id)
+      # Close ALL open tasks for plan:99 (includes work tasks + auto-chronicle beads)
+      for id in $(bd list -l plan:99 --status=open --type=task --limit=0 --json 2>/dev/null | jq -r '.[].id'); do
+        bd close "$id" 2>/dev/null
+      done
+      # Also close any in-progress tasks
+      for id in $(bd list -l plan:99 --status=in_progress --type=task --limit=0 --json 2>/dev/null | jq -r '.[].id'); do
+        bd close "$id" 2>/dev/null
+      done
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" status "$ROOT" 2>&1
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "completed"
+
+teardown:
+  - "rm -f .test-epic-id .test-task1-id .test-task2-id"
+  - "rm -rf .yoshiko-flow"

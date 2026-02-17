@@ -84,3 +84,63 @@ steps:
     assertions:
       - type: output_contains
         value: "OK"
+
+  # Case 11: Default config → qualification mode absent → treated as blocking
+  - name: "default_qualification_mode"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      # No config → sanity_check_mode defaults to "blocking"
+      MODE=$(yf_sanity_check_mode)
+      echo "mode=$MODE"
+      [ "$MODE" = "blocking" ] && echo "OK: default is blocking"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 12: plan-exec.sh start records start-sha in labels (verify content)
+  - name: "start_sha_content_verified"
+    run: |
+      # Setup: git repo + beads
+      cd "$WORK_DIR"
+      git init 2>/dev/null || true
+      mkdir -p .claude .yoshiko-flow
+      echo '# test' > CLAUDE.md
+      git add -A && git commit -m 'qualify-test' 2>/dev/null
+      bd init 2>/dev/null || true
+      ROOT=$(bd create --title="Qualify SHA Test" --type=epic --priority=2 -l ys:plan,plan:98 --silent)
+      EXPECTED_SHA=$(git rev-parse HEAD)
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT" 2>&1
+      # Read the label back
+      SHA_LABEL=$(bd label list "$ROOT" --json 2>/dev/null | jq -r '.[] | select(startswith("start-sha:"))' | head -1)
+      RECORDED="${SHA_LABEL#start-sha:}"
+      echo "expected=$EXPECTED_SHA"
+      echo "recorded=$RECORDED"
+      [ "$EXPECTED_SHA" = "$RECORDED" ] && echo "OK: start-sha matches HEAD exactly"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 13: plan-exec.sh start sets exec:executing label (state file verification)
+  - name: "start_sets_executing_label"
+    run: |
+      cd "$WORK_DIR"
+      ROOT=$(bd list -l plan:98 --type=epic --limit=1 --json 2>/dev/null | jq -r '.[0].id // empty')
+      if [ -z "$ROOT" ]; then
+        echo "SKIP: no test epic available"
+        exit 0
+      fi
+      LABELS=$(bd label list "$ROOT" --json 2>/dev/null)
+      HAS_EXECUTING=$(echo "$LABELS" | jq -r '.[] | select(. == "exec:executing")' | head -1)
+      echo "has_executing=$HAS_EXECUTING"
+      [ "$HAS_EXECUTING" = "exec:executing" ] && echo "OK: executing label present"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

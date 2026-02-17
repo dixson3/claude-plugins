@@ -1,0 +1,161 @@
+name: "Unit: NFR behavioral assertions"
+
+setup:
+  - "git init"
+  - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
+  - "echo '# test' > CLAUDE.md"
+  - "git add -A && git commit -m 'init'"
+
+steps:
+  # NFR-001: Preflight fast path outputs "up to date" when lock matches
+  - name: "nfr001_preflight_fast_path"
+    run: |
+      # First run to populate lock
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
+      # Second run should hit fast path
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "up to date"
+
+  # NFR-002: code-gate.sh fail-open on malformed JSON input
+  - name: "nfr002_failopen_malformed_json"
+    run: |
+      # Ensure no plan gate so code-gate takes the fast path
+      rm -f "$WORK_DIR/.yoshiko-flow/plan-gate"
+      echo 'THIS IS NOT JSON AT ALL!!!' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # NFR-002b: code-gate.sh fail-open when plan-gate has malformed JSON
+  - name: "nfr002b_failopen_malformed_gate"
+    run: |
+      echo 'NOT_JSON' > "$WORK_DIR/.yoshiko-flow/plan-gate"
+      # Send valid tool input for a non-exempt file
+      echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1 || true
+      rm -f "$WORK_DIR/.yoshiko-flow/plan-gate"
+      echo "OK: gate processed without crash"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # NFR-003: bash -n syntax check passes on all .sh scripts
+  - name: "nfr003_syntax_check_scripts"
+    run: |
+      FAIL=0
+      for f in "$PLUGIN_DIR"/plugins/yf/scripts/*.sh; do
+        [ -f "$f" ] || continue
+        if ! bash -n "$f" 2>&1; then
+          echo "SYNTAX ERROR: $(basename "$f")"
+          FAIL=1
+        fi
+      done
+      [ "$FAIL" -eq 0 ] && echo "OK: all scripts pass syntax check"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # NFR-003b: bash -n syntax check passes on all hook .sh files
+  - name: "nfr003b_syntax_check_hooks"
+    run: |
+      FAIL=0
+      for f in "$PLUGIN_DIR"/plugins/yf/hooks/*.sh; do
+        [ -f "$f" ] || continue
+        if ! bash -n "$f" 2>&1; then
+          echo "SYNTAX ERROR: $(basename "$f")"
+          FAIL=1
+        fi
+      done
+      [ "$FAIL" -eq 0 ] && echo "OK: all hooks pass syntax check"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # NFR-004: Preflight does not modify tracked project files
+  - name: "nfr004_git_cleanliness"
+    run: |
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
+      # After preflight, check git status for unexpected modifications
+      # Expected untracked: .yoshiko-flow/, .claude/, .gitignore, .beads/, .gitattributes, AGENTS.md, docs/
+      # NOT expected: modifications to CLAUDE.md or any other committed files
+      DIRTY=$(git status --porcelain | grep -v '^\?\?' | grep -v '^ M \.gitignore' || true)
+      if [ -z "$DIRTY" ]; then
+        echo "OK: no unexpected modifications to tracked files"
+      else
+        echo "UNEXPECTED: $DIRTY"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # NFR-005: Preflight is idempotent — second run produces identical output
+  - name: "nfr005_idempotent"
+    run: |
+      OUT1=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      OUT2=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "run1=$OUT1"
+      echo "run2=$OUT2"
+      if [ "$OUT1" = "$OUT2" ]; then
+        echo "OK: idempotent"
+      else
+        echo "FAIL: outputs differ"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # NFR-005b: Lock file unchanged across idempotent runs
+  - name: "nfr005b_lock_unchanged"
+    run: |
+      LOCK1=$(cat "$WORK_DIR/.yoshiko-flow/lock.json" 2>/dev/null | jq -S '.preflight' 2>/dev/null)
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
+      LOCK2=$(cat "$WORK_DIR/.yoshiko-flow/lock.json" 2>/dev/null | jq -S '.preflight' 2>/dev/null)
+      if [ "$LOCK1" = "$LOCK2" ]; then
+        echo "OK: lock unchanged"
+      else
+        echo "FAIL: lock changed"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # NFR-007: Config migration — old format migrated on preflight
+  - name: "nfr007_config_migration"
+    run: |
+      # Create a config.json that preflight should read without error
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/lock.json"
+      rm -rf "$WORK_DIR/.claude/rules/yf"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      # After preflight, lock should be updated with current version
+      VER=$(jq -r '.preflight.plugins.yf.version' "$WORK_DIR/.yoshiko-flow/lock.json" 2>/dev/null)
+      [ -n "$VER" ] && [ "$VER" != "null" ] && echo "OK: lock has version $VER"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .yoshiko-flow/plan-gate"
+  - "rm -rf .yoshiko-flow"

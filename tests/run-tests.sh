@@ -35,8 +35,6 @@ $HARNESS --plugin-dir "$PLUGIN_DIR" --unit-only $FLAGS \
 if ! $UNIT_ONLY; then
     echo ""
     echo "=== Integration Tests ==="
-    $HARNESS --plugin-dir "$PLUGIN_DIR" $FLAGS \
-        "$SCENARIOS"/gate-enforcement.yaml \
-        "$SCENARIOS"/dismiss-gate.yaml \
-        "$SCENARIOS"/full-lifecycle.yaml
+    # Integration tests removed in Plan 41 — coverage migrated to unit tests
+    echo "(no integration tests remaining)"
 fi

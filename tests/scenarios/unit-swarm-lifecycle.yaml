@@ -1,0 +1,127 @@
+name: "Unit: dispatch-state.sh — swarm lifecycle operations"
+
+setup:
+  - "mkdir -p .yoshiko-flow"
+
+steps:
+  # Case 1: First mark-dispatched creates state file
+  - name: "create_wisp_state"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/swarm-state.json"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched step-1
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "marked-dispatched"
+      - type: file_exists
+        path: ".yoshiko-flow/swarm-state.json"
+
+  # Case 2: Sequential dispatching records each step
+  - name: "sequential_dispatch"
+    run: |
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched step-2
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched step-3
+      echo "OK: dispatched steps 2 and 3"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: is-dispatched returns correct status for known and unknown steps
+  - name: "is_dispatched_status"
+    run: |
+      R1=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched step-1)
+      R2=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched step-unknown 2>/dev/null || echo "not-dispatched")
+      echo "step-1=$R1 step-unknown=$R2"
+    assertions:
+      - type: output_contains
+        value: "step-1=dispatched"
+      - type: output_contains
+        value: "step-unknown=not-dispatched"
+
+  # Case 4: pending lists all dispatched step keys
+  - name: "pending_lists_dispatched"
+    run: |
+      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm pending)
+      echo "$RESULT"
+      echo "$RESULT" | grep -q "step-1" && echo "$RESULT" | grep -q "step-2" && echo "$RESULT" | grep -q "step-3" && echo "OK: all steps listed"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: clear resets swarm state (squash-wisp)
+  - name: "squash_wisp_clears_state"
+    run: |
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm clear
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "cleared"
+
+  # Case 6: After clear, state is empty
+  - name: "state_clean_after_squash"
+    run: |
+      PENDING=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm pending)
+      R=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched step-1 2>/dev/null) || true
+      [ -z "$PENDING" ] && [ "$R" = "not-dispatched" ] && echo "OK: state is clean"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: Scoped clear only removes entries matching prefix
+  - name: "scoped_clear_preserves_other"
+    run: |
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched wisp-a/step-1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched wisp-a/step-2
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched wisp-b/step-1
+      # Clear only wisp-a scope
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm clear --scope wisp-a
+      # wisp-b should survive
+      R=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched wisp-b/step-1)
+      echo "$R"
+      [ "$R" = "dispatched" ] && echo "OK: scoped clear preserved other entries"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: Swarm clear doesn't affect pump state
+  - name: "swarm_clear_preserves_pump"
+    run: |
+      # Create pump state
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched task-001
+      # Clear swarm state
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm clear
+      # Pump should be unaffected
+      R=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump is-dispatched task-001)
+      echo "$R"
+      [ "$R" = "dispatched" ] && echo "OK: pump state preserved"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: Re-dispatch after squash starts clean
+  - name: "redispatch_after_squash"
+    run: |
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm clear
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched new-step-1
+      R=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched new-step-1)
+      [ "$R" = "dispatched" ] && echo "OK: re-dispatch after squash works"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .yoshiko-flow/swarm-state.json .yoshiko-flow/task-pump.json"
