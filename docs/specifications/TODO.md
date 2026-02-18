@@ -11,7 +11,7 @@
 | TODO-005 | Verify reactive bugfix triggers correctly on REVIEW:BLOCK in a real swarm execution | P2 | Diary 26-02-13.23-25 (Next Steps) | Open |
 | TODO-006 | Verify formula cooking with `bd cook --dry-run` for all 6 formulas (feature-build, research-spike, code-review, bugfix, build-test, code-implement) | P2 | Diary 26-02-13.22-30 (Next Steps) | Open |
 | TODO-007 | Verify reconciliation behavior on a project with existing specification documents | P2 | Diary 26-02-14.18-00 (Next Steps) | Open |
-| TODO-008 | Monitor beads-sync branch strategy in multi-session workflows for sync reliability | P2 | Diary 26-02-13.17-52 (Next Steps) | Open |
+| TODO-008 | ~~Monitor beads-sync branch strategy in multi-session workflows for sync reliability~~ | P2 | Diary 26-02-13.17-52 (Next Steps) | Resolved |
 | TODO-009 | Validate automatic migration for legacy local-only beads deployments in external projects | P2 | Diary 26-02-13.17-52 (Next Steps) | Open |
 | TODO-010 | ~~Marketplace version in `marketplace.json` is 2.11.0, behind plugin version 2.17.0~~ | P1 | `.claude-plugin/marketplace.json` | Resolved |
 | TODO-011 | ~~Root README.md plugin table shows version 2.11.0, behind actual version 2.17.0~~ | P1 | `README.md` line 18 | Resolved |
@@ -43,3 +43,4 @@
 | TODO-C02 | Implement research-spike formula with auto-archive step | v2.13.0 | Plan 28 |
 | TODO-C03 | Strengthen chronicle watch rule for infrastructure operations | v2.14.1 | Plan 31 |
 | TODO-C04 | Add config pruning for deprecated chronicler/archivist fields | v2.16.0 | Plan 33 |
+| TODO-C05 | Monitor beads-sync branch strategy — moot after dolt-native persistence (DD-003) | v2.22.0 | Plan 45 |

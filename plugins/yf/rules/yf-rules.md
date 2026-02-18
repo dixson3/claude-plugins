@@ -182,10 +182,9 @@ Agent operations use beads skills (DD-016):
 /beads:show <id>          # View issue details
 /beads:update <id> --status in_progress  # Claim work
 /beads:close <id>         # Complete work
-/beads:sync               # Sync beads state with git
 ```
 
-Also available via `bd` CLI for direct access: `bd ready`, `bd show`, `bd update`, `bd close`, `bd sync`.
+Also available via `bd` CLI for direct access: `bd ready`, `bd show`, `bd update`, `bd close`.
 
 ### 4.2 Landing the Plane
 
@@ -197,10 +196,9 @@ When ending a work session:
 4.5. Memory reconciliation (if specs exist): `/yf:memory_reconcile`
 5. Update issue status — close finished work
 6. Session prune (automatic via SessionEnd hook; manual: `bash plugins/yf/scripts/session-prune.sh all`)
-7. Sync beads: `bd sync`
-8. Commit code changes
-9. Push only when user explicitly requests
-10. Hand off context for next session
+7. Commit code changes
+8. Push only when user explicitly requests
+9. Hand off context for next session
 
 ---
 

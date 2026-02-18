@@ -53,7 +53,7 @@ Aligned to EDD/CORE.md DD-001 through DD-014.
 |----|---------|-----------|--------|
 | DD-001 | Beads as persistent task store | unit-pump-dispatch.yaml | tested |
 | DD-002 | Symlink-based rule management | unit-preflight-symlinks.yaml | tested |
-| DD-003 | Beads-sync branch strategy | unit-beads-git.yaml | tested |
+| DD-003 | Dolt-native persistence (no sync, no hooks) | unit-beads-git.yaml | tested |
 | DD-004 | Auto-chain lifecycle on ExitPlanMode | unit-exit-plan-gate.yaml | existence-only |
 | DD-005 | Hook + rule mechanism for plan enforcement | unit-code-gate.yaml | tested |
 | DD-006 | Formula-driven swarm with wisps | unit-swarm-lifecycle.yaml | tested |

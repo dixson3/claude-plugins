@@ -35,8 +35,8 @@ D3 Claude Plugins implements a plugin marketplace for Claude Code with the Yoshi
             |
 +-----------v---------------------+
 |  Beads Persistence Layer        |
-|  (.beads/, beads-sync branch,   |
-|   JSONL export/import)          |
+|  (.beads/dolt/, embedded dolt,  |
+|   immediate write persistence)  |
 +-----------+---------------------+
             |
 +-----------v---------------------+
@@ -96,17 +96,17 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Source**: Plan 17, diary `26-02-08.19-00.symlink-preflight.md`
 
-### DD-003: Beads-Sync Branch Strategy (Reversed from Local-Only)
+### DD-003: Dolt-Native Persistence (Reversed from Sync Branch)
 
-**Context**: v2.5.0 (Plan 18) made `.beads/` local-only and gitignored. This was later reversed in v2.12.0 (Plan 27) because cross-session and cross-machine persistence of issue state required git tracking.
+**Context**: v2.5.0 (Plan 18) made `.beads/` local-only. v2.12.0 (Plan 27) reversed with a `beads-sync` git branch. beads v0.52.0 introduced dolt backend where writes persist immediately, making `bd sync`, JSONL export hooks, and the beads-sync branch all obsolete.
 
-**Decision**: `.beads/` is git-tracked with a dedicated `beads-sync` branch. Beads manages its own `.beads/.gitignore` (tracking JSONL, config, metadata; ignoring db files and daemon state). Standard beads hooks (installed via `bd hooks install`) handle sync including auto-pushing the sync branch on `git push`.
+**Decision**: Beads uses an embedded dolt database (`.beads/dolt/beads/`) that persists writes immediately. The dolt database is gitignored. Version control uses `bd vc commit/status/merge`. Setup is just `bd init` -- no hooks, no sync branch.
 
-**Rationale**: The beads-sync branch keeps code branches clean while enabling issue state persistence. Standard beads hooks are fail-open -- if they fail, the push proceeds normally.
+**Rationale**: Dolt eliminates the entire sync layer. No merge conflicts on JSONL, no sync branch maintenance, no hooks redirecting core.hooksPath, no `bd sync` in session protocols. All five beads git hooks are no-ops in dolt mode.
 
-**Consequences**: Requires `bd hooks install` during setup. No custom pre-push hook -- standard beads hooks handle all sync (see REQ-027). Migration logic handles legacy local-only deployments. The `.beads/` directory is no longer in the project-level gitignore managed block.
+**Consequences**: `bd sync` is a no-op. `core.hooksPath` stays at default. Session close protocol omits sync step. Setup simplified from `bd init && bd config set sync.branch ... && bd hooks install` to `bd init`.
 
-**Source**: Plan 27, diary `26-02-13.17-52.beads-git-workflow.md`
+**Source**: Plan 27, Plan 45, beads v0.52.0
 
 ### DD-004: Auto-Chain Lifecycle on ExitPlanMode
 
@@ -198,7 +198,7 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Decision**: Automatic pruning at two trigger points: plan-scoped on completion, global on push. Soft-delete only (tombstones with 30-day recovery window). Both operations are fail-open and configurable.
 
-**Rationale**: Tombstones prevent resurrection issues from old beads-sync clones. PostToolUse hook (not PreToolUse) ensures code is safely remote before cleanup. The two-step push sequence preserves safety.
+**Rationale**: Tombstones prevent resurrection issues. PostToolUse hook (not PreToolUse) ensures code is safely remote before cleanup.
 
 **Consequences**: Requires `bd admin cleanup` support in beads-cli. Config keys `auto_prune.on_plan_complete` and `auto_prune.on_push` provide escape hatches.
 

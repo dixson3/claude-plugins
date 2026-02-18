@@ -14,16 +14,12 @@ Beads-cli is the external persistence layer that provides git-backed issue track
 
 **Flow**:
 1. Preflight checks `test -d .beads` (setup command guard)
-2. If `.beads/` does not exist: runs `bd init` (uses `dolt` backend by default since 0.50.0)
-3. Configures sync branch: `bd config set sync.branch beads-sync`
-4. Enables mass-delete protection: `bd config set sync.require_confirmation_on_mass_delete true`
-5. Installs standard beads git hooks: `bd hooks install` (pre-commit, post-merge, pre-push, post-checkout, prepare-commit-msg)
-6. No AGENTS.md is created — the plugin provides beads workflow context via its own rule file (`yf-rules.md`) and `bd prime` hook injection at session start
-7. No custom pre-push hook — standard beads hooks handle all sync including `beads-sync` branch auto-push
-7.5. Agent-facing task operations (create, update, close, list) route through beads plugin skills (`/beads:create`, `/beads:close`, etc.) per DD-016. Shell scripts continue using `bd` CLI directly.
-8. Beads manages its own `.beads/.gitignore`
+2. If `.beads/` does not exist: runs `bd init` (uses `dolt` backend by default since 0.50.0; writes persist immediately)
+3. No AGENTS.md is created — the plugin provides beads workflow context via its own rule file (`yf-rules.md`) and `bd prime` hook injection at session start
+4. Agent-facing task operations (create, update, close, list) route through beads plugin skills (`/beads:create`, `/beads:close`, etc.) per DD-016. Shell scripts continue using `bd` CLI directly.
+5. Beads manages its own `.beads/.gitignore`
 
-**Postconditions**: Beads initialized with `dolt` backend. Sync branch configured. Standard beads hooks installed. No AGENTS.md.
+**Postconditions**: Beads initialized with `dolt` backend. Writes persist immediately. No AGENTS.md. No hooks installed. No sync branch configured.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/.claude-plugin/preflight.json`
@@ -68,7 +64,6 @@ Beads-cli is the external persistence layer that provides git-backed issue track
    b. Runs `plan-prune.sh global`
    c. Script runs `bd admin cleanup --older-than <days> --force` (default 7 days)
    d. Script runs `bd admin cleanup --ephemeral --force` for closed wisps
-   e. Hook runs `bd sync` to push pruned state to beads-sync
 
 **Postconditions**: Closed beads soft-deleted (tombstones, 30-day recovery).
 
@@ -88,11 +83,10 @@ Beads-cli is the external persistence layer that provides git-backed issue track
 3. Generate diary: invoke `/yf:chronicle_diary` to process open chronicles
 4. Run quality gates (if code changed)
 5. Update issue status: close finished work
-6. Sync beads: `bd sync`
-7. Commit code changes
-8. Push only when operator asks
+6. Commit code changes
+7. Push only when operator asks
 
-**Postconditions**: Context preserved. Diary generated. Beads synced.
+**Postconditions**: Context preserved. Diary generated. Code committed.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/rules/beads.md`

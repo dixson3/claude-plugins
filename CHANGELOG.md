@@ -5,6 +5,31 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.22.0] - 2026-02-17
+
+### Removed
+
+- **`bd sync` references**: Removed from rules (Section 4.1 Quick Reference, Section 4.2 Landing the Plane), post-push-prune.sh hook, and all specification documents. `bd sync` is a no-op in dolt mode (beads v0.52.0).
+- **`bd hooks install`**: Removed from preflight setup. All 5 beads git hooks (pre-commit, post-merge, pre-push, post-checkout, prepare-commit-msg) are silent no-ops in dolt mode. `issues.jsonl` does not exist.
+- **`sync.branch` and `mass_delete` config**: Removed from preflight setup command. Beads setup is now just `bd init`.
+- **JSONL merge driver**: Removed `.gitattributes` entry for `.beads/issues.jsonl merge=beads`.
+- **`beads-sync` branch**: Deleted local and remote branches. The JSONL export pipeline is non-functional in dolt mode.
+- **`core.hooksPath` override**: Unset git config that pointed to `.beads/hooks/`.
+- **`sync-branch` config**: Removed from `.beads/config.yaml`.
+
+### Changed
+
+- **DD-003 rewritten**: "Beads-Sync Branch Strategy" → "Dolt-Native Persistence (Reversed from Sync Branch)" — documents the full arc from local-only → sync branch → dolt-native.
+- **TC-009 updated**: Beads state now persisted via embedded dolt database with immediate writes.
+- **REQ-027 simplified**: Setup is `bd init` only. No hooks, no sync branch, no mass-delete config.
+- **FS-027 updated**: Describes dolt-backed persistence instead of beads-sync + hooks.
+- **UC-025 simplified**: Setup flow reduced from 8 steps to 5 (removed sync.branch, mass-delete, hooks install).
+- **UC-027 updated**: Removed `bd sync` step from automatic pruning flow.
+- **UC-028 updated**: Removed `bd sync` step from session close protocol; renumbered.
+- **TODO-008 resolved**: Monitoring beads-sync is moot after dolt-native persistence.
+- **Plugin version**: 2.21.0 → 2.22.0.
+- **Test suite**: `unit-beads-git.yaml` renamed and expanded from 9 to 12 cases — inverted sync/hooks assertions, added negative tests for sync.branch, bd sync in hooks, and bd init exactness.
+
 ## [2.21.0] - 2026-02-17
 
 ### Added

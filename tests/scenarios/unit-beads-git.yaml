@@ -1,4 +1,4 @@
-name: "Unit: beads git workflow — sync branch and hooks enabled"
+name: "Unit: beads dolt backend — no sync, no hooks"
 
 steps:
   # Case 1: setup-project.sh generates .gitignore without .beads/ in managed block
@@ -35,31 +35,29 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: preflight.json includes bd hooks install
-  - name: "preflight_has_hooks_install"
+  # Case 3: preflight.json does NOT include bd hooks install (dolt mode — hooks are no-ops)
+  - name: "preflight_no_hooks_install"
     run: |
       RUN_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads") | .run' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
       if echo "$RUN_CMD" | grep -q 'bd hooks install'; then
-        echo "OK: preflight includes bd hooks install"
-      else
-        echo "FAIL: preflight run command is '$RUN_CMD', expected 'bd hooks install'"
+        echo "FAIL: preflight still includes bd hooks install"
         exit 1
       fi
+      echo "OK: preflight does not include bd hooks install"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 4: yf-rules.md Quick Reference contains beads sync reference
-  - name: "rules_has_bd_sync"
+  # Case 4: yf-rules.md Quick Reference does NOT contain sync reference (dolt persists immediately)
+  - name: "rules_no_bd_sync"
     run: |
       if grep -A15 '## Quick Reference\|### 4.1' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" | grep -q 'sync'; then
-        echo "OK: yf-rules.md Quick Reference includes sync reference"
-      else
-        echo "FAIL: yf-rules.md Quick Reference does not include sync reference"
+        echo "FAIL: yf-rules.md Quick Reference still includes sync reference"
         exit 1
       fi
+      echo "OK: yf-rules.md Quick Reference does not include sync reference"
     assertions:
       - type: exit_code
         value: "0"
@@ -131,6 +129,51 @@ steps:
         exit 1
       fi
       echo "OK: setup-project.sh MANAGED_BLOCK does not include .beads/"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: preflight.json does NOT contain sync.branch config
+  - name: "preflight_no_sync_branch"
+    run: |
+      RUN_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads") | .run' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
+      if echo "$RUN_CMD" | grep -q 'sync.branch'; then
+        echo "FAIL: preflight still references sync.branch"
+        exit 1
+      fi
+      echo "OK: preflight does not reference sync.branch"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 11: post-push-prune.sh does NOT contain bd sync
+  - name: "post_push_prune_no_sync"
+    run: |
+      if grep -q 'bd sync' "$PLUGIN_DIR/plugins/yf/hooks/post-push-prune.sh"; then
+        echo "FAIL: post-push-prune.sh still contains bd sync"
+        exit 1
+      fi
+      echo "OK: post-push-prune.sh does not contain bd sync"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 12: preflight setup command is exactly "bd init" (no chained commands)
+  - name: "preflight_setup_is_bd_init_only"
+    run: |
+      RUN_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads") | .run' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
+      if [ "$RUN_CMD" = "bd init" ]; then
+        echo "OK: preflight setup is exactly 'bd init'"
+      else
+        echo "FAIL: preflight setup is '$RUN_CMD', expected 'bd init'"
+        exit 1
+      fi
     assertions:
       - type: exit_code
         value: "0"
