@@ -61,4 +61,13 @@ if [ "$COUNT" -gt 0 ]; then
 MARKER
 fi
 
+# --- Write dirty-tree marker if uncommitted changes exist ---
+DIRTY_COUNT=$(git -C "$PROJECT_DIR" status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+if [ "$DIRTY_COUNT" -gt 0 ]; then
+  mkdir -p "$BEADS_DIR" 2>/dev/null || true
+  cat > "$BEADS_DIR/.dirty-tree" <<MARKER
+{"created":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","reason":"session_end","dirty_count":$DIRTY_COUNT}
+MARKER
+fi
+
 exit 0

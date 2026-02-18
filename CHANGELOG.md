@@ -5,6 +5,28 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.23.0] - 2026-02-18
+
+### Added
+
+- **`/yf:session_land` skill** (REQ-039, UC-028, DD-017): Full session close-out orchestrator — dirty tree check, in-progress beads triage, chronicle capture, diary generation, quality gates, memory reconciliation, session prune, commit, and push with operator confirmation via AskUserQuestion.
+- **`pre-push-land.sh` blocking hook** (REQ-039, UC-039, DD-017): PreToolUse hook on `Bash(git push*)` that blocks push (exit 2) when uncommitted changes or in-progress beads exist. Structured checklist output with actionable guidance.
+- **Plan foreshadowing** (REQ-040, UC-040): Plan intake Step 0 auto-classifies uncommitted files as plan-overlapping (foreshadowing commits) or unrelated (ad-hoc commits) before plan lifecycle begins. Both commits automatic.
+- **Dirty-tree markers** (REQ-041, UC-041): `session-end.sh` writes `.beads/.dirty-tree` marker when session ends with uncommitted changes. `session-recall.sh` consumes marker and warns next session.
+- **`beads-no-git-ops` preflight setup** (DD-017, FS-048): Configures `bd config set no-git-ops true` to suppress `bd prime` SESSION CLOSE PROTOCOL git commands. yf manages the git commit/push workflow.
+- **Spec entries**: REQ-039/040/041, DD-017, FS-044/045/046/047/048, UC-039/040/041.
+- **New test files**: `unit-session-land.yaml`, `unit-pre-push-land.yaml`.
+
+### Changed
+
+- **`yf-rules.md` optimized**: Trimmed from ~275 lines to ~120 lines of self-contained action directives. Removed informational content (Rule 4.1 beads quick reference, Rule 5.3 tiers 1-2, Rule 2.4 full report template). No IG cross-references — rules reference skills only.
+- **Rule 4.2 rewritten**: "Landing the Plane" now directs to `/yf:session_land` skill. Notes that this protocol supersedes `bd prime` SESSION CLOSE PROTOCOL.
+- **`plugin.json` hook declarations**: `Bash(git push*)` now fires two PreToolUse hooks in sequence — `pre-push-land.sh` (blocking) then `pre-push-diary.sh` (advisory).
+- **IG/beads-integration.md**: UC-028 expanded from 7 to 11 steps with full session_land flow. Added UC-039 (pre-push enforcement) and UC-041 (dirty-tree markers).
+- **IG/plan-lifecycle.md**: UC-002 expanded with detection criteria and foreshadowing reference. Added UC-040 (plan foreshadowing). UC-001 expanded with chronicle/archive guidance.
+- **Plugin version**: 2.22.0 → 2.23.0.
+- **Test updates**: `unit-session-end.yaml` (dirty-tree marker write), `unit-session-recall.yaml` (dirty-tree marker consumption).
+
 ## [2.22.0] - 2026-02-17
 
 ### Removed

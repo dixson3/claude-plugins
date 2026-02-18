@@ -73,20 +73,60 @@ Beads-cli is the external persistence layer that provides git-backed issue track
 
 ### UC-028: Session Close Protocol (Landing the Plane)
 
-**Actor**: Operator (manual) or Agent (triggered)
+**Actor**: Operator (via `/yf:session_land`) or Agent (triggered)
 
 **Preconditions**: Work session is ending.
 
 **Flow**:
-1. File issues for remaining work (create beads)
-2. Capture context: invoke `/yf:chronicle_capture topic:session-close`
-3. Generate diary: invoke `/yf:chronicle_diary` to process open chronicles
-4. Run quality gates (if code changed)
-5. Update issue status: close finished work
-6. Commit code changes
-7. Push only when operator asks
+1. Check dirty tree: `git status --porcelain`. Report changed files.
+2. File remaining work: `bd list --status=in_progress`. Ask operator to close, leave open, or create followup.
+3. Capture context (conditional): invoke `/yf:chronicle_capture topic:session-close`
+4. Generate diary (conditional): invoke `/yf:chronicle_diary` to process open chronicles
+5. Run quality gates (conditional, if code changed)
+6. Memory reconciliation (conditional, if specs exist): invoke `/yf:memory_reconcile mode:check`
+7. Update issue status: close finished beads
+8. Session prune: `bash plugins/yf/scripts/session-prune.sh all`
+9. Commit: stage changes, present diff summary, commit
+10. Push with operator confirmation: AskUserQuestion "Push to remote?" If yes, `git push`.
+11. Hand off: summarize done/remaining/context
 
-**Postconditions**: Context preserved. Diary generated. Code committed.
+**Postconditions**: Context preserved. Diary generated. Code committed. Push with operator consent.
 
 **Key Files**:
-- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/rules/beads.md`
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/session_land/SKILL.md`
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/hooks/pre-push-land.sh`
+
+### UC-039: Pre-Push Enforcement
+
+**Actor**: System (pre-push-land.sh hook)
+
+**Preconditions**: Agent attempts `git push`.
+
+**Flow**:
+1. `pre-push-land.sh` fires as PreToolUse hook on `Bash(git push*)`
+2. Check uncommitted changes: `git status --porcelain`
+3. Check in-progress beads: `bd list --status=in_progress --json`
+4. If either condition fails: exit 2 (block) with structured checklist output
+5. If both pass: exit 0 (allow). Existing `pre-push-diary.sh` fires after.
+
+**Postconditions**: Push proceeds only when working tree is clean and no beads are in-progress.
+
+**Key Files**:
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/hooks/pre-push-land.sh`
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/.claude-plugin/plugin.json`
+
+### UC-041: Dirty-Tree Cross-Session Awareness
+
+**Actor**: System (session-end.sh and session-recall.sh)
+
+**Preconditions**: Session ending with uncommitted changes, or new session starting after previous dirty session.
+
+**Flow**:
+1. **Session end**: `session-end.sh` checks `git status --porcelain`. If dirty, writes `.beads/.dirty-tree` marker with timestamp and file count.
+2. **Session start**: `session-recall.sh` reads `.beads/.dirty-tree`. If found, sets `HAS_DIRTY=true` and `DIRTY_FILE_COUNT`, removes marker, includes warning in session recall output.
+
+**Postconditions**: Next session is warned about left-behind uncommitted changes.
+
+**Key Files**:
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/hooks/session-end.sh`
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/session-recall.sh`

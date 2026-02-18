@@ -264,6 +264,18 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Source**: Plan 42
 
+### DD-017: Session Close Enforcement via Blocking Hook + Orchestrator Skill
+
+**Context**: The session close protocol (Rule 4.2, UC-028) was a behavioral rule with no mechanical enforcement. Agents could skip commits, forget to push, or start plans with uncommitted changes. The beads `bd prime` SESSION CLOSE PROTOCOL still referenced `bd sync` (a no-op after DD-003).
+
+**Decision**: Add mechanical enforcement: a blocking pre-push hook (`pre-push-land.sh`) that checks for uncommitted changes and in-progress beads before allowing push, plus an orchestrator skill (`/yf:session_land`) that runs the full close-out checklist. Suppress the beads `bd prime` SESSION CLOSE PROTOCOL via `no-git-ops` beads config since yf manages the git workflow.
+
+**Rationale**: Behavioral rules alone are insufficient for critical session-boundary operations. The hook provides a mechanical backstop (consistent with DD-005: hook + rule enforcement model). The skill provides an invocable entry point for the full checklist. Suppressing `bd prime` git ops eliminates confusion about which protocol to follow.
+
+**Consequences**: `git push` is blocked until the working tree is clean and all beads are closed or updated. The `bd prime` SESSION CLOSE PROTOCOL no longer includes `bd sync` or `git push` steps. Dirty-tree markers bridge uncommitted state across sessions.
+
+**Source**: Plan 46
+
 ## Non-Functional Requirements
 
 ### NFR-001: Preflight Performance

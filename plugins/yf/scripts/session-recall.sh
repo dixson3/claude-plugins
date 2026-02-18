@@ -46,6 +46,16 @@ if [ -f "$PENDING_MARKER" ]; then
   rm -f "$PENDING_MARKER"
 fi
 
+# --- Check for dirty-tree marker from previous session ---
+DIRTY_MARKER="$BEADS_DIR/.dirty-tree"
+HAS_DIRTY=false
+DIRTY_FILE_COUNT=0
+if [ -f "$DIRTY_MARKER" ]; then
+  HAS_DIRTY=true
+  DIRTY_FILE_COUNT=$(jq -r '.dirty_count // 0' "$DIRTY_MARKER" 2>/dev/null || echo "0")
+  rm -f "$DIRTY_MARKER"
+fi
+
 # --- Query open chronicles ---
 CHRONICLES=$( (set +e; bd list --label=ys:chronicle --status=open --format=json 2>/dev/null) || echo "[]")
 COUNT=$(echo "$CHRONICLES" | jq 'length' 2>/dev/null || echo "0")
@@ -71,7 +81,7 @@ if [ -d "$PLANS_DIR" ]; then
 fi
 
 # --- Exit silently if nothing to report ---
-if [ "$COUNT" -eq 0 ] && [ "$HAS_PENDING" = "false" ] && [ "$HAS_PLAN_WARNING" = "false" ]; then
+if [ "$COUNT" -eq 0 ] && [ "$HAS_PENDING" = "false" ] && [ "$HAS_PLAN_WARNING" = "false" ] && [ "$HAS_DIRTY" = "false" ]; then
   exit 0
 fi
 
@@ -96,6 +106,16 @@ fi
 
 if $HAS_PLAN_WARNING; then
   echo "WARNING: Plan $PLAN_WARNING_IDX exists but has no beads. Run /yf:plan_intake to set up the lifecycle."
+  echo ""
+fi
+
+if $HAS_DIRTY; then
+  echo "=========================================="
+  echo "  DIRTY TREE: Previous session left $DIRTY_FILE_COUNT uncommitted file(s)"
+  echo "=========================================="
+  echo ""
+  echo "Review with: git status"
+  echo "Commit before starting new work, or run /yf:session_land to close out."
   echo ""
 fi
 

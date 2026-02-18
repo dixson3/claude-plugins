@@ -73,6 +73,7 @@ Current capabilities:
 | Engineer | `engineer` | engineer_analyze_project, engineer_reconcile, engineer_update, engineer_suggest_updates | yf_engineer_synthesizer |
 | Coder | `code` | (uses swarm formulas) | yf_code_researcher, yf_code_writer, yf_code_tester, yf_code_reviewer |
 | Memory | `memory` | memory_reconcile | — |
+| Session | `session` | session_land | — |
 | Core | (none) | setup | — |
 
 ### Adding a New Capability

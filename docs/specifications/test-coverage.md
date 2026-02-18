@@ -44,6 +44,9 @@ Maps each specification item to its test coverage. Status key: **tested** (behav
 | REQ-036 | User-scope install with per-project activation | unit-activation.yaml, unit-preflight.yaml | tested |
 | REQ-037 | Memory reconciliation | unit-memory-reconcile.yaml | existence-only |
 | REQ-038 | Skill-level chronicle auto-capture | unit-chronicle-worthiness.yaml | existence-only |
+| REQ-039 | Pre-push enforcement + session_land | unit-pre-push-land.yaml, unit-session-land.yaml | untested |
+| REQ-040 | Plan foreshadowing at intake | unit-plan-intake.yaml | untested |
+| REQ-041 | Dirty-tree cross-session markers | unit-session-end.yaml, unit-session-recall.yaml | untested |
 
 ## Design Decisions (DD-xxx)
 
@@ -67,6 +70,7 @@ Aligned to EDD/CORE.md DD-001 through DD-014.
 | DD-014 | Specifications as anchor documents | unit-spec-sanity.yaml | tested |
 | DD-015 | Three-condition activation model | unit-activation.yaml, unit-yf-config.yaml | tested |
 | DD-016 | Hybrid beads routing | — | untested |
+| DD-017 | Session close enforcement (hook + skill) | unit-pre-push-land.yaml, unit-session-land.yaml | untested |
 
 ## Non-Functional Requirements (NFR-xxx)
 
@@ -124,16 +128,19 @@ Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–00
 | UC-036 | Per-project activation via /yf:setup | marketplace | unit-activation.yaml | tested |
 | UC-037 | Memory reconciliation | chronicler | unit-memory-reconcile.yaml | existence-only |
 | UC-038 | Skill-level auto-chronicle at decision points | chronicler | unit-chronicle-worthiness.yaml | existence-only |
+| UC-039 | Pre-push enforcement | beads-integration | unit-pre-push-land.yaml | untested |
+| UC-040 | Plan foreshadowing at intake | plan-lifecycle | unit-plan-intake.yaml | untested |
+| UC-041 | Dirty-tree cross-session awareness | beads-integration | unit-session-end.yaml, unit-session-recall.yaml | untested |
 
 ## Coverage Summary
 
 | Category | Total | Tested | Existence-Only | Untested |
 |----------|-------|--------|----------------|----------|
-| REQ | 38 | 24 | 14 | 0 |
-| DD | 16 | 13 | 2 | 1 |
+| REQ | 41 | 24 | 14 | 3 |
+| DD | 17 | 13 | 2 | 2 |
 | NFR | 7 | 6 | 1 | 0 |
-| UC | 38 | 21 | 16 | 1 |
-| **Total** | **99** | **64** | **33** | **2** |
+| UC | 41 | 21 | 16 | 4 |
+| **Total** | **106** | **64** | **33** | **9** |
 
 Total assertions: **667** (across all unit test scenarios)
 

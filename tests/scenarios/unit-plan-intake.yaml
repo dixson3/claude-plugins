@@ -65,13 +65,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: Rules contain plan intake detection section
+  # Case 5: Rules contain plan intake self-check section
   - name: "has_detection_section"
     run: |
-      if grep -q "Detection" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
-        echo "OK: detection section present"
+      if grep -q "self-check" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" && grep -q "Plan-like content" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
+        echo "OK: plan intake self-check present"
       else
-        echo "FAIL: missing detection section"
+        echo "FAIL: missing plan intake self-check"
         exit 1
       fi
     assertions:
@@ -163,13 +163,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 11: consolidated rules contain chronicle capture step
+  # Case 11: session_land skill contains chronicle capture step (delegated from Rule 4.2)
   - name: "rules_has_chronicle_step"
     run: |
-      if grep -q "yf:chronicle_capture topic:session-close" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
-        echo "OK: rules have chronicle capture step"
+      if grep -q "yf:chronicle_capture topic:session-close" "$PLUGIN_DIR/plugins/yf/skills/session_land/SKILL.md"; then
+        echo "OK: session_land has chronicle capture step"
       else
-        echo "FAIL: rules missing chronicle capture"
+        echo "FAIL: session_land missing chronicle capture"
         exit 1
       fi
     assertions:
@@ -208,13 +208,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 14: consolidated rules have diary generation step
+  # Case 14: session_land skill has diary generation step (delegated from Rule 4.2)
   - name: "rules_has_diary_step"
     run: |
-      if grep -q "yf:chronicle_diary" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
-        echo "OK: rules have diary generation step"
+      if grep -q "yf:chronicle_diary" "$PLUGIN_DIR/plugins/yf/skills/session_land/SKILL.md"; then
+        echo "OK: session_land has diary generation step"
       else
-        echo "FAIL: rules missing diary generation"
+        echo "FAIL: session_land missing diary generation"
         exit 1
       fi
     assertions:

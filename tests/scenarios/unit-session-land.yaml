@@ -1,0 +1,141 @@
+name: "Unit: session_land skill — existence and structure checks"
+
+setup:
+  - "mkdir -p .yoshiko-flow .beads"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
+
+steps:
+  # Case 1: Skill file exists
+  - name: "skill_file_exists"
+    run: |
+      if [ -f "$PLUGIN_DIR/plugins/yf/skills/session_land/SKILL.md" ]; then
+        echo "OK: skill file exists"
+      else
+        echo "FAIL: skill file not found"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Has correct frontmatter
+  - name: "has_correct_frontmatter"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/session_land/SKILL.md"
+      if head -5 "$SKILL" | grep -q "name: yf:session_land" && \
+         head -5 "$SKILL" | grep -q "user_invocable: true"; then
+        echo "OK: correct frontmatter"
+      else
+        echo "FAIL: missing or incorrect frontmatter"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Contains activation guard
+  - name: "has_activation_guard"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/session_land/SKILL.md"
+      if grep -q "yf-activation-check.sh" "$SKILL" && \
+         grep -q "IS_ACTIVE" "$SKILL"; then
+        echo "OK: activation guard present"
+      else
+        echo "FAIL: activation guard missing"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: References AskUserQuestion for push confirmation
+  - name: "references_ask_user_question"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/session_land/SKILL.md"
+      if grep -q "AskUserQuestion" "$SKILL" && \
+         grep -q "Push to remote" "$SKILL"; then
+        echo "OK: AskUserQuestion for push confirmation"
+      else
+        echo "FAIL: missing push confirmation step"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: References chronicle_capture and chronicle_diary
+  - name: "references_chronicle_skills"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/session_land/SKILL.md"
+      if grep -q "chronicle_capture" "$SKILL" && \
+         grep -q "chronicle_diary" "$SKILL"; then
+        echo "OK: references chronicle skills"
+      else
+        echo "FAIL: missing chronicle skill references"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: References memory_reconcile
+  - name: "references_memory_reconcile"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/session_land/SKILL.md"
+      if grep -q "memory_reconcile" "$SKILL"; then
+        echo "OK: references memory_reconcile"
+      else
+        echo "FAIL: missing memory_reconcile reference"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: References session-prune.sh
+  - name: "references_session_prune"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/session_land/SKILL.md"
+      if grep -q "session-prune.sh" "$SKILL"; then
+        echo "OK: references session-prune.sh"
+      else
+        echo "FAIL: missing session-prune.sh reference"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: Has all 11 steps
+  - name: "has_all_steps"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/session_land/SKILL.md"
+      STEP_COUNT=$(grep -c "^### Step" "$SKILL")
+      if [ "$STEP_COUNT" -ge 11 ]; then
+        echo "OK: has $STEP_COUNT steps"
+      else
+        echo "FAIL: expected 11 steps, found $STEP_COUNT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .yoshiko-flow/config.json"

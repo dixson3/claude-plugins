@@ -99,14 +99,15 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: Rule 4.2 references memory_reconcile
+  # Case 7: Rule 4.2 delegates to session_land which includes memory_reconcile
   - name: "rule_references_memory_reconcile"
     run: |
       RULES="$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
-      if grep -q 'memory_reconcile' "$RULES"; then
-        echo "OK: Rule 4.2 references memory_reconcile"
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/session_land/SKILL.md"
+      if grep -q 'session_land' "$RULES" && grep -q 'memory_reconcile' "$SKILL"; then
+        echo "OK: Rule 4.2 delegates to session_land which includes memory_reconcile"
       else
-        echo "FAIL: Rule 4.2 does not reference memory_reconcile"
+        echo "FAIL: Rule 4.2 does not delegate to session_land or session_land missing memory_reconcile"
         exit 1
       fi
     assertions:

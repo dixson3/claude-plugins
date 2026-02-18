@@ -13,7 +13,8 @@
     ],
     "directories": ["docs/plans", "docs/diary", "docs/research", "docs/decisions", "docs/specifications", "docs/specifications/EDD", "docs/specifications/IG", ".yoshiko-flow"],
     "setup": [
-      { "name": "beads", "check": "test -d .beads", "run": "bd init" }
+      { "name": "beads", "check": "test -d .beads", "run": "bd init" },
+      { "name": "beads-no-git-ops", "check": "bd config get no-git-ops 2>/dev/null | grep -q true", "run": "bd config set no-git-ops true" }
     ]
   }
 }

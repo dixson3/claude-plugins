@@ -4,14 +4,14 @@ setup:
   - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}' > .yoshiko-flow/config.json"
 
 steps:
-  # Case 1: Rule 5.3 contains Auto-capture tier with trigger table
-  - name: "rule_5_3_has_auto_capture_tier"
+  # Case 1: Rule 5.3 references chronicle_capture for session boundaries and context switches
+  - name: "rule_5_3_has_chronicle_capture"
     run: |
       RULES="$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
-      if grep -q 'Auto-capture' "$RULES" && grep -q 'Tier 1' "$RULES"; then
-        echo "OK: Rule 5.3 contains Auto-capture tier"
+      if grep -q 'chronicle_capture' "$RULES" && grep -q 'context switches' "$RULES"; then
+        echo "OK: Rule 5.3 references chronicle_capture for context switches"
       else
-        echo "FAIL: Rule 5.3 missing Auto-capture tier"
+        echo "FAIL: Rule 5.3 missing chronicle_capture or context switches"
         exit 1
       fi
     assertions:
@@ -20,14 +20,14 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Rule 5.3 contains Agent-initiated tier referencing write-capable agents
-  - name: "rule_5_3_has_agent_initiated_tier"
+  # Case 2: Rule 5.3 defines NOT chronicle-worthy exclusions
+  - name: "rule_5_3_has_not_chronicle_worthy"
     run: |
       RULES="$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
-      if grep -q 'Agent-initiated' "$RULES" && grep -q 'yf_code_writer' "$RULES"; then
-        echo "OK: Rule 5.3 contains Agent-initiated tier with write-capable agents"
+      if grep -q 'NOT chronicle-worthy' "$RULES" && grep -q 'routine completions' "$RULES"; then
+        echo "OK: Rule 5.3 defines NOT chronicle-worthy exclusions"
       else
-        echo "FAIL: Rule 5.3 missing Agent-initiated tier or agent references"
+        echo "FAIL: Rule 5.3 missing NOT chronicle-worthy exclusions"
         exit 1
       fi
     assertions:

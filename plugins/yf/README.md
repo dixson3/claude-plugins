@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.22.0
+# Yoshiko Flow (yf) Plugin — v2.23.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -8,7 +8,7 @@ The natural state of software is _maintenance_. How hard or easy that maintenanc
 
 Traditionally, producing this content is a chore that requires real organizational discipline. Agentic coding makes the problem worse: agents generate context faster than humans can catalog it, and each session starts with a blank slate. Yoshiko Flow automates the discipline — capturing plans, observations, and decisions as structured artifacts without requiring the operator to remember to do it.
 
-It does this through six capabilities:
+It does this through seven capabilities:
 
 1. **Plan Lifecycle** — Breaks plans into a dependency graph of tracked tasks, with automatic decomposition, scheduling, and dispatch
 2. **Swarm Execution** — Runs structured, parallel agent workflows using formula templates, wisps, and a dispatch loop
@@ -16,6 +16,7 @@ It does this through six capabilities:
 4. **Archivist** — Preserves research findings and design decisions as permanent documentation that supports PRDs and ERDs
 5. **Engineer** — Synthesizes and maintains specification artifacts (PRD, EDD, Implementation Guides, TODO register), reconciling plans against specs before execution
 6. **Coder** — Standards-driven code generation with dedicated research, implementation, testing, and review agents working through a structured formula
+7. **Session** — Mechanical enforcement of session close-out with pre-push blocking, dirty-tree awareness, and operator-confirmed push
 
 ## Activation
 
@@ -314,6 +315,26 @@ Integrated into Rule 4.2 "Landing the Plane" as step 4.5 — runs after quality 
 | Skill | Description |
 |-------|-------------|
 | `/yf:memory_reconcile` | Reconcile MEMORY.md against specs and CLAUDE.md |
+
+## Session (Close-Out Enforcement)
+
+### Why
+
+Behavioral rules alone cannot guarantee that agents commit their work, close their beads, and push before a session ends. The session capability adds mechanical enforcement: a blocking pre-push hook that refuses `git push` until the working tree is clean and all beads are closed, plus an orchestrator skill that walks through the full close-out checklist with operator confirmation at key steps.
+
+### How It Works
+
+- **Pre-push enforcement**: `pre-push-land.sh` blocks `git push` when uncommitted changes or in-progress beads exist. Output is a structured checklist showing exactly what needs to be addressed.
+- **Session landing**: `/yf:session_land` orchestrates the full close-out: dirty tree check, in-progress beads triage, chronicle capture, diary generation, quality gates, memory reconciliation, session prune, commit, push with operator confirmation, and handoff summary.
+- **Plan foreshadowing**: When a plan intake finds uncommitted changes, it auto-classifies them as plan-overlapping (foreshadowing) or unrelated and commits each group with descriptive messages.
+- **Dirty-tree markers**: `session-end.sh` writes a `.beads/.dirty-tree` marker when a session ends with uncommitted changes. `session-recall.sh` consumes it on the next session start and warns the operator.
+- **bd prime suppression**: The `no-git-ops` beads config suppresses the `bd prime` SESSION CLOSE PROTOCOL, since yf manages the git workflow.
+
+### Skills
+
+| Skill | Description |
+|-------|-------------|
+| `/yf:session_land` | Orchestrate full session close-out with operator confirmation |
 
 ## Configuration
 

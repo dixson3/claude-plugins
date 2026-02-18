@@ -264,20 +264,20 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 12: Consolidated rules contain swarm chronicle bridge content
+  # Case 12: swarm_react skill contains chronicle auto-capture content (delegated from rules)
   - name: "swarm_chronicle_bridge_in_rules"
     run: |
-      grep -q 'reactive bugfix.*chronicle\|auto-capture.*chronicle\|chronicle.*auto' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" && echo "OK: swarm-chronicle-bridge content in rules"
+      grep -q 'reactive bugfix.*chronicle\|auto-capture.*chronicle\|chronicle.*auto' "$PLUGIN_DIR/plugins/yf/skills/swarm_react/SKILL.md" && echo "OK: swarm-chronicle-bridge content in swarm_react skill"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 13: Swarm chronicle bridge fires automatically (not advisory)
+  # Case 13: Swarm chronicle bridge fires automatically (not advisory) in swarm_react skill
   - name: "swarm_chronicle_bridge_auto_fires"
     run: |
-      grep -q 'NOT advisory\|fires automatically' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" && echo "OK: bridge fires automatically"
+      grep -q 'NOT advisory\|fires automatically\|Auto-Capture Chronicle' "$PLUGIN_DIR/plugins/yf/skills/swarm_react/SKILL.md" && echo "OK: bridge fires automatically"
     assertions:
       - type: exit_code
         value: "0"

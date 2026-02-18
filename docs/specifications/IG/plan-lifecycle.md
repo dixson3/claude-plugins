@@ -26,6 +26,8 @@ The plan lifecycle converts plans into a dependency graph of tracked tasks with 
 
 **Postconditions**: Plan is in Executing state. Beads hierarchy exists. Tasks are being dispatched to agents.
 
+**Chronicle/archive guidance**: A plan-save chronicle stub is created automatically by `exit-plan-gate.sh`. If the planning discussion had significant design rationale beyond the plan file, optionally invoke `/yf:chronicle_capture topic:planning`. If the discussion involved web searches or comparing alternatives, invoke `/yf:archive_capture type:research` or `type:decision` between plan save and beads creation. If any step fails, stop and report — the user can retry or run `/yf:plan_dismiss_gate`.
+
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/hooks/exit-plan-gate.sh`
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/rules/auto-chain-plan.md`
@@ -37,14 +39,20 @@ The plan lifecycle converts plans into a dependency graph of tracked tasks with 
 
 **Preconditions**: Operator pastes a plan into a new session or says "implement this plan" without ExitPlanMode having fired.
 
+**Detection criteria** (fires when ALL are true):
+- The user says "implement the/this plan" or provides plan content to execute
+- Plan-like content exists (headings like "## Implementation", structured task lists)
+- The auto-chain has NOT fired (no "Auto-chaining plan lifecycle..." message)
+
 **Flow**:
 1. `plan-intake.md` rule detects plan-like content without auto-chain signal
 2. Rule invokes `/yf:plan_intake`
-3. Skill saves plan file to `docs/plans/plan-NN.md` if not already saved
-4. Skill invokes `/yf:plan_create_beads` to create beads hierarchy
-5. Skill runs `plan-exec.sh start` to begin execution
-6. Skill invokes `/yf:chronicle_capture topic:planning` to capture planning context
-7. Skill invokes `/yf:plan_execute` to start dispatch
+3. (Step 0) Foreshadowing check: auto-classify and commit uncommitted changes (UC-040)
+4. Skill saves plan file to `docs/plans/plan-NN.md` if not already saved
+5. Skill invokes `/yf:plan_create_beads` to create beads hierarchy
+6. Skill runs `plan-exec.sh start` to begin execution
+7. Skill invokes `/yf:chronicle_capture topic:planning` to capture planning context
+8. Skill invokes `/yf:plan_execute` to start dispatch
 
 **Postconditions**: Same as UC-001. Plan goes through full lifecycle regardless of entry path.
 
@@ -122,3 +130,24 @@ The plan lifecycle converts plans into a dependency graph of tracked tasks with 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/hooks/code-gate.sh`
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/plan_dismiss_gate/SKILL.md`
+
+### UC-040: Plan Foreshadowing at Intake
+
+**Actor**: System (plan_intake skill, Step 0)
+
+**Preconditions**: Plan intake invoked. Working tree has uncommitted changes.
+
+**Flow**:
+1. `plan_intake` Step 0 runs `git status --porcelain`. If clean, skip to Step 1.
+2. Parse plan content to identify target scope (file paths, directories, modules).
+3. For each uncommitted file, check overlap with plan scope:
+   - **Foreshadowing**: file path overlaps plan targets (same directory/module/component)
+   - **Unrelated**: no overlap
+4. Commit unrelated changes: `"Pre-plan commit: unrelated changes before plan-<idx>"`
+5. Commit foreshadowing changes: `"Plan foreshadowing (plan-<idx>): <summary>"`
+6. Report classification and commits.
+
+**Postconditions**: Working tree is clean. Uncommitted changes classified and committed with descriptive messages.
+
+**Key Files**:
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/plan_intake/SKILL.md`

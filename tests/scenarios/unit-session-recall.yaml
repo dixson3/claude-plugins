@@ -242,8 +242,77 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 9: Detects and consumes dirty-tree marker
+  - name: "detects_dirty_tree_marker"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.beads/.pending-diary"
+      rm -rf "$WORK_DIR/docs/plans"
+      mkdir -p "$WORK_DIR/.beads"
+      echo '{"created":"2026-02-18T10:00:00Z","reason":"session_end","dirty_count":5}' > "$WORK_DIR/.beads/.dirty-tree"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      if [ "$1" = "list" ]; then
+        echo "[]"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
+      echo "$OUTPUT"
+      # Marker should be consumed
+      if [ -f "$WORK_DIR/.beads/.dirty-tree" ]; then
+        echo "FAIL: dirty-tree marker was not consumed"
+        exit 1
+      fi
+      if echo "$OUTPUT" | grep -q "DIRTY TREE" && \
+         echo "$OUTPUT" | grep -q "5 uncommitted"; then
+        echo "OK: detects dirty-tree marker and warns"
+      else
+        echo "FAIL: missing dirty-tree warning"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: No dirty-tree warning when no marker
+  - name: "no_dirty_tree_without_marker"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.beads/.pending-diary"
+      rm -f "$WORK_DIR/.beads/.dirty-tree"
+      rm -rf "$WORK_DIR/docs/plans"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      if [ "$1" = "list" ]; then
+        echo "[]"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
+      if [ -z "$OUTPUT" ]; then
+        echo "OK: silent when no dirty-tree marker"
+      else
+        echo "FAIL: unexpected output: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
   - "rm -f .yoshiko-flow/config.json"
   - "rm -f .beads/.pending-diary"
+  - "rm -f .beads/.dirty-tree"
   - "rm -rf mock-bin"
   - "rm -rf docs/plans"

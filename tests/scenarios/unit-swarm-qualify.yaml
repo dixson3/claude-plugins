@@ -52,11 +52,14 @@ steps:
       - type: output_contains
         value: "qualifying"
 
-  # Case 7: plan-completion-report has Qualification section
+  # Case 7: plan completion delegates to plan_execute which has Qualification gate
   - name: "completion_report_has_qualification"
     run: |
-      grep "Qualification" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" | head -3
+      grep "plan_execute" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" | head -3
+      grep "Qualification" "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md" | head -3
     assertions:
+      - type: output_contains
+        value: "plan_execute"
       - type: output_contains
         value: "Qualification"
 
@@ -66,7 +69,7 @@ steps:
       jq -r '.version' "$PLUGIN_DIR/plugins/yf/.claude-plugin/plugin.json"
     assertions:
       - type: output_contains
-        value: "2.22.0"
+        value: "2.23.0"
 
   # Case 9: research-spike formula has planning_safe
   - name: "research_spike_planning_safe"

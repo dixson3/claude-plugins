@@ -32,6 +32,34 @@ Run the 5-step intake checklist to ensure a plan goes through the proper lifecyc
 
 Execute these steps in order, skipping any that are already satisfied:
 
+### Step 0: Foreshadowing Check
+
+Before beginning intake, check for uncommitted changes:
+
+```bash
+git status --porcelain
+```
+
+If the working tree is clean, skip to Step 1.
+
+If dirty, auto-classify each changed file:
+
+1. Parse the plan content (from argument, inline, or most recent plan file)
+   to identify the plan's target scope — file paths, directories, modules
+   mentioned in the plan.
+2. For each uncommitted file, check overlap with plan scope:
+   - **Foreshadowing**: File path overlaps with plan targets (same directory,
+     same module, same component). These are proto-plan changes.
+   - **Unrelated**: File path has no overlap with plan scope.
+3. Commit unrelated changes first with message:
+   `"Pre-plan commit: unrelated changes before plan-<idx>"`
+4. Commit foreshadowing changes with message:
+   `"Plan foreshadowing (plan-<idx>): <summary of changes>"`
+5. Report what was classified and committed.
+
+Both commits happen automatically — no operator prompt needed. The
+classification is logged in the commit messages for traceability.
+
 ### Step 1: Ensure Plan File Exists
 
 Check if a plan file exists in `docs/plans/` for this plan:

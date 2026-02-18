@@ -75,6 +75,9 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 | REQ-036 | Plugin must support user-scope installation with per-project activation. Installing yf globally does not activate it in any project; explicit `/yf:setup` is required per-project. | P0 | Core | Plan 42 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/setup/SKILL.md` |
 | REQ-037 | MEMORY.md must be reconcilable against specifications and CLAUDE.md. Contradictions resolved in favor of specs, gaps promoted to specs with operator approval, ephemeral duplicates removed. | P2 | Memory | Plan 43 | `plugins/yf/skills/memory_reconcile/SKILL.md` |
 | REQ-038 | Chronicle beads must be auto-created at skill decision points (gate verdicts, spec mutations, qualification outcomes, scope changes) and at swarm step completion when formula flags are enabled. | P1 | Chronicler | Plan 44 | `plugins/yf/rules/yf-rules.md` (Rule 5.3) |
+| REQ-039 | Pre-push hook must block `git push` when uncommitted changes or in-progress beads exist, with actionable checklist output. `/yf:session_land` skill orchestrates full session close-out with operator confirmation for push. | P1 | Session | Plan 46 | `plugins/yf/hooks/pre-push-land.sh`, `plugins/yf/skills/session_land/SKILL.md` |
+| REQ-040 | Plan intake must auto-classify and commit uncommitted changes before plan lifecycle begins — foreshadowing commits for plan-overlapping changes, ad-hoc commits for unrelated changes. | P2 | Plan Lifecycle | Plan 46 | `plugins/yf/skills/plan_intake/SKILL.md` |
+| REQ-041 | Session boundaries must track uncommitted-change state via dirty-tree markers, warning the next session about left-behind work. | P2 | Session | Plan 46 | `plugins/yf/hooks/session-end.sh`, `plugins/yf/scripts/session-recall.sh` |
 
 ## 4. Functional Specifications
 
@@ -147,3 +150,11 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 - FS-035: `code-implement` formula with 4-step pipeline: research-standards, implement, test, review
 - FS-036: Code researcher checks existing IGs before proposing new standards
 - FS-037: Code reviewer references IGs for specification alignment in reviews
+
+### 4.10 Session
+
+- FS-044: Pre-push blocking hook checks two conditions: uncommitted changes and in-progress beads. Exit 2 (block) when either condition fails, exit 0 when both pass.
+- FS-045: `/yf:session_land` skill orchestrates full close-out: dirty tree check, in-progress beads, chronicle capture, diary generation, quality gates, memory reconciliation, session prune, commit, push with operator confirmation, handoff.
+- FS-046: Plan foreshadowing at intake auto-classifies uncommitted files as plan-overlapping (foreshadowing) or unrelated, commits each group separately with descriptive messages.
+- FS-047: Dirty-tree marker (`.beads/.dirty-tree`) written at session end when uncommitted changes exist, consumed and reported at next session start.
+- FS-048: `bd prime` SESSION CLOSE PROTOCOL suppressed via `no-git-ops` beads config; yf manages the git commit/push workflow via `/yf:session_land` and `pre-push-land.sh`.

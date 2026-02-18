@@ -112,7 +112,79 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 5: Writes dirty-tree marker when tree dirty
+  - name: "writes_dirty_tree_marker"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.beads/.dirty-tree"
+      # Create uncommitted file to make tree dirty
+      echo "dirty" > "$WORK_DIR/uncommitted.txt"
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      if [ "$1" = "list" ]; then
+        echo "[]"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
+      EXIT_CODE=$?
+      if [ -f "$WORK_DIR/.beads/.dirty-tree" ]; then
+        MARKER=$(cat "$WORK_DIR/.beads/.dirty-tree")
+        if echo "$MARKER" | grep -q '"reason":"session_end"' && \
+           echo "$MARKER" | grep -q '"dirty_count":'; then
+          echo "OK: dirty-tree marker written with correct content"
+        else
+          echo "FAIL: marker content incorrect: $MARKER"
+          exit 1
+        fi
+      else
+        echo "FAIL: dirty-tree marker not created"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: No dirty-tree marker when tree clean
+  - name: "no_dirty_marker_when_clean"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.beads/.dirty-tree"
+      rm -f "$WORK_DIR/uncommitted.txt"
+      cd "$WORK_DIR"
+      git add -A >/dev/null 2>&1 || true
+      git commit -m "clean" --allow-empty >/dev/null 2>&1 || true
+      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
+      #!/bin/bash
+      if [ "$1" = "list" ]; then
+        echo "[]"
+        exit 0
+      fi
+      echo "{}"
+      MOCK
+      chmod +x "$WORK_DIR/mock-bin/bd"
+      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
+      if [ ! -f "$WORK_DIR/.beads/.dirty-tree" ]; then
+        echo "OK: no dirty-tree marker when tree clean"
+      else
+        echo "FAIL: dirty-tree marker should not exist"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
   - "rm -f .yoshiko-flow/config.json"
   - "rm -f .beads/.pending-diary"
+  - "rm -f .beads/.dirty-tree"
+  - "rm -f uncommitted.txt"
   - "rm -rf mock-bin"

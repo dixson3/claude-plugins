@@ -62,7 +62,7 @@ steps:
   # Case 7: consolidated rules document design-BLOCK exclusion
   - name: "rules_design_block_excluded"
     run: |
-      grep -c "design" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
+      grep -ci "design" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
     assertions:
       - type: exit_code
         value: "0"
