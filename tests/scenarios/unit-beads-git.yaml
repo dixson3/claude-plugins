@@ -51,13 +51,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: yf-rules.md Quick Reference contains bd sync
+  # Case 4: yf-rules.md Quick Reference contains beads sync reference
   - name: "rules_has_bd_sync"
     run: |
-      if grep -A10 '## Quick Reference\|### 4.1' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" | grep -q 'bd sync'; then
-        echo "OK: yf-rules.md Quick Reference includes bd sync"
+      if grep -A15 '## Quick Reference\|### 4.1' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" | grep -q 'sync'; then
+        echo "OK: yf-rules.md Quick Reference includes sync reference"
       else
-        echo "FAIL: yf-rules.md Quick Reference does not include bd sync"
+        echo "FAIL: yf-rules.md Quick Reference does not include sync reference"
         exit 1
       fi
     assertions:

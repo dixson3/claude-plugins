@@ -91,3 +91,50 @@ The chronicler captures observations and context as work progresses, then compos
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/chronicle_diary/SKILL.md`
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/agents/yf_chronicle_diary.md`
+
+### UC-037: Memory Reconciliation
+
+**Actor**: Operator or System (Rule 4.2 step 4.5)
+
+**Preconditions**: yf is enabled. MEMORY.md exists with content beyond the "no active items" sentinel. Specification files and/or CLAUDE.md exist.
+
+**Flow**:
+1. Operator invokes `/yf:memory_reconcile` (or system runs it at session close per Rule 4.2)
+2. Skill reads MEMORY.md
+3. Skill reads CLAUDE.md and specification files (PRD.md, EDD/CORE.md, IG/*.md, TODO.md)
+4. Skill classifies each memory item: contradiction, gap, or ephemeral/duplicate
+5. Skill presents structured report with proposed actions
+6. In gate mode: operator approves changes via AskUserQuestion; spec changes require individual approval per Rule 1.4
+7. In check mode: report only, no modifications
+8. Skill executes approved changes: corrects contradictions, promotes gaps via `/yf:engineer_update`, removes ephemeral items
+9. Skill writes cleaned MEMORY.md
+
+**Postconditions**: MEMORY.md contains only items that genuinely belong there. Gaps promoted to appropriate spec files.
+
+**Key Files**:
+- `plugins/yf/skills/memory_reconcile/SKILL.md`
+
+### UC-038: Skill-Level Auto-Chronicle at Decision Points
+
+**Actor**: System (skill auto-capture)
+
+**Preconditions**: yf is enabled. `bd` is available. A skill that produces a decision point (verdict, spec mutation, scope change, qualification outcome) is executing.
+
+**Flow**:
+1. Skill reaches a decision point (e.g., reconciliation verdict, spec update, qualification result, task decomposition)
+2. Skill evaluates the chronicle trigger condition (e.g., NEEDS-RECONCILIATION verdict, any spec mutation, 3+ child beads)
+3. If triggered: skill creates a chronicle bead via `bd create --type task --title "Chronicle: <skill> — <outcome>" -l ys:chronicle,ys:chronicle:auto,ys:topic:<topic>[,plan:<idx>]`
+4. Bead description captures structured context: verdict details, conflicts, operator choices, rationale
+5. For formula-flagged steps: `swarm_dispatch` Step 6c creates the chronicle bead when the step has `"chronicle": true`
+6. For read-only agents: `CHRONICLE-SIGNAL:` line in structured comments triggers chronicle creation by the dispatch loop
+
+**Postconditions**: Chronicle bead exists with decision context. Tagged to active plan if applicable. Auto-chronicles labeled `ys:chronicle:auto` for diary triage.
+
+**Key Files**:
+- `plugins/yf/rules/yf-rules.md` (Rule 5.3)
+- `plugins/yf/skills/engineer_reconcile/SKILL.md` (Step 7.5)
+- `plugins/yf/skills/engineer_update/SKILL.md` (Step 3.5)
+- `plugins/yf/skills/swarm_qualify/SKILL.md` (Step 6.5)
+- `plugins/yf/skills/plan_breakdown/SKILL.md` (Step 5.5)
+- `plugins/yf/skills/plan_intake/SKILL.md` (Step 1.5g)
+- `plugins/yf/skills/swarm_dispatch/SKILL.md` (Step 6c)

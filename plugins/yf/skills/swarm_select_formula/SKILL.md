@@ -7,6 +7,22 @@ arguments:
     required: true
 ---
 
+## Activation Guard
+
+Before proceeding, check that yf is active:
+
+```bash
+ACTIVATION=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/yf-activation-check.sh")
+IS_ACTIVE=$(echo "$ACTIVATION" | jq -r '.active')
+```
+
+If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIVATION` and tell the user:
+
+> Yoshiko Flow is not active: {reason}. {action}
+
+Then stop. Do not execute the remaining steps.
+
+
 # Swarm Formula Selection
 
 Evaluates a task bead's title, description, and type to determine the best swarm formula, then applies a `formula:<name>` label. Designed to be called during `plan_create_beads` Step 8b after agent selection.

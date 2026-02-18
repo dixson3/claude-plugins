@@ -18,13 +18,13 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 - G4: Preserve research findings and design decisions as permanent, indexed documentation
 - G5: Enable structured multi-agent workflows using formula-driven swarm execution
 - G6: Synthesize and maintain living specification documents (PRD, EDD, IG, TODO) from project context
-- G7: Achieve zero-configuration setup with fail-open, non-blocking behavior throughout
+- G7: Achieve zero-configuration setup with fail-open hooks and explicit per-project activation
 
 ## 2. Technical Constraints
 
 - TC-001: All shell scripts must be bash 3.2 compatible (macOS default)
 - TC-002: Scripts use jq for JSON processing (external dependency)
-- TC-003: beads-cli >= 0.50.0 required for issue tracking (external dependency); `dolt` backend required (default since 0.50.0)
+- TC-003: beads-cli >= 0.50.0 required for issue tracking (external dependency); beads Claude Code plugin (`steveyegge/beads`) required for agent-facing task operations; `dolt` backend required (default since 0.50.0)
 - TC-004: Plugin must work within Claude Code's plugin system (plugin.json strict schema, auto-discovered skills/agents)
 - TC-005: Hooks must be fail-open (exit 0 always) -- never block user operations on internal errors
 - TC-006: Rules are behavioral guidance (agent compliance) -- hooks provide mechanical enforcement
@@ -64,12 +64,17 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 | REQ-025 | Specification drift must be detectable during work via advisory watch rule | P2 | Engineer | Plan 34 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/rules/watch-for-spec-drift.md` |
 | REQ-026 | Closed beads must be automatically pruned at plan completion (plan-scoped) and after git push (global) with soft-delete tombstones | P2 | Beads Integration | Plan 32 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/plan-prune.sh` |
 | REQ-027 | Beads must be initialized with `dolt` backend (default), `beads-sync` branch, standard `bd hooks install` hooks, and no AGENTS.md (plugin provides beads rules via custom rule file). Custom pre-push hooks are prohibited — all sync uses standard beads hooks. | P1 | Beads Integration | Plan 27 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/.claude-plugin/preflight.json` |
-| REQ-028 | Setup must be zero-question with automatic installation of rules, directories, and beads configuration | P0 | Core | Plan 33 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/setup/SKILL.md` |
+| REQ-028 | Setup must be zero-question with automatic installation of rules, directories, and beads configuration. Setup requires beads plugin to be installed; `/yf:setup` checks for beads plugin and blocks activation if absent. | P0 | Core | Plan 33 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/setup/SKILL.md` |
 | REQ-029 | Project `.gitignore` must be automatically managed with sentinel-bracketed block for yf ephemeral files | P1 | Core | Plan 23 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/setup-project.sh` |
 | REQ-030 | All new work must include automated test scenarios in YAML format, runnable via `bash tests/run-tests.sh --unit-only` | P0 | Testing | Plan 06 | `/Users/james/workspace/dixson3/d3-claude-plugins/tests/run-tests.sh` |
 | REQ-031 | Go test harness must support both unit tests (shell-only) and integration tests (Claude sessions via --resume) | P1 | Testing | Plan 06 | `/Users/james/workspace/dixson3/d3-claude-plugins/tests/harness/` |
 | REQ-032 | Code implementation must support standards-driven workflows with dedicated research, coding, testing, and review agents via the `code-implement` formula | P1 | Coder | Plan 35 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/formulas/code-implement.formula.json` |
 | REQ-033 | Specification integrity gates must run at plan intake (contradiction check, new capability check, test-spec alignment, test deprecation, change chronicles, structural consistency) and plan completion (diary generation, staleness checks, spec self-reconciliation) | P1 | Engineer | Plan 40 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/spec-sanity-check.sh` |
+| REQ-034 | Plugin must enforce three-condition activation gate: (1) `.yoshiko-flow/config.json` exists, (2) `enabled: true` in config, (3) beads plugin installed. All skills except `/yf:setup` refuse when any condition fails. | P0 | Core | Plan 42 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/yf-activation-check.sh` |
+| REQ-035 | Plugin must declare and enforce dependency on beads plugin (`steveyegge/beads`). Preflight emits dependency-missing signal when beads is not installed and removes rule symlinks. | P0 | Core | Plan 42 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/plugin-preflight.sh` |
+| REQ-036 | Plugin must support user-scope installation with per-project activation. Installing yf globally does not activate it in any project; explicit `/yf:setup` is required per-project. | P0 | Core | Plan 42 | `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/setup/SKILL.md` |
+| REQ-037 | MEMORY.md must be reconcilable against specifications and CLAUDE.md. Contradictions resolved in favor of specs, gaps promoted to specs with operator approval, ephemeral duplicates removed. | P2 | Memory | Plan 43 | `plugins/yf/skills/memory_reconcile/SKILL.md` |
+| REQ-038 | Chronicle beads must be auto-created at skill decision points (gate verdicts, spec mutations, qualification outcomes, scope changes) and at swarm step completion when formula flags are enabled. | P1 | Chronicler | Plan 44 | `plugins/yf/rules/yf-rules.md` (Rule 5.3) |
 
 ## 4. Functional Specifications
 
@@ -117,6 +122,10 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 - FS-025: Single watch rule covers PRD, EDD, and IG drift monitoring
 - FS-038: Mechanical sanity check script validates six structural dimensions (count parity, ID contiguity, coverage arithmetic, UC range alignment, test file existence, formula count) with configurable enforcement mode; intake gate enforces spec-as-anchor-document principle with operator approval for all changes
 - FS-039: Plan completion includes spec self-reconciliation (PRD→EDD→IG traceability, test-coverage consistency, orphaned/stale entry detection) and deprecated artifact pruning verification
+- FS-040: Three-condition activation gate checks `.yoshiko-flow/config.json` existence, `enabled` field, and beads plugin installation. `yf-activation-check.sh` outputs structured JSON with reason and remediation action. Skills read this JSON before executing.
+- FS-041: Preflight dependency check parses `~/.claude/plugins/installed_plugins.json` for `beads@*` key. Fallback: `command -v bd`. When beads is missing: emit `YF_DEPENDENCY_MISSING` signal, remove rule symlinks (same as disabled path), exit.
+- FS-042: Memory reconciliation classifies MEMORY.md items as contradictions (spec wins), gaps (promote to specs), or ephemeral duplicates (remove). Agent-interpreted — the LLM reads both documents and reasons semantically. Operator approval required for all spec changes per Rule 1.4. Idempotent — clean memory is a no-op.
+- FS-043: Skill-level chronicle capture fires deterministically at decision points — verdicts, spec mutations, scope changes. Formula-level chronicle capture fires via `"chronicle": true` step flag on terminal swarm steps. Write-capable swarm agents capture plan deviations and unexpected discoveries directly via `bd create`. Read-only agents signal chronicle-worthy content via `CHRONICLE-SIGNAL:` lines in structured comments, consumed by `swarm_dispatch` Step 6c.
 
 ### 4.7 Beads Integration
 

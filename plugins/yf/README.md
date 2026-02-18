@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.18.1
+# Yoshiko Flow (yf) Plugin — v2.21.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -17,22 +17,45 @@ It does this through six capabilities:
 5. **Engineer** — Synthesizes and maintains specification artifacts (PRD, EDD, Implementation Guides, TODO register), reconciling plans against specs before execution
 6. **Coder** — Standards-driven code generation with dedicated research, implementation, testing, and review agents working through a structured formula
 
+## Activation
+
+Yoshiko Flow uses **explicit per-project activation**. Installing yf (globally or per-project) does not activate it — you must run `/yf:setup` in each project where you want it active.
+
+### Prerequisites
+
+1. **beads-cli** — Git-backed issue tracker. See [beads-cli](https://github.com/dixson3/beads-cli) for installation.
+2. **beads plugin** — Claude Code plugin providing agent-facing task operations: `/install steveyegge/beads`
+
+### Three-Condition Gate
+
+yf is active only when ALL of:
+- `.yoshiko-flow/config.json` exists (created by `/yf:setup`)
+- `enabled` field is `true` in the config
+- The beads plugin (`steveyegge/beads`) is installed
+
+When inactive, all skills except `/yf:setup` refuse to execute, and hooks exit silently.
+
 ## Getting Started
 
-1. **Install beads-cli** — Beads is a git-backed issue tracker that yf uses for plan tracking. See [beads-cli](https://github.com/dixson3/beads-cli) for installation.
+1. **Install beads-cli** — See [beads-cli](https://github.com/dixson3/beads-cli) for installation.
 
-2. **Load the marketplace:**
+2. **Install the beads plugin:**
+   ```
+   /install steveyegge/beads
+   ```
+
+3. **Load the marketplace:**
    ```bash
    claude --plugin-dir /path/to/yoshiko-studios-marketplace
    ```
 
-3. **Run setup:**
+4. **Run setup:**
    ```
    /yf:setup
    ```
-   Setup automatically adds `.gitignore` entries for yf ephemeral files and cleans up any conflicting `bd init` content from AGENTS.md.
+   Setup verifies beads is installed, writes the activation config, installs rules, creates directories, and initializes beads.
 
-4. **Start planning** — Enter plan mode, write your plan, exit. Yoshiko Flow takes it from there — saving the plan, creating tracked tasks, and beginning execution. See [Plan Lifecycle](#plan-lifecycle) for details.
+5. **Start planning** — Enter plan mode, write your plan, exit. Yoshiko Flow takes it from there. See [Plan Lifecycle](#plan-lifecycle) for details.
 
 > **Note:** Beads uses a `beads-sync` branch for issue state. Code branches stay clean.
 
@@ -149,8 +172,10 @@ Claude sessions lose context on compaction, clear, or new session start. The ins
 ### How It Works
 
 - **Manual**: `/yf:chronicle_capture` to snapshot current context
-- **Automatic**: SessionStart hook outputs open chronicle summaries for immediate context recovery
-- **Automatic**: SessionEnd and PreCompact hooks create draft chronicles from significant git activity
+- **Automatic (skill-level)**: Chronicle beads auto-created at decision points — reconciliation conflicts, spec mutations, qualification verdicts, scope changes, and intake reconciliation. No suggestion needed; skills fire deterministically.
+- **Automatic (formula-level)**: Terminal swarm steps with `"chronicle": true` flag auto-create chronicle beads via the dispatch loop. Enabled on review/verify steps of all 5 non-research formulas.
+- **Automatic (agent-initiated)**: Write-capable swarm agents create chronicle beads on plan deviations, unexpected discoveries, and non-obvious test failures. Read-only agents signal chronicle-worthy findings via `CHRONICLE-SIGNAL:` in structured comments.
+- **Automatic (session boundary)**: SessionStart hook outputs open chronicle summaries for context recovery. SessionEnd and PreCompact hooks create draft chronicles from significant git activity.
 - **Automatic**: Pre-push hook creates draft chronicles and warns about open chronicles
 - **Automatic**: Plan transitions capture planning context
 - **Recovery**: `/yf:chronicle_recall` restores context in new sessions (also triggered automatically via SessionStart)
@@ -271,6 +296,24 @@ No new file artifacts — the coder capability works through the existing swarm 
 | Agent: `yf_code_writer` | Full-capability; implements code following standards |
 | Agent: `yf_code_tester` | Limited-write; creates and runs tests |
 | Agent: `yf_code_reviewer` | Read-only; reviews against IGs and standards |
+
+## Memory (MEMORY.md Reconciliation)
+
+### Why
+
+Claude Code's auto-memory system stores project conventions and lessons learned in MEMORY.md. Over time, memory items drift — they contradict specifications, duplicate CLAUDE.md content, or contain ephemeral session state that no longer applies. Manual reconciliation is tedious and easy to skip. The memory capability automates this hygiene at session close.
+
+### How It Works
+
+`/yf:memory_reconcile` reads MEMORY.md and compares each item against specifications and CLAUDE.md. Items are classified as contradictions (spec wins), gaps (promote to specs with operator approval), or ephemeral duplicates (remove). Clean memory is a no-op.
+
+Integrated into Rule 4.2 "Landing the Plane" as step 4.5 — runs after quality gates, before commit, so any spec promotions are included in the session's work.
+
+### Skills
+
+| Skill | Description |
+|-------|-------------|
+| `/yf:memory_reconcile` | Reconcile MEMORY.md against specs and CLAUDE.md |
 
 ## Configuration
 

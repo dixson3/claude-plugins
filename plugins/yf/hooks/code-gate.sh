@@ -113,7 +113,7 @@ if [[ ! -f "$GATE_FILE" ]]; then
           BLOCKED_IDX="${BEADS_RESULT#block:}"
           jq -n --arg idx "$BLOCKED_IDX" '{
             "decision": "block",
-            "reason": ("BLOCKED: Plan " + $idx + " exists but has no beads. Run /yf:plan_intake to set up the lifecycle, or create .yoshiko-flow/plan-intake-skip to bypass.")
+            "reason": ("BLOCKED: Plan " + $idx + " exists but has no beads. Run /yf:plan_intake to set up the lifecycle, or /yf:plan_dismiss_gate to abandon it.")
           }'
           exit 2
         fi

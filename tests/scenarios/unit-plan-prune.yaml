@@ -6,6 +6,7 @@ setup:
   - "echo '# test' > CLAUDE.md"
   - "git add -A && git commit -m 'init'"
   - "bd init 2>/dev/null || true"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: Plan-scoped prune deletes closed beads with plan label
@@ -58,6 +59,7 @@ steps:
   - name: "plan_prune_empty_result"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" plan "plan:97" 2>&1)
       echo "$OUTPUT"
@@ -115,6 +117,7 @@ steps:
   - name: "always_exit_zero"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" plan "plan:00" 2>&1
       RC1=$?
@@ -138,6 +141,7 @@ steps:
   - name: "dry_run_preview"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       ID=$(bd create --title="Dry run task" --type=task -l plan:96 --silent)
       bd close "$ID" 2>/dev/null

@@ -3,6 +3,7 @@ name: "Unit: bd-safety-net.sh — advisory hook for bd delete"
 setup:
   - "mkdir -p .yoshiko-flow docs/plans"
   - "rm -f .yoshiko-flow/plan-intake-ok"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: No plan files → no warning, exits 0

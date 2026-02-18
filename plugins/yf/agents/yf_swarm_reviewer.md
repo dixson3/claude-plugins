@@ -102,6 +102,16 @@ If a relevant IG exists:
 
 If no IG exists or none is relevant, skip this step — do not flag the absence of specs.
 
+## Chronicle Signal
+
+If your analysis reveals something the orchestrator should chronicle — an unexpected constraint, a significant finding that changes the implementation approach, or a blocking issue with design implications — include a `CHRONICLE-SIGNAL:` line at the end of your structured comment:
+
+```
+CHRONICLE-SIGNAL: <one-line summary of what should be chronicled and why>
+```
+
+The dispatch loop reads this signal and auto-creates a chronicle bead. Only include this line for genuinely significant discoveries, not routine findings.
+
 ## Guidelines
 
 - Use `REVIEW:BLOCK` only for critical issues that would cause bugs or breakage

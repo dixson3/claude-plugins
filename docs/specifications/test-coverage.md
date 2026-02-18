@@ -39,6 +39,11 @@ Maps each specification item to its test coverage. Status key: **tested** (behav
 | REQ-031 | Go test harness | unit-yf-structure.yaml | existence-only |
 | REQ-032 | Standards-driven code implementation | unit-code-implement.yaml | tested |
 | REQ-033 | Spec integrity gates at intake/completion | unit-spec-sanity.yaml | tested |
+| REQ-034 | Three-condition activation gate | unit-activation.yaml, unit-yf-config.yaml | tested |
+| REQ-035 | Beads plugin dependency enforcement | unit-activation.yaml, unit-preflight.yaml | tested |
+| REQ-036 | User-scope install with per-project activation | unit-activation.yaml, unit-preflight.yaml | tested |
+| REQ-037 | Memory reconciliation | unit-memory-reconcile.yaml | existence-only |
+| REQ-038 | Skill-level chronicle auto-capture | unit-chronicle-worthiness.yaml | existence-only |
 
 ## Design Decisions (DD-xxx)
 
@@ -60,6 +65,8 @@ Aligned to EDD/CORE.md DD-001 through DD-014.
 | DD-012 | State directory migration (.claude/ -> .yoshiko-flow/) | unit-preflight.yaml | existence-only |
 | DD-013 | Standards-driven code implementation formula | unit-code-implement.yaml | tested |
 | DD-014 | Specifications as anchor documents | unit-spec-sanity.yaml | tested |
+| DD-015 | Three-condition activation model | unit-activation.yaml, unit-yf-config.yaml | tested |
+| DD-016 | Hybrid beads routing | — | untested |
 
 ## Non-Functional Requirements (NFR-xxx)
 
@@ -75,7 +82,7 @@ Aligned to EDD/CORE.md DD-001 through DD-014.
 
 ## Use Cases (UC-xxx)
 
-Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–009), chronicler (UC-010–013), archivist (UC-014–017), engineer (UC-018–021, UC-033–034), marketplace (UC-022–024), beads-integration (UC-025–028), coder (UC-029–032).
+Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–009), chronicler (UC-010–013, UC-037–038), archivist (UC-014–017), engineer (UC-018–021, UC-033–034), marketplace (UC-022–024, UC-035–036), beads-integration (UC-025–028), coder (UC-029–032).
 
 | ID | Summary | IG Source | Test File | Status |
 |----|---------|-----------|-----------|--------|
@@ -113,16 +120,20 @@ Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–00
 | UC-032 | Standards compliance review | coder | unit-code-implement.yaml | tested |
 | UC-033 | Plan intake spec integrity gate | engineer | unit-spec-sanity.yaml | tested |
 | UC-034 | Plan completion spec self-reconciliation | engineer | unit-spec-sanity.yaml | existence-only |
+| UC-035 | Plugin activation gate check | marketplace | unit-activation.yaml | tested |
+| UC-036 | Per-project activation via /yf:setup | marketplace | unit-activation.yaml | tested |
+| UC-037 | Memory reconciliation | chronicler | unit-memory-reconcile.yaml | existence-only |
+| UC-038 | Skill-level auto-chronicle at decision points | chronicler | unit-chronicle-worthiness.yaml | existence-only |
 
 ## Coverage Summary
 
 | Category | Total | Tested | Existence-Only | Untested |
 |----------|-------|--------|----------------|----------|
-| REQ | 33 | 21 | 12 | 0 |
-| DD | 14 | 12 | 2 | 0 |
+| REQ | 38 | 24 | 14 | 0 |
+| DD | 16 | 13 | 2 | 1 |
 | NFR | 7 | 6 | 1 | 0 |
-| UC | 34 | 19 | 14 | 1 |
-| **Total** | **88** | **58** | **29** | **1** |
+| UC | 38 | 21 | 16 | 1 |
+| **Total** | **99** | **64** | **33** | **2** |
 
 Total assertions: **667** (across all unit test scenarios)
 

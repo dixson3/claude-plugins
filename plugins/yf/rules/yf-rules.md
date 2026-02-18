@@ -4,6 +4,16 @@ Rules are ordered by priority. Hard enforcement rules are checked first; advisor
 
 ## 1. HARD ENFORCEMENT
 
+### 1.0 Activation Gate
+
+yf is INACTIVE when ANY of:
+- `.yoshiko-flow/config.json` does not exist
+- `.yoshiko-flow/config.json` has `enabled: false`
+- The beads plugin (`steveyegge/beads`) is not installed
+
+When inactive: all skills except `/yf:setup` refuse to execute, all hooks exit silently.
+To activate: install beads (`/install steveyegge/beads`), then run `/yf:setup`.
+
 ### 1.1 Beads Are the Source of Truth
 
 During plan execution, beads own all task state. The Claude Task system (TaskCreate/TaskList) is NOT used for plan work.
@@ -165,13 +175,17 @@ Budget: 1 retry per step (configurable via `max_retries`). After bugfix, the fai
 
 ### 4.1 Beads Quick Reference
 
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
-bd sync               # Sync beads state with git
+Agent operations use beads skills (DD-016):
+
 ```
+/beads:ready              # Find available work
+/beads:show <id>          # View issue details
+/beads:update <id> --status in_progress  # Claim work
+/beads:close <id>         # Complete work
+/beads:sync               # Sync beads state with git
+```
+
+Also available via `bd` CLI for direct access: `bd ready`, `bd show`, `bd update`, `bd close`, `bd sync`.
 
 ### 4.2 Landing the Plane
 
@@ -180,6 +194,7 @@ When ending a work session:
 2. Capture context (if significant): `/yf:chronicle_capture topic:session-close`
 3. Generate diary (if open chronicles): `/yf:chronicle_diary`
 4. Run quality gates (if code changed)
+4.5. Memory reconciliation (if specs exist): `/yf:memory_reconcile`
 5. Update issue status — close finished work
 6. Session prune (automatic via SessionEnd hook; manual: `bash plugins/yf/scripts/session-prune.sh all`)
 7. Sync beads: `bd sync`
@@ -208,9 +223,42 @@ During plan mode, if 3+ web searches performed, or comparing alternatives, or re
 
 ### 5.3 Chronicle Worthiness
 
-Flag chronicle-worthy moments: significant progress, important decisions, context switches, blockers, session boundaries, infrastructure operations, implementation adjustments, swarm events, plan compliance adjustments.
+An event is chronicle-worthy when it produces **context that would be lost** and **would be needed to understand future work**.
 
-Suggest: "Consider running `/yf:chronicle_capture`." Do NOT auto-capture. At most once every 15-20 minutes (10-15 min for categories 7-9).
+**Tier 1 — Auto-capture (deterministic, no suggestion needed):**
+
+These fire within skills. The agent does NOT need to watch for them.
+
+| Event | Skill | Captures |
+|-------|-------|----------|
+| Reconciliation conflict | `engineer_reconcile` Step 7.5 | Verdict, conflicts, operator decision |
+| Spec mutation | `engineer_update` Step 3.5 | Action, entry ID, rationale |
+| Qualification verdict | `swarm_qualify` Step 6.5 | PASS/BLOCK, scope, issues |
+| Scope change (3+ children) | `plan_breakdown` Step 5.5 | Parent task, child count, decomposition rationale |
+| Intake reconciliation | `plan_intake` Step 1.5g | Reconciliation verdict, spec changes approved |
+| Swarm step completion | `swarm_dispatch` Step 6c | Step comment content (when formula `"chronicle": true`) |
+
+**Tier 2 — Agent-initiated (behavioral, write-capable agents):**
+
+Write-capable swarm agents (`yf_code_writer`, `yf_code_tester`, `yf_swarm_tester`) create chronicle beads when they encounter:
+
+- **Plan deviation**: implementation diverges from task description or upstream FINDINGS
+- **Unexpected discovery**: constraint, dependency, or behavior not anticipated
+- **Test failure with non-obvious cause**: failure whose root cause is not the code under test
+
+Using: `bd create --type task --title "Chronicle: <summary>" -l ys:chronicle,ys:topic:swarm --description "<what, why, impact>"`
+
+**Tier 3 — Advisory (main agent watches):**
+
+The main orchestrating agent suggests `/yf:chronicle_capture` for:
+
+- Context switches between plan tasks (at most once per switch)
+- Significant blockers requiring human input
+- Session boundaries (already in Rule 4.2 step 2)
+
+Cadence: at most once every 15 minutes. Tiers 1 and 2 are NOT advisory — they fire automatically.
+
+**NOT chronicle-worthy**: routine task completion matching the plan, config tweaks, formatting, typo fixes, intermediate pipeline steps (the terminal step captures the outcome).
 
 ### 5.4 Archive Worthiness
 

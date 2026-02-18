@@ -1,6 +1,7 @@
 name: "Unit: swarm qualification gate"
 setup:
   - "mkdir -p .yoshiko-flow"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: swarm_qualify skill file exists
@@ -65,7 +66,7 @@ steps:
       jq -r '.version' "$PLUGIN_DIR/plugins/yf/.claude-plugin/plugin.json"
     assertions:
       - type: output_contains
-        value: "2.20.0"
+        value: "2.21.0"
 
   # Case 9: research-spike formula has planning_safe
   - name: "research_spike_planning_safe"
@@ -89,6 +90,7 @@ steps:
   - name: "default_qualification_mode"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       # No config → sanity_check_mode defaults to "blocking"

@@ -28,7 +28,8 @@
       "id": "review",
       "title": "Review {{feature}}",
       "description": "Review the implementation of {{feature}} against coding standards from FINDINGS, relevant IGs, and test results from TESTS. SUBAGENT:yf:yf_swarm_reviewer\n\nPost a REVIEW: comment on the parent bead with verdict (REVIEW:PASS or REVIEW:BLOCK), standards compliance assessment, and IG alignment notes.",
-      "needs": ["test"]
+      "needs": ["test"],
+      "chronicle": true
     }
   ]
 }

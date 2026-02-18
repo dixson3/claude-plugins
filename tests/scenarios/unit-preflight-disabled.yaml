@@ -123,6 +123,43 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 8: Inactive because beads not installed → rules removed
+  - name: "inactive_no_beads_removes_rules"
+    run: |
+      # First enable and install rules
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/lock.json"
+      rm -rf "$WORK_DIR/.claude/rules/yf"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
+      # Verify rules exist
+      BEFORE=0
+      for f in "$WORK_DIR/.claude/rules/yf"/*.md; do
+        [ -L "$f" ] && BEFORE=$((BEFORE + 1))
+      done
+      # Now run with no beads
+      rm -f "$WORK_DIR/.yoshiko-flow/lock.json"
+      OUTPUT=$(HOME="$WORK_DIR/fakehome" PATH="/usr/bin:/bin" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      AFTER=0
+      for f in "$WORK_DIR/.claude/rules/yf"/*.md; do
+        [ -e "$f" ] || [ -L "$f" ] || continue
+        AFTER=$((AFTER + 1))
+      done
+      if [ "$BEFORE" -gt 0 ] && [ "$AFTER" -eq 0 ]; then
+        echo "OK: rules removed when beads missing (had $BEFORE, now $AFTER)"
+      else
+        echo "FAIL: before=$BEFORE after=$AFTER"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "inactive"
+      - type: output_contains
+        value: "OK"
+
 teardown:
   - "rm -f .yoshiko-flow/config.json .yoshiko-flow/lock.json .claude/yf.local.json"
   - "rm -f .yoshiko-flow/plan-gate"
+  - "rm -rf fakehome"

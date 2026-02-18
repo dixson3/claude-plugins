@@ -100,6 +100,7 @@ steps:
   - name: "preflight_creates_gitignore"
     run: |
       rm -f "$WORK_DIR/.gitignore" "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -rf "$WORK_DIR/.claude/rules/yf"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"

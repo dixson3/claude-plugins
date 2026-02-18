@@ -5,6 +5,7 @@ setup:
   - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
   - "echo '# test' > CLAUDE.md"
   - "git add -A && git commit -m 'init'"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # NFR-001: Preflight fast path outputs "up to date" when lock matches

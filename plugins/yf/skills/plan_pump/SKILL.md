@@ -7,6 +7,22 @@ arguments:
     required: false
 ---
 
+## Activation Guard
+
+Before proceeding, check that yf is active:
+
+```bash
+ACTIVATION=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/yf-activation-check.sh")
+IS_ACTIVE=$(echo "$ACTIVATION" | jq -r '.active')
+```
+
+If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIVATION` and tell the user:
+
+> Yoshiko Flow is not active: {reason}. {action}
+
+Then stop. Do not execute the remaining steps.
+
+
 # Task Pump Skill
 
 Reads beads that are ready for work, classifies each into a **formula track** (dispatched via `/yf:swarm_run` for multi-agent workflows) or an **agent track** (dispatched via bare Task tool calls), and launches them in parallel. This is the mechanism that converts the persistent beads DAG into live agent execution.

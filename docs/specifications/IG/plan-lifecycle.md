@@ -103,7 +103,7 @@ The plan lifecycle converts plans into a dependency graph of tracked tasks with 
 
 **Actor**: System (code-gate.sh hook)
 
-**Preconditions**: `.yoshiko-flow/plan-gate` file exists.
+**Preconditions**: `.yoshiko-flow/plan-gate` file exists, or plan files exist in `docs/plans/`.
 
 **Flow**:
 1. Agent attempts Edit or Write tool call
@@ -112,9 +112,13 @@ The plan lifecycle converts plans into a dependency graph of tracked tasks with 
 4. If gate exists: checks target file path against exempt patterns
 5. Exempt paths pass through: `docs/plans/*`, `.yoshiko-flow/*`, `CHANGELOG.md`, `MEMORY.md`, `README.md`, `.beads/*`, `docs/specifications/*`
 6. Non-exempt paths: hook outputs block message with instructions to complete lifecycle
-7. If no gate: runs safety-net checks (plan without beads, chronicle staleness nudge)
+7. If no gate: runs safety-net checks:
+   a. **Plan without beads**: If a plan file exists in `docs/plans/` with status != Completed and no beads exist for its `plan:<idx>` label, BLOCK the edit. Direct agent to `/yf:plan_intake` (to set up the lifecycle) or `/yf:plan_dismiss_gate` (to abandon it). **The skip marker (`.yoshiko-flow/plan-intake-skip`) must only be created by `/yf:plan_dismiss_gate` — agents must never create it directly.**
+   b. **Chronicle staleness nudge**: If in-progress beads exist with no recent chronicle, emit advisory nudge (non-blocking).
+8. Skip marker `.yoshiko-flow/plan-intake-ok` (from successful intake) or `.yoshiko-flow/plan-intake-skip` (from dismiss gate) suppresses the beads check for the remainder of the session.
 
-**Postconditions**: Implementation files blocked until plan reaches Executing state.
+**Postconditions**: Implementation files blocked until plan reaches Executing state or is explicitly dismissed.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/hooks/code-gate.sh`
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/plan_dismiss_gate/SKILL.md`

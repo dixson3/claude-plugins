@@ -10,7 +10,7 @@ Beads-cli is the external persistence layer that provides git-backed issue track
 
 **Actor**: System (preflight setup)
 
-**Preconditions**: beads-cli >= 0.50.0 installed. Git repository initialized.
+**Preconditions**: beads-cli >= 0.50.0 installed. Beads Claude Code plugin (`steveyegge/beads`) installed. Git repository initialized.
 
 **Flow**:
 1. Preflight checks `test -d .beads` (setup command guard)
@@ -20,6 +20,7 @@ Beads-cli is the external persistence layer that provides git-backed issue track
 5. Installs standard beads git hooks: `bd hooks install` (pre-commit, post-merge, pre-push, post-checkout, prepare-commit-msg)
 6. No AGENTS.md is created — the plugin provides beads workflow context via its own rule file (`yf-rules.md`) and `bd prime` hook injection at session start
 7. No custom pre-push hook — standard beads hooks handle all sync including `beads-sync` branch auto-push
+7.5. Agent-facing task operations (create, update, close, list) route through beads plugin skills (`/beads:create`, `/beads:close`, etc.) per DD-016. Shell scripts continue using `bd` CLI directly.
 8. Beads manages its own `.beads/.gitignore`
 
 **Postconditions**: Beads initialized with `dolt` backend. Sync branch configured. Standard beads hooks installed. No AGENTS.md.

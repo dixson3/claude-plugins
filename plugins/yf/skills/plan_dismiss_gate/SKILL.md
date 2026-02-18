@@ -4,6 +4,22 @@ description: Remove the plan gate to allow free editing (abandons the plan lifec
 arguments: []
 ---
 
+## Activation Guard
+
+Before proceeding, check that yf is active:
+
+```bash
+ACTIVATION=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/yf-activation-check.sh")
+IS_ACTIVE=$(echo "$ACTIVATION" | jq -r '.active')
+```
+
+If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIVATION` and tell the user:
+
+> Yoshiko Flow is not active: {reason}. {action}
+
+Then stop. Do not execute the remaining steps.
+
+
 # Dismiss Gate Skill
 
 Escape hatch for abandoning a plan without implementing it. Removes the plan gate so edits are unblocked, and marks the associated plan as Abandoned.
@@ -16,6 +32,11 @@ Escape hatch for abandoning a plan without implementing it. Removes the plan gat
 2. **Read gate metadata**: Parse the `.yoshiko-flow/plan-gate` JSON to extract `plan_idx` and `plan_file`
 
 3. **Remove the gate file**: Delete `.yoshiko-flow/plan-gate`
+
+3.5. **Create skip marker**: Create `.yoshiko-flow/plan-intake-skip` so the code-gate does not re-block:
+   ```bash
+   touch "${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/plan-intake-skip"
+   ```
 
 4. **Update plan status**: If `plan_file` exists in `docs/plans/`:
    - Change the `**Status:**` line from "Ready" or "Draft" to "Abandoned"

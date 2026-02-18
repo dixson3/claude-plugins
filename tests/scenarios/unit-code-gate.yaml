@@ -4,6 +4,7 @@ setup:
   - "echo '# test' > README.md"
   - "echo '# changelog' > CHANGELOG.md"
   - "echo '# memory' > MEMORY.md"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: No gate file → allow

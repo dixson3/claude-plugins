@@ -64,6 +64,24 @@ bd comment <bead-id> "TESTS:
 7. **Post comment**: Use `bd comment` to post TESTS on the parent bead
 8. **Close**: `bd close <bead-id>`
 
+## Chronicle Protocol
+
+If you encounter any of the following during your work, create a chronicle bead BEFORE posting your structured comment:
+
+- **Plan deviation**: Your implementation diverges from the task description or upstream FINDINGS
+- **Unexpected discovery**: A constraint, dependency, or behavior not anticipated in the task
+- **Non-obvious failure**: A test failure whose root cause is not the code under test (e.g., environment issue, dependency conflict, spec gap)
+
+To create:
+```bash
+bd create --type task \
+  --title "Chronicle: <brief summary>" \
+  -l ys:chronicle,ys:topic:swarm \
+  --description "<what happened, why it matters, impact on task>"
+```
+
+Do NOT chronicle routine completions, expected test passes, or standard implementations matching the plan.
+
 ## Guidelines
 
 - Follow existing test patterns in the codebase

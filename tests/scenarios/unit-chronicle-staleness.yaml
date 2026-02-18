@@ -2,6 +2,7 @@ name: "Unit: chronicle-staleness.sh — checkpoint chronicles for stale sessions
 
 setup:
   - "mkdir -p .yoshiko-flow .beads"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: Exits cleanly when yf disabled
@@ -26,6 +27,7 @@ steps:
   - name: "no_in_progress_beads"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-staleness-"*
       mkdir -p "$WORK_DIR/mock-bin"
       cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
@@ -55,6 +57,7 @@ steps:
   - name: "stale_creates_checkpoint"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-staleness-"*
       rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
       mkdir -p "$WORK_DIR/mock-bin"
@@ -108,6 +111,7 @@ steps:
   - name: "recent_chronicle_skips"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-staleness-"*
       rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
       NOW=$(date -u +%Y-%m-%dT%H:%M:%S)
@@ -151,6 +155,7 @@ steps:
   - name: "dedup_prevents_duplicates"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
       # Dedup file from case 4 should exist — write the current hour key
       DEDUP_FILE="$WORK_DIR/.yoshiko-flow/.chronicle-staleness-$(date +%Y%m%d)"
@@ -172,6 +177,7 @@ steps:
   - name: "custom_threshold"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-staleness-"*
       rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
       # Restore mock that returns in-progress beads + no chronicles
@@ -220,6 +226,7 @@ steps:
   - name: "always_exits_zero"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       # Run with no mock bd at all — should still exit 0
       PATH="/usr/bin:/bin" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-staleness.sh" 2>/dev/null
       echo "OK: exit code $?"

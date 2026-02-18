@@ -66,6 +66,24 @@ Follow existing test patterns in the project:
 - For other code: follow the project's established test conventions
 - Name test files to match the feature being tested
 
+## Chronicle Protocol
+
+If you encounter any of the following during your work, create a chronicle bead BEFORE posting your structured comment:
+
+- **Plan deviation**: Your implementation diverges from the task description or upstream FINDINGS
+- **Unexpected discovery**: A constraint, dependency, or behavior not anticipated in the task
+- **Non-obvious failure**: A test failure whose root cause is not the code under test (e.g., environment issue, dependency conflict, spec gap)
+
+To create:
+```bash
+bd create --type task \
+  --title "Chronicle: <brief summary>" \
+  -l ys:chronicle,ys:topic:swarm \
+  --description "<what happened, why it matters, impact on task>"
+```
+
+Do NOT chronicle routine completions, expected test passes, or standard implementations matching the plan.
+
 ## Guidelines
 
 - Test the happy path and at least one error case

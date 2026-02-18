@@ -72,6 +72,7 @@ Current capabilities:
 | Swarm | `swarm` | swarm_run, swarm_dispatch, swarm_status, swarm_list_formulas, swarm_select_formula, swarm_react, swarm_qualify | yf_swarm_researcher, yf_swarm_reviewer, yf_swarm_tester |
 | Engineer | `engineer` | engineer_analyze_project, engineer_reconcile, engineer_update, engineer_suggest_updates | yf_engineer_synthesizer |
 | Coder | `code` | (uses swarm formulas) | yf_code_researcher, yf_code_writer, yf_code_tester, yf_code_reviewer |
+| Memory | `memory` | memory_reconcile | — |
 | Core | (none) | setup | — |
 
 ### Adding a New Capability
@@ -150,6 +151,43 @@ Current capabilities:
 
 8. **Document**: Add `README.md` to the plugin directory
 
+## Activation Model
+
+Yoshiko Flow uses **explicit per-project activation** (DD-015). Installing yf globally does not activate it — each project must run `/yf:setup` to opt in.
+
+### Three-Condition Gate
+
+`yf_is_enabled()` enforces three conditions (fail-closed):
+
+1. **Config exists** — `.yoshiko-flow/config.json` must be present
+2. **Enabled flag** — `enabled` field must not be `false`
+3. **Beads installed** — The beads plugin (`steveyegge/beads`) must be installed
+
+When any condition fails, yf is inactive: skills refuse (via `yf-activation-check.sh`), hooks exit silently, and preflight removes rules.
+
+### Activation Check Script
+
+`yf-activation-check.sh` is a standalone script that outputs structured JSON:
+
+```json
+{"active": true}
+{"active": false, "reason": "No .yoshiko-flow/config.json found", "action": "Run /yf:setup to configure this project"}
+```
+
+All skills (except `/yf:setup`) include an activation guard that runs this script before executing.
+
+### Beads Dependency
+
+yf declares a dependency on the beads plugin in `preflight.json`. The `yf_beads_installed()` function checks `~/.claude/plugins/installed_plugins.json` for a `beads@*` key, falling back to `command -v bd`.
+
+### Fail-Open vs. Fail-Closed
+
+The **activation model** is fail-closed: no config = inactive. This is distinct from hooks and optional config flags, which remain fail-open:
+
+- `yf_is_enabled()` — fail-closed (three conditions)
+- `_yf_check_flag()` — fail-open (used by `yf_is_prune_on_complete`, etc.)
+- Hooks — fail-open (exit 0 on internal errors, TC-005)
+
 ## Preflight System
 
 Plugins declare their artifacts (rules, directories, setup commands) in `.claude-plugin/preflight.json`. This file is separate from `plugin.json` to comply with Claude Code's strict manifest schema.
@@ -220,7 +258,8 @@ The `yf-config.sh` shell library provides accessor functions:
 | Function | Description |
 |----------|-------------|
 | `yf_merged_config` | Read merged config as JSON |
-| `yf_is_enabled` | Check master switch |
+| `yf_is_enabled` | Three-condition activation gate (config exists + enabled + beads installed) |
+| `yf_beads_installed` | Check if beads plugin is installed (registry + CLI fallback) |
 | `yf_read_field` | Read arbitrary config field |
 | `yf_config_exists` | Check if config file exists |
 

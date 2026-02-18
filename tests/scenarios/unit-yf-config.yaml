@@ -4,17 +4,17 @@ setup:
   - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
 
 steps:
-  # Case 1: Missing config → defaults to enabled
-  - name: "missing_defaults_enabled"
+  # Case 1: Missing config → defaults to disabled (fail-closed, DD-015)
+  - name: "missing_defaults_disabled"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       if yf_is_enabled; then
-        echo "OK: defaults to enabled"
-      else
-        echo "FAIL: should default to enabled"
+        echo "FAIL: should default to disabled (no config = inactive)"
         exit 1
+      else
+        echo "OK: defaults to disabled"
       fi
     assertions:
       - type: exit_code
@@ -62,18 +62,25 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Malformed config -- fail-open
+  # Case 4: Malformed config -- fail-open on jq parse but requires beads
   - name: "malformed_failopen"
     run: |
       mkdir -p "$WORK_DIR/.claude"
       echo 'NOT VALID JSON!!!' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
-      if yf_is_enabled; then
-        echo "OK: fail-open on malformed"
+      # With malformed JSON: config exists (pass condition 1), jq fails so
+      # val is empty and not "false" (pass condition 2), then checks beads.
+      # If bd is available, this returns enabled (fail-open on parse errors).
+      if command -v bd >/dev/null 2>&1; then
+        if yf_is_enabled; then
+          echo "OK: fail-open on malformed (beads available)"
+        else
+          echo "FAIL: should fail-open when beads available"
+          exit 1
+        fi
       else
-        echo "FAIL: should fail-open"
-        exit 1
+        echo "OK: skipped (bd not available)"
       fi
     assertions:
       - type: exit_code
@@ -195,5 +202,66 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 11: yf_is_enabled — three conditions all met
+  - name: "enabled_three_conditions"
+    run: |
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      if command -v bd >/dev/null 2>&1; then
+        if yf_is_enabled; then
+          echo "OK: enabled with all three conditions"
+        else
+          echo "FAIL: should be enabled"
+          exit 1
+        fi
+      else
+        echo "OK: skipped (bd not available)"
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 12: yf_is_enabled — config exists, enabled, no beads → disabled
+  - name: "enabled_no_beads_disabled"
+    run: |
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      # Override HOME and PATH to hide beads
+      if HOME="$WORK_DIR/fakehome" PATH="/usr/bin:/bin" yf_is_enabled; then
+        echo "FAIL: should be disabled without beads"
+        exit 1
+      fi
+      echo "OK: disabled without beads"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 13: yf_beads_installed function
+  - name: "beads_installed_function"
+    run: |
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      # Test with mock registry
+      mkdir -p "$WORK_DIR/fakehome/.claude/plugins"
+      echo '{"beads@0.50.0":{}}' > "$WORK_DIR/fakehome/.claude/plugins/installed_plugins.json"
+      if HOME="$WORK_DIR/fakehome" yf_beads_installed; then
+        echo "OK: found beads in registry"
+      else
+        echo "FAIL: should find beads"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
   - "rm -f .yoshiko-flow/config.json"
+  - "rm -rf fakehome"

@@ -2,6 +2,7 @@ name: "Unit: plugin-preflight.sh — stale artifact removal"
 
 setup:
   - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: Stale symlink gets removed
@@ -9,6 +10,7 @@ steps:
     run: |
       # First, do a clean preflight to get lock files
       rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json" "$WORK_DIR/.claude/yf.local.json"
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.claude/rules/"*.md
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       # Inject a fake stale entry into the local lock

@@ -10,6 +10,22 @@ arguments:
     required: false
 ---
 
+## Activation Guard
+
+Before proceeding, check that yf is active:
+
+```bash
+ACTIVATION=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/yf-activation-check.sh")
+IS_ACTIVE=$(echo "$ACTIVATION" | jq -r '.active')
+```
+
+If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIVATION` and tell the user:
+
+> Yoshiko Flow is not active: {reason}. {action}
+
+Then stop. Do not execute the remaining steps.
+
+
 # Execute Plan Skill
 
 Orchestrates plan execution using the task pump. The pump reads ready beads from the plan DAG, classifies each into a **formula track** (dispatched via `/yf:swarm_run`) or an **agent track** (dispatched via bare Task tool calls), and launches them in parallel. The execution loop continues until all work is complete.

@@ -8,6 +8,22 @@ arguments:
     required: false
 ---
 
+## Activation Guard
+
+Before proceeding, check that yf is active:
+
+```bash
+ACTIVATION=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/yf-activation-check.sh")
+IS_ACTIVE=$(echo "$ACTIVATION" | jq -r '.active')
+```
+
+If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIVATION` and tell the user:
+
+> Yoshiko Flow is not active: {reason}. {action}
+
+Then stop. Do not execute the remaining steps.
+
+
 # Plan Intake Checklist
 
 Run the 5-step intake checklist to ensure a plan goes through the proper lifecycle before implementation begins. Idempotent — safe to re-run if partially completed.
@@ -101,6 +117,24 @@ Then run spec reconciliation:
 - Invoke `/yf:engineer_reconcile plan_file:<path> mode:gate`
 
 This closes the gap where manual intake previously had no spec checks at all.
+
+**1.5g. Chronicle reconciliation verdict:**
+If reconciliation ran in Step 1.5f and produced a result (skip if no specs exist),
+create a chronicle bead capturing the intake reconciliation context:
+
+```bash
+LABELS="ys:chronicle,ys:chronicle:auto,ys:topic:planning,plan:<idx>"
+
+bd create --type task \
+  --title "Chronicle: plan_intake — reconciliation for plan-<idx>" \
+  -l "$LABELS" \
+  --description "Intake reconciliation verdict: <PASS or NEEDS-RECONCILIATION>
+Structural consistency: <sanity check result>
+Spec changes approved: <list of changes from Steps 1.5a-d, or 'none'>
+Contradictions found: <summary or 'none'>
+New capabilities requiring spec coverage: <summary or 'none'>" \
+  --silent
+```
 
 ### Step 2: Ensure Beads Exist
 

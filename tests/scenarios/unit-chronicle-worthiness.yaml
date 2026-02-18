@@ -1,0 +1,213 @@
+name: "Unit: Chronicle worthiness — existence checks for chronicle hooks, formula flags, agent protocols"
+setup:
+  - "mkdir -p .yoshiko-flow"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}' > .yoshiko-flow/config.json"
+
+steps:
+  # Case 1: Rule 5.3 contains Auto-capture tier with trigger table
+  - name: "rule_5_3_has_auto_capture_tier"
+    run: |
+      RULES="$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
+      if grep -q 'Auto-capture' "$RULES" && grep -q 'Tier 1' "$RULES"; then
+        echo "OK: Rule 5.3 contains Auto-capture tier"
+      else
+        echo "FAIL: Rule 5.3 missing Auto-capture tier"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Rule 5.3 contains Agent-initiated tier referencing write-capable agents
+  - name: "rule_5_3_has_agent_initiated_tier"
+    run: |
+      RULES="$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
+      if grep -q 'Agent-initiated' "$RULES" && grep -q 'yf_code_writer' "$RULES"; then
+        echo "OK: Rule 5.3 contains Agent-initiated tier with write-capable agents"
+      else
+        echo "FAIL: Rule 5.3 missing Agent-initiated tier or agent references"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: engineer_reconcile/SKILL.md references ys:chronicle (Step 7.5)
+  - name: "engineer_reconcile_has_chronicle_step"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/engineer_reconcile/SKILL.md"
+      if grep -q 'ys:chronicle' "$SKILL" && grep -q 'Step 7.5' "$SKILL"; then
+        echo "OK: engineer_reconcile has chronicle step 7.5"
+      else
+        echo "FAIL: engineer_reconcile missing chronicle step"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: engineer_update/SKILL.md references ys:chronicle (Step 3.5)
+  - name: "engineer_update_has_chronicle_step"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/engineer_update/SKILL.md"
+      if grep -q 'ys:chronicle' "$SKILL" && grep -q 'Step 3.5' "$SKILL"; then
+        echo "OK: engineer_update has chronicle step 3.5"
+      else
+        echo "FAIL: engineer_update missing chronicle step"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: swarm_qualify/SKILL.md references ys:chronicle (Step 6.5)
+  - name: "swarm_qualify_has_chronicle_step"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/swarm_qualify/SKILL.md"
+      if grep -q 'ys:chronicle' "$SKILL" && grep -q 'Step 6.5' "$SKILL"; then
+        echo "OK: swarm_qualify has chronicle step 6.5"
+      else
+        echo "FAIL: swarm_qualify missing chronicle step"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: plan_breakdown/SKILL.md references ys:chronicle (Step 5.5)
+  - name: "plan_breakdown_has_chronicle_step"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/plan_breakdown/SKILL.md"
+      if grep -q 'ys:chronicle' "$SKILL" && grep -q 'Step 5.5' "$SKILL"; then
+        echo "OK: plan_breakdown has chronicle step 5.5"
+      else
+        echo "FAIL: plan_breakdown missing chronicle step"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: plan_intake/SKILL.md references chronicle in Step 1.5g
+  - name: "plan_intake_has_chronicle_step"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/plan_intake/SKILL.md"
+      if grep -q '1.5g' "$SKILL" && grep -q 'ys:chronicle' "$SKILL"; then
+        echo "OK: plan_intake has chronicle step 1.5g"
+      else
+        echo "FAIL: plan_intake missing chronicle step 1.5g"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: feature-build.formula.json contains "chronicle": true
+  - name: "feature_build_has_chronicle_flag"
+    run: |
+      FORMULA="$PLUGIN_DIR/plugins/yf/formulas/feature-build.formula.json"
+      if grep -q '"chronicle": true' "$FORMULA"; then
+        echo "OK: feature-build has chronicle flag"
+      else
+        echo "FAIL: feature-build missing chronicle flag"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: code-implement.formula.json contains "chronicle": true
+  - name: "code_implement_has_chronicle_flag"
+    run: |
+      FORMULA="$PLUGIN_DIR/plugins/yf/formulas/code-implement.formula.json"
+      if grep -q '"chronicle": true' "$FORMULA"; then
+        echo "OK: code-implement has chronicle flag"
+      else
+        echo "FAIL: code-implement missing chronicle flag"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: bugfix.formula.json contains "chronicle": true
+  - name: "bugfix_has_chronicle_flag"
+    run: |
+      FORMULA="$PLUGIN_DIR/plugins/yf/formulas/bugfix.formula.json"
+      if grep -q '"chronicle": true' "$FORMULA"; then
+        echo "OK: bugfix has chronicle flag"
+      else
+        echo "FAIL: bugfix missing chronicle flag"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 11: yf_code_writer.md contains "Chronicle Protocol"
+  - name: "code_writer_has_chronicle_protocol"
+    run: |
+      AGENT="$PLUGIN_DIR/plugins/yf/agents/yf_code_writer.md"
+      if grep -q 'Chronicle Protocol' "$AGENT"; then
+        echo "OK: yf_code_writer has Chronicle Protocol"
+      else
+        echo "FAIL: yf_code_writer missing Chronicle Protocol"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 12: yf_swarm_reviewer.md contains "CHRONICLE-SIGNAL"
+  - name: "swarm_reviewer_has_chronicle_signal"
+    run: |
+      AGENT="$PLUGIN_DIR/plugins/yf/agents/yf_swarm_reviewer.md"
+      if grep -q 'CHRONICLE-SIGNAL' "$AGENT"; then
+        echo "OK: yf_swarm_reviewer has CHRONICLE-SIGNAL"
+      else
+        echo "FAIL: yf_swarm_reviewer missing CHRONICLE-SIGNAL"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 13: swarm_dispatch/SKILL.md references "CHRONICLE-SIGNAL"
+  - name: "swarm_dispatch_has_chronicle_signal"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/swarm_dispatch/SKILL.md"
+      if grep -q 'CHRONICLE-SIGNAL' "$SKILL"; then
+        echo "OK: swarm_dispatch references CHRONICLE-SIGNAL"
+      else
+        echo "FAIL: swarm_dispatch missing CHRONICLE-SIGNAL reference"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

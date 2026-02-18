@@ -2,12 +2,14 @@ name: "Unit: plugin-preflight.sh — symlink-specific behavior"
 
 setup:
   - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: Fresh install creates symlinks (not copies)
   - name: "fresh_creates_symlinks_not_copies"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json" "$WORK_DIR/.claude/yf.local.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -rf "$WORK_DIR/.claude/rules/yf"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       SYMLINKS=0
@@ -59,6 +61,7 @@ steps:
   - name: "regular_file_replaced_by_symlink"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       # Replace a symlink with a regular file (simulating old copy)
       rm -f "$WORK_DIR/.claude/rules/yf/yf-rules.md"
       mkdir -p "$WORK_DIR/.claude/rules/yf" && cp "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" "$WORK_DIR/.claude/rules/yf/yf-rules.md"

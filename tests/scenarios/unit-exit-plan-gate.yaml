@@ -1,6 +1,7 @@
 name: "Unit: exit-plan-gate.sh"
 setup:
   - "mkdir -p .claude .yoshiko-flow docs/plans"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: Gate already exists → idempotent skip

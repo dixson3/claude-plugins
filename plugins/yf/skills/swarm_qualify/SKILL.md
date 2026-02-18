@@ -10,6 +10,22 @@ arguments:
     required: false
 ---
 
+## Activation Guard
+
+Before proceeding, check that yf is active:
+
+```bash
+ACTIVATION=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/yf-activation-check.sh")
+IS_ACTIVE=$(echo "$ACTIVATION" | jq -r '.active')
+```
+
+If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIVATION` and tell the user:
+
+> Yoshiko Flow is not active: {reason}. {action}
+
+Then stop. Do not execute the remaining steps.
+
+
 # Swarm Qualification Gate
 
 Runs a `code-review` formula as a mandatory qualification step before a plan is marked complete. Blocks completion on REVIEW:BLOCK.
@@ -98,6 +114,25 @@ bd show <gate-id> --comments
 - Close the qualification gate bead with a note
 - Report the advisory block in the completion report
 - Return success — plan completion proceeds with warning
+
+### Step 6.5: Chronicle Qualification Verdict
+
+After processing the verdict (PASS or BLOCK), create a chronicle bead. Both verdicts are chronicle-worthy — PASS captures the quality checkpoint, BLOCK captures what needs fixing.
+
+```bash
+LABELS="ys:chronicle,ys:chronicle:auto,ys:topic:qualification"
+[ -n "$PLAN_LABEL" ] && LABELS="$LABELS,plan:$PLAN_IDX"
+
+bd create --type task \
+  --title "Chronicle: swarm_qualify — REVIEW:$VERDICT for plan-$PLAN_IDX" \
+  -l "$LABELS" \
+  --description "Qualification verdict: REVIEW:$VERDICT
+Config mode: $QUAL_MODE
+Review scope: $START_SHA..HEAD
+Gate bead: $GATE_ID
+Issues found: <summary of issues or 'none'>" \
+  --silent
+```
 
 ## Output
 

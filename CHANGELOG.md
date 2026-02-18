@@ -5,6 +5,40 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.21.0] - 2026-02-17
+
+### Added
+
+- **Three-condition activation gate** (REQ-034, DD-015): yf only activates when `.yoshiko-flow/config.json` exists, `enabled: true`, AND beads plugin is installed. Fail-closed activation replaces previous fail-open behavior. G7 revised to "fail-open hooks and explicit per-project activation."
+- **yf-activation-check.sh**: Standalone activation check script outputting structured JSON (`{"active":true}` or `{"active":false,"reason":"...","action":"..."}`). Used by all skill guards.
+- **yf_beads_installed()** config helper in `yf-config.sh` — checks `~/.claude/plugins/installed_plugins.json` for beads plugin, falls back to `command -v bd`.
+- **Skill activation guards**: All 27 skills (except `/yf:setup`) check activation status before executing and report reason/remediation when inactive.
+- **Beads plugin dependency** (REQ-035): `preflight.json` declares `steveyegge/beads` as required dependency. Preflight emits `YF_DEPENDENCY_MISSING` signal and removes rules when beads is absent.
+- **Per-project activation** (REQ-036): Installing yf globally no longer activates it everywhere. Explicit `/yf:setup` required per-project.
+- **Rule 1.0 — Activation Gate**: Hard enforcement rule documenting the three-condition gate.
+- **Hybrid beads routing** (DD-016): Agent-facing instructions reference beads skills (`/beads:ready`, `/beads:close`); shell scripts continue using `bd` CLI.
+- **Setup beads check**: `/yf:setup` verifies beads plugin before writing config.
+- **Spec entries**: REQ-034/035/036, FS-040/041, DD-015/016, UC-035/036, TODO-027/028; revised G7, TC-003, REQ-028, UC-023, UC-025.
+- **New test file** `unit-activation.yaml` with 8 test cases for activation gate.
+- **11 new test steps** across `unit-yf-config.yaml`, `unit-preflight.yaml`, `unit-preflight-disabled.yaml`.
+- **Memory reconciliation skill** (REQ-037, FS-042, UC-037): `/yf:memory_reconcile` automates MEMORY.md hygiene — classifies items as contradictions (spec wins), gaps (promote to specs), or ephemeral duplicates (remove). Operator approval required for spec changes per Rule 1.4.
+- **Rule 4.2 step 4.5**: Memory reconciliation integrated into "Landing the Plane" session close protocol, running after quality gates and before commit.
+- **Spec entries**: REQ-037, FS-042, UC-037, TODO-029.
+- **New test file** `unit-memory-reconcile.yaml` with 7 existence-check test cases.
+- **Skill-level chronicle auto-capture** (REQ-038, FS-043, UC-038): Chronicle beads auto-created at decision points — reconciliation conflicts (`engineer_reconcile` Step 7.5), spec mutations (`engineer_update` Step 3.5), qualification verdicts (`swarm_qualify` Step 6.5), scope changes (`plan_breakdown` Step 5.5), and intake reconciliation (`plan_intake` Step 1.5g).
+- **Formula chronicle flags**: `"chronicle": true` enabled on terminal steps of 5 formulas (feature-build, code-implement, build-test, code-review, bugfix). Dispatch loop auto-creates chronicle beads for flagged steps.
+- **Agent chronicle protocol**: Write-capable agents (`yf_code_writer`, `yf_code_tester`, `yf_swarm_tester`) create chronicle beads on plan deviations, unexpected discoveries, and non-obvious failures. Read-only agents (`yf_swarm_researcher`, `yf_swarm_reviewer`, `yf_code_researcher`, `yf_code_reviewer`) signal chronicle-worthy findings via `CHRONICLE-SIGNAL:` in structured comments.
+- **CHRONICLE-SIGNAL dispatch**: `swarm_dispatch` Step 6c reads `CHRONICLE-SIGNAL:` lines from step comments and auto-creates chronicle beads, giving read-only agents a path to trigger chronicles.
+- **Spec entries**: REQ-038, FS-043, UC-038, TODO-030.
+- **New test file** `unit-chronicle-worthiness.yaml` with 13 existence-check test cases.
+
+### Changed
+
+- **yf_is_enabled()** rewritten from `_yf_check_flag '.enabled'` (fail-open) to three-condition check (fail-closed). No config = inactive.
+- **plugin-preflight.sh**: No config exits early without installing rules. Missing beads removes rules and exits.
+- **Rule 4.1**: Beads quick reference updated to show beads skills alongside `bd` CLI.
+- **Rule 5.3**: Rewritten from vague categories ("significant progress", "important decisions") to concrete 3-tier taxonomy — Tier 1: auto-capture at skill decision points, Tier 2: agent-initiated for write-capable agents, Tier 3: advisory for main orchestrator.
+
 ## [2.20.0] - 2026-02-16
 
 ### Added

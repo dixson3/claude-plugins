@@ -16,7 +16,8 @@
       "id": "report",
       "title": "Report on {{feature}} review",
       "description": "Produce a structured review report from the analysis. SUBAGENT:general-purpose\n\nPost a REVIEW: comment on the parent bead with verdict (REVIEW:PASS or REVIEW:BLOCK) and categorized findings (critical, suggestion, nit).",
-      "needs": ["analyze"]
+      "needs": ["analyze"],
+      "chronicle": true
     }
   ]
 }

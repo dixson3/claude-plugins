@@ -1,12 +1,14 @@
 name: "Unit: Engineer capability — preflight directories and code-gate exemption"
 setup:
   - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: Preflight creates specification directories
   - name: "preflight_creates_spec_directories"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -rf "$WORK_DIR/.claude/rules/yf"
       rm -rf "$WORK_DIR/docs/specifications"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1

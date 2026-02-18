@@ -4,11 +4,12 @@ setup:
   - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
 
 steps:
-  # Case 1: No config → installs all rules as symlinks
+  # Case 1: With config → installs all rules as symlinks
   - name: "fresh_install_creates_symlinks"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json" "$WORK_DIR/.claude/yf.local.json"
       rm -rf "$WORK_DIR/.claude/rules/yf"
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
     assertions:
       - type: exit_code
@@ -94,11 +95,12 @@ steps:
       - type: output_contains
         value: "installed .claude/rules/yf/yf-rules.md"
 
-  # Case 7: Directories created when missing
+  # Case 7: Directories created when missing (requires config)
   - name: "creates_missing_directories"
     run: |
-      rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/lock.json"
       rm -rf "$WORK_DIR/docs/plans" "$WORK_DIR/docs/diary"
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       if [ -d "$WORK_DIR/docs/plans" ] && [ -d "$WORK_DIR/docs/diary" ]; then
@@ -145,5 +147,55 @@ steps:
       - type: output_contains
         value: "warn"
 
+  # Case 10: No config → exits early, no rules installed (fail-closed activation)
+  - name: "no_config_exits_early"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      rm -rf "$WORK_DIR/.claude/rules/yf"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "YF_SETUP_NEEDED"; then
+        # Verify no rules were installed
+        COUNT=0
+        for f in "$WORK_DIR/.claude/rules/yf"/*.md; do
+          [ -e "$f" ] || [ -L "$f" ] || continue
+          COUNT=$((COUNT + 1))
+        done
+        if [ "$COUNT" -eq 0 ]; then
+          echo "OK: no config → no rules installed"
+        else
+          echo "FAIL: $COUNT rules installed without config"
+          exit 1
+        fi
+      else
+        echo "FAIL: missing YF_SETUP_NEEDED signal"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 11: Beads dependency missing → emits signal
+  - name: "beads_dependency_signal"
+    run: |
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/lock.json"
+      OUTPUT=$(HOME="$WORK_DIR/fakehome" PATH="/usr/bin:/bin" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "YF_DEPENDENCY_MISSING"; then
+        echo "OK: beads dependency signal emitted"
+      else
+        echo "FAIL: missing dependency signal"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
   - "rm -f .yoshiko-flow/config.json .yoshiko-flow/lock.json .claude/yf.local.json"
+  - "rm -rf fakehome"

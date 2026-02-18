@@ -2,6 +2,7 @@ name: "Unit: plan-intake rule content"
 
 setup:
   - "mkdir -p .claude/rules .yoshiko-flow"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: consolidated yf-rules.md source exists in yf plugin
@@ -143,6 +144,7 @@ steps:
   - name: "preflight_syncs_rule"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -rf "$WORK_DIR/.claude/rules/yf"
       mkdir -p "$WORK_DIR/.claude/rules" "$WORK_DIR/docs/plans" "$WORK_DIR/docs/diary"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)

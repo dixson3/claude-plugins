@@ -88,8 +88,8 @@ case "$COMMAND" in
       exit 0
     fi
 
-    # Delete with reason (soft delete / tombstones)
-    echo "$ALL_IDS" | xargs bd delete --force --reason="plan completion auto-prune" 2>/dev/null || true
+    # Delete beads (permanent removal of closed plan beads)
+    echo "$ALL_IDS" | xargs bd delete --force 2>/dev/null || true
     echo "Pruned $COUNT beads for $PLAN_LABEL"
     ;;
 

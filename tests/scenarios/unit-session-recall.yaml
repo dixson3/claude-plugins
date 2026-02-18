@@ -2,6 +2,7 @@ name: "Unit: session-recall.sh — SessionStart chronicle recovery"
 
 setup:
   - "mkdir -p .yoshiko-flow .beads"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: Exits silently when yf disabled
@@ -26,6 +27,7 @@ steps:
   - name: "silent_when_no_chronicles"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/.pending-diary"
       mkdir -p "$WORK_DIR/mock-bin"
       cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
@@ -55,6 +57,7 @@ steps:
   - name: "outputs_summary_with_chronicles"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/.pending-diary"
       cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
       #!/bin/bash
@@ -86,6 +89,7 @@ steps:
   - name: "detects_pending_diary_marker"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       mkdir -p "$WORK_DIR/.beads"
       cat > "$WORK_DIR/.beads/.pending-diary" << 'MARKER'
       {"created":"2026-02-09T14:30:00Z","reason":"session_end","chronicle_count":3,"draft_created":true}
@@ -124,6 +128,7 @@ steps:
   - name: "pending_diary_with_no_current_chronicles"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       mkdir -p "$WORK_DIR/.beads"
       cat > "$WORK_DIR/.beads/.pending-diary" << 'MARKER'
       {"created":"2026-02-09T14:30:00Z","reason":"session_end","chronicle_count":2,"draft_created":false}
@@ -160,6 +165,7 @@ steps:
   - name: "always_exits_zero"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/.pending-diary"
       # Use a bd that fails
       cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
@@ -179,6 +185,7 @@ steps:
   - name: "plan_without_beads_warns"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/.pending-diary"
       mkdir -p "$WORK_DIR/docs/plans"
       printf '# Plan 99\n**Status:** Draft' > "$WORK_DIR/docs/plans/plan-99.md"
@@ -209,6 +216,7 @@ steps:
   - name: "completed_plan_no_warning"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/.pending-diary"
       mkdir -p "$WORK_DIR/docs/plans"
       printf '# Plan 99\n**Status: Completed**' > "$WORK_DIR/docs/plans/plan-99.md"

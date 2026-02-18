@@ -23,7 +23,8 @@
       "id": "review",
       "title": "Review {{feature}}",
       "description": "Review the implementation of {{feature}} for correctness, style, and edge cases. SUBAGENT:Explore\n\nPost a REVIEW: comment on the parent bead with verdict (REVIEW:PASS or REVIEW:BLOCK) and details.",
-      "needs": ["implement"]
+      "needs": ["implement"],
+      "chronicle": true
     }
   ]
 }

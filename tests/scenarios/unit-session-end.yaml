@@ -4,6 +4,7 @@ setup:
   - "mkdir -p .yoshiko-flow .beads"
   - "git init . >/dev/null 2>&1 || true"
   - "git config user.email 'test@test.com' && git config user.name 'Test'"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: Exits silently when yf disabled
@@ -29,6 +30,7 @@ steps:
   - name: "writes_pending_marker"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/.pending-diary"
       mkdir -p "$WORK_DIR/mock-bin"
       cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
@@ -67,6 +69,7 @@ steps:
   - name: "no_marker_when_no_chronicles"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/.pending-diary"
       cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
       #!/bin/bash
@@ -95,6 +98,7 @@ steps:
   - name: "always_exits_zero"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
       #!/bin/bash
       exit 1

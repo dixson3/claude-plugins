@@ -14,6 +14,29 @@ Zero-question setup. Enables yf with sensible defaults. Chronicler and archivist
 
 ## Behavior
 
+### Beads Dependency Check
+
+Before any setup action, verify that the beads plugin is installed:
+
+```bash
+BEADS_REGISTRY="$HOME/.claude/plugins/installed_plugins.json"
+BEADS_FOUND=false
+if [ -f "$BEADS_REGISTRY" ] && command -v jq >/dev/null 2>&1; then
+  if jq -e 'keys[] | select(startswith("beads@"))' "$BEADS_REGISTRY" >/dev/null 2>&1; then
+    BEADS_FOUND=true
+  fi
+fi
+if [ "$BEADS_FOUND" != "true" ] && ! command -v bd >/dev/null 2>&1; then
+  BEADS_FOUND=false
+fi
+```
+
+If `BEADS_FOUND` is `false`, tell the user:
+
+> Yoshiko Flow requires the beads plugin. Install it first: `/install steveyegge/beads`
+
+Then stop. Do not write any config or run preflight.
+
 ### Default (no arguments)
 
 Enable yf with `artifact_dir: docs`. No questions asked.

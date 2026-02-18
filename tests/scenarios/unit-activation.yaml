@@ -1,0 +1,162 @@
+name: "Unit: yf-activation-check.sh — three-condition gate"
+
+setup:
+  - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
+
+steps:
+  # Case 1: No config → inactive
+  - name: "no_config_inactive"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/yf-activation-check.sh")
+      ACTIVE=$(echo "$OUTPUT" | jq -r '.active')
+      REASON=$(echo "$OUTPUT" | jq -r '.reason // empty')
+      if [ "$ACTIVE" = "false" ] && echo "$REASON" | grep -qi "config"; then
+        echo "OK: no config → inactive"
+      else
+        echo "FAIL: active=$ACTIVE reason=$REASON"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: enabled:false → inactive
+  - name: "disabled_inactive"
+    run: |
+      echo '{"enabled":false,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/yf-activation-check.sh")
+      ACTIVE=$(echo "$OUTPUT" | jq -r '.active')
+      REASON=$(echo "$OUTPUT" | jq -r '.reason // empty')
+      if [ "$ACTIVE" = "false" ] && echo "$REASON" | grep -qi "disabled"; then
+        echo "OK: disabled → inactive"
+      else
+        echo "FAIL: active=$ACTIVE reason=$REASON"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: enabled:true + beads installed → active
+  - name: "enabled_with_beads_active"
+    run: |
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      # Ensure bd is available (it should be since beads-cli is a project dependency)
+      if ! command -v bd >/dev/null 2>&1; then
+        echo "SKIP: bd not available in test environment"
+        exit 0
+      fi
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/yf-activation-check.sh")
+      ACTIVE=$(echo "$OUTPUT" | jq -r '.active')
+      if [ "$ACTIVE" = "true" ]; then
+        echo "OK: enabled + beads → active"
+      else
+        echo "FAIL: active=$ACTIVE"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: enabled:true + beads NOT installed → inactive
+  - name: "enabled_no_beads_inactive"
+    run: |
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      # Override HOME to hide installed_plugins.json and PATH to hide bd
+      OUTPUT=$(HOME="$WORK_DIR/fakehome" PATH="/usr/bin:/bin" bash "$PLUGIN_DIR/plugins/yf/scripts/yf-activation-check.sh")
+      ACTIVE=$(echo "$OUTPUT" | jq -r '.active')
+      REASON=$(echo "$OUTPUT" | jq -r '.reason // empty')
+      if [ "$ACTIVE" = "false" ] && echo "$REASON" | grep -qi "beads"; then
+        echo "OK: no beads → inactive"
+      else
+        echo "FAIL: active=$ACTIVE reason=$REASON"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Script always exits 0
+  - name: "always_exits_zero"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      bash "$PLUGIN_DIR/plugins/yf/scripts/yf-activation-check.sh" >/dev/null 2>&1
+      echo "OK: exit code $?"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: Output is valid JSON
+  - name: "output_is_valid_json"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/yf-activation-check.sh")
+      if echo "$OUTPUT" | jq . >/dev/null 2>&1; then
+        echo "OK: valid JSON"
+      else
+        echo "FAIL: invalid JSON: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: yf_beads_installed with registry present
+  - name: "beads_installed_via_registry"
+    run: |
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      mkdir -p "$WORK_DIR/fakehome/.claude/plugins"
+      echo '{"beads@0.50.0":{"name":"beads","version":"0.50.0"}}' > "$WORK_DIR/fakehome/.claude/plugins/installed_plugins.json"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      if HOME="$WORK_DIR/fakehome" yf_beads_installed; then
+        echo "OK: beads found in registry"
+      else
+        echo "FAIL: beads not found in registry"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: yf_beads_installed with empty registry
+  - name: "beads_not_in_registry"
+    run: |
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      mkdir -p "$WORK_DIR/fakehome/.claude/plugins"
+      echo '{"other-plugin@1.0.0":{}}' > "$WORK_DIR/fakehome/.claude/plugins/installed_plugins.json"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      if HOME="$WORK_DIR/fakehome" PATH="/usr/bin:/bin" yf_beads_installed; then
+        echo "FAIL: should not find beads"
+        exit 1
+      fi
+      echo "OK: beads not found"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .yoshiko-flow/config.json"
+  - "rm -rf fakehome"

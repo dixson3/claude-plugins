@@ -16,6 +16,12 @@ D3 Claude Plugins implements a plugin marketplace for Claude Code with the Yoshi
 +-----------+---------------------+
             |
 +-----------v---------------------+
+|  Activation Gate                |
+|  (three-condition check:        |
+|   config + enabled + beads)     |
++-----------+---------------------+
+            |
++-----------v---------------------+
 |  Marketplace Layer              |
 |  (.claude-plugin/marketplace.   |
 |   json, plugin registry)        |
@@ -49,6 +55,7 @@ The system uses a layered enforcement approach:
 2. **Rules (behavioral)**: Markdown files loaded into agent context. The agent reads and follows them. No performance cost, relies on agent compliance.
 3. **Scripts (deterministic)**: Shell scripts for state transitions, config access, and data analysis. Called from hooks, skills, and rules.
 4. **Beads (persistent)**: Git-backed issue tracker providing gates, dependencies, labels, and deferred state.
+5. **Activation gate (skill-level)**: `yf-activation-check.sh` outputs JSON status; skills read and refuse when inactive. Defense-in-depth -- hooks also enforce via `yf_is_enabled`.
 
 ### Data Flow
 
@@ -232,6 +239,30 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 **Consequences**: The plan intake checklist (Step 1.5) adds operator approval gates that may slow plan startup. The structural checks are fail-open (exit 0 always) and configurable via `.config.engineer.sanity_check_mode`.
 
 **Source**: Plan 40
+
+### DD-015: Three-Condition Activation Model
+
+**Context**: yf activated on every project where installed, even without setup. G7 said "fail-open" which conflated hook behavior (always exit 0 on errors) with activation behavior (enabled by default).
+
+**Decision**: Separate hook fail-open (TC-005, unchanged) from activation fail-closed. Three conditions: config exists + enabled:true + beads plugin installed. `yf_is_enabled()` enforces all three. `_yf_check_flag` remains fail-open for optional sub-config flags.
+
+**Rationale**: User-scope installation should not impose yf on every project. Explicit activation (`/yf:setup`) is the only entry point. The beads plugin provides agent-facing skills that yf depends on.
+
+**Consequences**: Projects without explicit setup become inactive. `YF_SETUP_NEEDED` signal in preflight guides users. Existing projects with `config.json` and `enabled: true` remain active if beads is installed.
+
+**Source**: Plan 42
+
+### DD-016: Hybrid Beads Routing
+
+**Context**: yf references `bd` CLI commands in rules, skills, and shell scripts. The beads plugin provides agent-facing skills (`/beads:create`, `/beads:close`, etc.) that offer richer context.
+
+**Decision**: Shell scripts and hooks continue using `bd` CLI directly (infrastructure layer). Agent-facing instructions (rules, skill steps) reference beads skills (`/beads:ready`, `/beads:close`, etc.) for operations. Both pathways remain available.
+
+**Rationale**: Shell scripts need deterministic CLI calls, not skill invocations. Agent instructions benefit from the beads skill layer which includes context, validation, and formatting. Declaring the dependency ensures beads skills are available.
+
+**Consequences**: Agent operations route through beads plugin skills. yf must declare and enforce beads plugin as a dependency (DD-015). Shell infrastructure is unaffected.
+
+**Source**: Plan 42
 
 ## Non-Functional Requirements
 

@@ -22,7 +22,8 @@
       "id": "verify",
       "title": "Verify fix for {{feature}}",
       "description": "Verify the fix is correct: run relevant tests, check edge cases, confirm the bug is resolved. SUBAGENT:general-purpose\n\nPost a TESTS: comment on the parent bead with pass/fail results and verification details.",
-      "needs": ["fix"]
+      "needs": ["fix"],
+      "chronicle": true
     }
   ]
 }

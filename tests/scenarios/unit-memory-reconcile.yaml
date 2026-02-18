@@ -1,0 +1,116 @@
+name: "Unit: Memory reconciliation skill — existence checks"
+setup:
+  - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}' > .yoshiko-flow/config.json"
+
+steps:
+  # Case 1: Skill file exists
+  - name: "skill_file_exists"
+    run: |
+      if [ -f "$PLUGIN_DIR/plugins/yf/skills/memory_reconcile/SKILL.md" ]; then
+        echo "OK: memory_reconcile skill file exists"
+      else
+        echo "FAIL: memory_reconcile skill file not found"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Correct name in frontmatter
+  - name: "frontmatter_name_correct"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/memory_reconcile/SKILL.md"
+      if head -5 "$SKILL" | grep -q 'name: yf:memory_reconcile'; then
+        echo "OK: frontmatter name is yf:memory_reconcile"
+      else
+        echo "FAIL: frontmatter name incorrect"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Has activation guard
+  - name: "has_activation_guard"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/memory_reconcile/SKILL.md"
+      if grep -q 'yf-activation-check.sh' "$SKILL"; then
+        echo "OK: activation guard present"
+      else
+        echo "FAIL: activation guard missing"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: References MEMORY.md
+  - name: "references_memory_md"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/memory_reconcile/SKILL.md"
+      if grep -q 'MEMORY.md' "$SKILL"; then
+        echo "OK: references MEMORY.md"
+      else
+        echo "FAIL: does not reference MEMORY.md"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: References AskUserQuestion (operator approval)
+  - name: "references_ask_user_question"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/memory_reconcile/SKILL.md"
+      if grep -q 'AskUserQuestion' "$SKILL"; then
+        echo "OK: references AskUserQuestion for operator approval"
+      else
+        echo "FAIL: does not reference AskUserQuestion"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: References engineer_update (gap promotion)
+  - name: "references_engineer_update"
+    run: |
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/memory_reconcile/SKILL.md"
+      if grep -q 'engineer_update' "$SKILL"; then
+        echo "OK: references engineer_update for gap promotion"
+      else
+        echo "FAIL: does not reference engineer_update"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: Rule 4.2 references memory_reconcile
+  - name: "rule_references_memory_reconcile"
+    run: |
+      RULES="$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
+      if grep -q 'memory_reconcile' "$RULES"; then
+        echo "OK: Rule 4.2 references memory_reconcile"
+      else
+        echo "FAIL: Rule 4.2 does not reference memory_reconcile"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

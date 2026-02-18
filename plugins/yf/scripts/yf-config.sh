@@ -51,8 +51,33 @@ _yf_check_flag() {
   [ "$val" != "false" ]
 }
 
+# yf_beads_installed — returns 0 if beads plugin is installed
+yf_beads_installed() {
+  local registry="$HOME/.claude/plugins/installed_plugins.json"
+  if [ -f "$registry" ] && command -v jq >/dev/null 2>&1; then
+    if jq -e 'keys[] | select(startswith("beads@"))' "$registry" >/dev/null 2>&1; then
+      return 0
+    fi
+  fi
+  # Fallback: check for bd CLI
+  command -v bd >/dev/null 2>&1
+}
+
 # yf_is_enabled — returns 0 if enabled, 1 if disabled
-yf_is_enabled() { _yf_check_flag '.enabled'; }
+# Three-condition activation gate (DD-015):
+#   1. Config exists
+#   2. enabled != false
+#   3. Beads plugin installed
+yf_is_enabled() {
+  yf_config_exists || return 1
+  if command -v jq >/dev/null 2>&1; then
+    local val
+    val=$(yf_merged_config | jq -r 'if .enabled == null then true else .enabled end' 2>/dev/null)
+    [ "$val" = "false" ] && return 1
+  fi
+  yf_beads_installed || return 1
+  return 0
+}
 
 # yf_is_prune_on_complete — returns 0 if plan-completion pruning enabled
 yf_is_prune_on_complete() { _yf_check_flag '.config.auto_prune.on_plan_complete'; }

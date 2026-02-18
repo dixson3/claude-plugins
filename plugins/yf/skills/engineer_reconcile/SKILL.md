@@ -13,6 +13,22 @@ arguments:
     required: false
 ---
 
+## Activation Guard
+
+Before proceeding, check that yf is active:
+
+```bash
+ACTIVATION=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/yf-activation-check.sh")
+IS_ACTIVE=$(echo "$ACTIVATION" | jq -r '.active')
+```
+
+If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIVATION` and tell the user:
+
+> Yoshiko Flow is not active: {reason}. {action}
+
+Then stop. Do not execute the remaining steps.
+
+
 # Engineer: Reconcile Plan Against Specifications
 
 Check a plan for compliance with existing specification documents. Flags conflicts, untraced functionality, and features that may need IG updates.
@@ -102,6 +118,30 @@ If IG files exist, check which features may be affected:
 Combine individual verdicts:
 - All COMPLIANT → `PASS`
 - Any CONFLICT or NEEDS-UPDATE → `NEEDS-RECONCILIATION`
+
+### Step 7.5: Chronicle on NEEDS-RECONCILIATION
+
+If the overall verdict from Step 6 is `NEEDS-RECONCILIATION`, create a chronicle bead capturing the reconciliation context. Skip on `PASS` (routine compliance is not chronicle-worthy).
+
+```bash
+# Only chronicle on conflict — routine PASS is not chronicle-worthy
+if [ "$VERDICT" = "NEEDS-RECONCILIATION" ]; then
+  PLAN_LABEL=$(bd label list <epic-id> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
+  LABELS="ys:chronicle,ys:chronicle:auto,ys:topic:engineer"
+  [ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
+
+  bd create --type task \
+    --title "Chronicle: engineer_reconcile — NEEDS-RECONCILIATION" \
+    -l "$LABELS" \
+    --description "Reconciliation verdict: NEEDS-RECONCILIATION
+PRD: $PRD_VERDICT
+EDD: $EDD_VERDICT
+IG: $IG_VERDICT
+Conflicts: <specific conflicts found>
+Operator decision: <update specs / modify plan / acknowledge>" \
+    --silent
+fi
+```
 
 ### Step 7: Report and Gate
 

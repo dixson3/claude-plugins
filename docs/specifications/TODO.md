@@ -30,6 +30,10 @@
 | TODO-024 | End-to-end test: code-researcher checks existing IGs before researching standards | P2 | Plan 35 Phase 5 (coder capability) | Open |
 | TODO-025 | End-to-end test: reactive bugfix triggers on REVIEW:BLOCK within code-implement swarm | P2 | Plan 35 Phase 5 (coder capability) | Open |
 | TODO-026 | E2E validation of intake integrity gate during real plan with spec changes | P2 | Plan 40 (spec integrity gates) | Open |
+| TODO-027 | E2E validation of activation gate: verify skill refusal when beads plugin missing, when config absent, and when `enabled: false` | P2 | Plan 42 (activation gate) | Open |
+| TODO-028 | Validate hybrid beads routing: confirm agent operations use beads skills and shell scripts use bd CLI without regression | P2 | Plan 42 (activation gate) | Open |
+| TODO-029 | E2E validation of memory reconciliation with real MEMORY.md and spec files | P2 | Plan 43 (memory reconcile) | Open |
+| TODO-030 | E2E validation of skill-level chronicle capture during real plan execution | P2 | Plan 44 (chronicle worthiness) | Open |
 
 ## Completed Items
 

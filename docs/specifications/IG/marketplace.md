@@ -35,6 +35,8 @@ The marketplace provides the plugin architecture for Claude Code -- plugin regis
 **Flow**:
 1. `preflight-wrapper.sh` triggers `plugin-preflight.sh`
 2. Script sources `yf-config.sh` for config access
+2.25. If no `.yoshiko-flow/config.json` exists: emit `YF_SETUP_NEEDED`, remove any existing rule symlinks, exit (fail-closed activation)
+2.5. Check beads plugin dependency: parse `~/.claude/plugins/installed_plugins.json` for `beads@*`. If missing: emit `YF_DEPENDENCY_MISSING`, remove rule symlinks, exit.
 3. Script checks fast path: version matches, rule count matches, all symlinks correct
 4. If fast path passes: exit in <50ms
 5. If full sync needed: for each rule in `preflight.json`:
@@ -55,6 +57,44 @@ The marketplace provides the plugin architecture for Claude Code -- plugin regis
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/hooks/preflight-wrapper.sh`
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/.claude-plugin/preflight.json`
 
+### UC-035: Plugin Activation Gate Check
+
+**Actor**: System (skill invocation)
+
+**Preconditions**: yf skill invoked by agent.
+
+**Flow**:
+1. Skill runs `yf-activation-check.sh`
+2. Script checks three conditions: config exists, enabled:true, beads installed
+3. Returns `{"active":true}` or `{"active":false,"reason":"...","action":"..."}`
+4. If inactive: skill reports reason and action to user, stops execution
+5. If active: skill proceeds with normal steps
+
+**Postconditions**: Only active projects execute yf skills.
+
+**Key Files**:
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/yf-activation-check.sh`
+
+### UC-036: Per-Project Activation via /yf:setup
+
+**Actor**: Operator
+
+**Preconditions**: yf plugin installed (user or project scope). beads plugin installed.
+
+**Flow**:
+1. Operator runs `/yf:setup` in a project
+2. Skill checks beads plugin presence in `~/.claude/plugins/installed_plugins.json`
+3. If beads missing: report dependency, provide install instructions, stop
+4. If beads present: write `.yoshiko-flow/config.json` with `{enabled: true, config: {artifact_dir: "docs"}}`
+5. Run `plugin-preflight.sh` to install rules, directories, beads init
+6. Plugin is now active in this project
+
+**Postconditions**: `.yoshiko-flow/config.json` committed. Rules symlinked. Beads initialized.
+
+**Key Files**:
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/setup/SKILL.md`
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/plugin-preflight.sh`
+
 ### UC-024: Running Tests
 
 **Actor**: Developer
@@ -69,6 +109,9 @@ The marketplace provides the plugin architecture for Claude Code -- plugin regis
 5. Assertions check exit codes, stdout content, file existence
 6. Harness reports pass/fail per scenario
 7. Script reports total: `N passed, M failed`
+
+**Test Authoring Notes**:
+- Since v2.21.0, `yf_is_enabled()` is fail-closed (no config = inactive per DD-015). Test scenarios that invoke yf scripts must create `.yoshiko-flow/config.json` with `{"enabled":true,"config":{}}` in their setup block or individual steps. Steps that `rm -f config.json` then call yf scripts will get inactive behavior.
 
 **Postconditions**: Test results displayed. Non-zero exit on failures.
 

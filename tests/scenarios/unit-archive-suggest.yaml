@@ -3,12 +3,14 @@ name: "Unit: archive-suggest.sh — commit scanner"
 setup:
   - "mkdir -p .yoshiko-flow"
   - "git init . >/dev/null 2>&1 || true"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: No commits found
   - name: "no_commits"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/archive-suggest.sh" --since "1 second ago" 2>&1)
       echo "$OUTPUT"
       if echo "$OUTPUT" | grep -q "No commits found"; then
@@ -27,6 +29,7 @@ steps:
   - name: "detects_research_keywords"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       # Create a commit with research keywords
       echo "test" > "$WORK_DIR/research-test.txt"
       cd "$WORK_DIR" && git add research-test.txt && git commit -m "Researched authentication libraries for Go" --allow-empty >/dev/null 2>&1
@@ -48,6 +51,7 @@ steps:
   - name: "detects_decision_keywords"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       echo "test2" > "$WORK_DIR/decision-test.txt"
       cd "$WORK_DIR" && git add decision-test.txt && git commit -m "Chose Redis for caching layer architecture" --allow-empty >/dev/null 2>&1
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/archive-suggest.sh" --since "5 minutes ago" 2>&1)
@@ -68,6 +72,7 @@ steps:
   - name: "always_exits_zero"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/archive-suggest.sh" --since "5 minutes ago" >/dev/null 2>&1
       echo "OK: exit code $?"
     assertions:

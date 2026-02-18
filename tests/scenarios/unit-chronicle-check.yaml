@@ -4,6 +4,7 @@ setup:
   - "mkdir -p .yoshiko-flow .beads"
   - "git init . >/dev/null 2>&1 || true"
   - "git config user.email 'test@test.com' && git config user.name 'Test'"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: Exits cleanly when yf disabled
@@ -28,6 +29,7 @@ steps:
   - name: "no_significant_changes"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-drafted-"*
       # Create a trivial commit with no significant patterns or keywords
       echo "trivial" > "$WORK_DIR/trivial.txt"
@@ -51,6 +53,7 @@ steps:
   - name: "keyword_matches_create_draft"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-drafted-"*
       echo "keyword-test" > "$WORK_DIR/keyword-test.txt"
       cd "$WORK_DIR" && git add keyword-test.txt && git commit -m "Decided on new architecture pattern for plugins" >/dev/null 2>&1
@@ -101,6 +104,7 @@ steps:
   - name: "significant_files_create_draft"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-drafted-"*
       rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
       mkdir -p "$WORK_DIR/plugins/test"
@@ -125,6 +129,7 @@ steps:
   - name: "dedup_prevents_duplicates"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
       # Dedup file should already exist from previous test
       # Run again with same conditions
@@ -149,6 +154,7 @@ steps:
   - name: "in_progress_beads_create_draft"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-drafted-"*
       rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
       mkdir -p "$WORK_DIR/mock-bin"
@@ -199,6 +205,7 @@ steps:
   - name: "in_progress_beads_dedup"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
       # Dedup file from case 7 should exist
       OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "1 second ago" 2>&1)
@@ -218,6 +225,7 @@ steps:
   - name: "always_exits_zero"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" check --since "5 minutes ago" >/dev/null 2>&1
       echo "OK: exit code $?"
     assertions:

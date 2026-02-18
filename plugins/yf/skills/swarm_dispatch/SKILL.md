@@ -10,6 +10,22 @@ arguments:
     required: false
 ---
 
+## Activation Guard
+
+Before proceeding, check that yf is active:
+
+```bash
+ACTIVATION=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/yf-activation-check.sh")
+IS_ACTIVE=$(echo "$ACTIVATION" | jq -r '.active')
+```
+
+If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIVATION` and tell the user:
+
+> Yoshiko Flow is not active: {reason}. {action}
+
+Then stop. Do not execute the remaining steps.
+
+
 # Swarm Dispatch
 
 The core dispatch loop that drives agents through molecule steps. Reads the molecule state, identifies ready steps, parses agent annotations, and dispatches parallel Task tool calls.
@@ -145,9 +161,11 @@ The reactive skill handles eligibility checks (depth, dedup, config), spawns a b
 
 If no failure is detected, proceed normally.
 
-### Step 6c: Progressive Chronicle (Opt-In)
+### Step 6c: Progressive Chronicle (Opt-In + Signal)
 
-After a step completes, if the step JSON has `"chronicle": true`:
+After a step completes, check two chronicle triggers:
+
+**Trigger 1 — Formula flag**: If the step JSON has `"chronicle": true`:
 
 ```bash
 # Check step definition for chronicle flag
@@ -164,7 +182,27 @@ if [ "$CHRONICLE" = "true" ]; then
 fi
 ```
 
-This is **opt-in per step** — no existing formulas are affected unless their step JSON explicitly includes `"chronicle": true`. Use this for steps that produce high-value context worth preserving independently of the final swarm chronicle.
+**Trigger 2 — CHRONICLE-SIGNAL**: If the step's comment on the parent bead contains a `CHRONICLE-SIGNAL:` line (used by read-only agents that cannot create beads directly):
+
+```bash
+COMMENT=$(bd show <parent_bead> --comments | grep -A 1 "CHRONICLE-SIGNAL:")
+if [ -n "$COMMENT" ]; then
+  SIGNAL_TEXT=$(echo "$COMMENT" | grep "CHRONICLE-SIGNAL:" | sed 's/CHRONICLE-SIGNAL: *//')
+  PLAN_LABEL=$(bd label list <parent_bead> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
+  LABELS="ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto"
+  [ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
+
+  bd create --title "Chronicle (Signal): $SIGNAL_TEXT" \
+    -l "$LABELS" \
+    --description "Signaled by step <step-id> (<step title>)
+Agent type: <read-only>
+Signal: $SIGNAL_TEXT
+Full comment: <step comment content>" \
+    --silent
+fi
+```
+
+This is **opt-in per step** (formula flag) or **opt-in per agent** (CHRONICLE-SIGNAL). Both give agents a path to trigger chronicles — write-capable agents can also create beads directly via their Chronicle Protocol.
 
 ### Step 6d: Archive Findings (Opt-In)
 

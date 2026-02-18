@@ -3,6 +3,7 @@ name: "Unit: code-gate.sh chronicle safety net"
 setup:
   - "mkdir -p .claude .yoshiko-flow docs/plans"
   - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/plan-intake-ok .yoshiko-flow/plan-chronicle-ok"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: Plan with beads but no chronicle -> warning

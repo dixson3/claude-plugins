@@ -19,6 +19,22 @@ arguments:
     required: false
 ---
 
+## Activation Guard
+
+Before proceeding, check that yf is active:
+
+```bash
+ACTIVATION=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/yf-activation-check.sh")
+IS_ACTIVE=$(echo "$ACTIVATION" | jq -r '.active')
+```
+
+If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIVATION` and tell the user:
+
+> Yoshiko Flow is not active: {reason}. {action}
+
+Then stop. Do not execute the remaining steps.
+
+
 # Engineer: Update Specification
 
 Add, update, or deprecate individual entries in specification documents.
@@ -78,6 +94,25 @@ Read the spec file and extract the highest existing ID for the relevant type:
 2. Find the entry and change its Status to `Deprecated`
 3. Add deprecation note with date and reason
 4. Report: "Deprecated TODO-002: [reason]"
+
+### Step 3.5: Chronicle Spec Mutation
+
+After executing the action (add/update/deprecate), create a chronicle bead. Every spec mutation is a contract change worth recording.
+
+```bash
+PLAN_LABEL=$(bd list -l exec:executing --type=epic --status=open --limit=1 --json 2>/dev/null | jq -r '.[0].labels[]? | select(startswith("plan:"))' | head -1)
+LABELS="ys:chronicle,ys:chronicle:auto,ys:topic:engineer"
+[ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
+
+bd create --type task \
+  --title "Chronicle: engineer_update — $ACTION $ENTRY_ID" \
+  -l "$LABELS" \
+  --description "Spec mutation: $ACTION
+Entry: $ENTRY_ID
+File: $TARGET_FILE
+Rationale: <why this change was made>" \
+  --silent
+```
 
 ### Step 4: Cross-Reference Check
 

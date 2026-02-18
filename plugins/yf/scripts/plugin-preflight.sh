@@ -65,11 +65,23 @@ fi
 # --- Source the config library ---
 . "$SCRIPT_DIR/yf-config.sh"
 
-# --- Setup needed signal ---
+# --- Beads dependency check ---
+if ! yf_beads_installed; then
+  echo "YF_DEPENDENCY_MISSING: beads"
+  echo "preflight: yf requires the beads plugin. Install: /install steveyegge/beads"
+fi
+
+# --- Setup needed signal (fail-closed activation) ---
 if ! yf_config_exists; then
   echo "YF_SETUP_NEEDED"
   echo "preflight: no config found — run /yf:setup to configure"
-  # Continue with defaults to install artifacts on first run
+  # Remove any existing rule symlinks (inactive project)
+  for F in "$PROJECT_DIR/.claude/rules/yf"/*.md; do
+    [ -e "$F" ] || [ -L "$F" ] || continue
+    rm -f "$F"
+  done
+  rmdir "$PROJECT_DIR/.claude/rules/yf" 2>/dev/null || true
+  exit 0
 fi
 
 # --- Read config ---
@@ -113,6 +125,26 @@ if [ "$YF_ENABLED" = "false" ]; then
   else
     echo "preflight: disabled — no rules to remove"
   fi
+  exit 0
+fi
+
+# --- Inactive: beads not installed ---
+if ! yf_beads_installed; then
+  REMOVED=0
+  for F in "$PROJECT_DIR/.claude/rules/yf"/*.md; do
+    [ -e "$F" ] || [ -L "$F" ] || continue
+    rm -f "$F"
+    REMOVED=$((REMOVED + 1))
+    echo "preflight: yf — removed (inactive) .claude/rules/yf/$(basename "$F")"
+  done
+  for F in "$PROJECT_DIR/.claude/rules"/yf-*.md; do
+    [ -e "$F" ] || [ -L "$F" ] || continue
+    rm -f "$F"
+    REMOVED=$((REMOVED + 1))
+    echo "preflight: yf — removed (inactive) .claude/rules/$(basename "$F")"
+  done
+  rmdir "$PROJECT_DIR/.claude/rules/yf" 2>/dev/null || true
+  echo "preflight: inactive — beads plugin not installed"
   exit 0
 fi
 

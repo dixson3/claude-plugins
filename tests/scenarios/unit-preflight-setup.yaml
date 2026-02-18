@@ -2,6 +2,7 @@ name: "Unit: plugin-preflight.sh — setup signal"
 
 setup:
   - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: YF_SETUP_NEEDED when no config exists
@@ -35,10 +36,11 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: Artifacts still installed even with YF_SETUP_NEEDED
+  # Case 3: Artifacts installed when config exists
   - name: "artifacts_installed_on_first_run"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -rf "$WORK_DIR/.claude/rules/yf"
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" >/dev/null 2>&1
       COUNT=0
@@ -81,6 +83,7 @@ steps:
   - name: "copy_to_symlink_migration"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -rf "$WORK_DIR/.claude/rules/yf"
       # Create a regular file (simulating old copy mode)
       mkdir -p "$WORK_DIR/.claude/rules/yf" && cp "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" "$WORK_DIR/.claude/rules/yf/yf-rules.md"
