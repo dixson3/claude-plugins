@@ -45,3 +45,5 @@
 # - github.repo
 
 dolt.database: "beads"
+
+no-git-ops: true

@@ -10,7 +10,7 @@ arguments:
 
 # /yf:setup — Project Configuration
 
-Zero-question setup. Enables yf with sensible defaults. Chronicler and archivist are always on.
+Zero-question setup. Enables yf with sensible defaults.
 
 ## Behavior
 
@@ -99,7 +99,5 @@ Then run preflight.
 ## Important
 
 - No `AskUserQuestion` calls — this is zero-question setup
-- Config writes only `{enabled, config: {artifact_dir}}` — no chronicler/archivist fields
-- Chronicler and archivist are always on when yf is enabled
+- Config writes only `{enabled, config: {artifact_dir}}`
 - The only way to disable yf is `/yf:setup disable`
-- Old configs with `chronicler_enabled`/`archivist_enabled` are pruned by preflight
