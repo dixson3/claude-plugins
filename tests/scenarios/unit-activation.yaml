@@ -77,7 +77,7 @@ steps:
       OUTPUT=$(HOME="$WORK_DIR/fakehome" PATH="/usr/bin:/bin" bash "$PLUGIN_DIR/plugins/yf/scripts/yf-activation-check.sh")
       ACTIVE=$(echo "$OUTPUT" | jq -r '.active')
       REASON=$(echo "$OUTPUT" | jq -r '.reason // empty')
-      if [ "$ACTIVE" = "false" ] && echo "$REASON" | grep -qi "beads"; then
+      if [ "$ACTIVE" = "false" ] && echo "$REASON" | grep -qi "bd CLI"; then
         echo "OK: no beads → inactive"
       else
         echo "FAIL: active=$ACTIVE reason=$REASON"
@@ -120,18 +120,20 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: yf_beads_installed with registry present
-  - name: "beads_installed_via_registry"
+  # Case 7: yf_bd_available with bd in PATH
+  - name: "bd_available_in_path"
     run: |
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
-      mkdir -p "$WORK_DIR/fakehome/.claude/plugins"
-      echo '{"beads@0.50.0":{"name":"beads","version":"0.50.0"}}' > "$WORK_DIR/fakehome/.claude/plugins/installed_plugins.json"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
-      if HOME="$WORK_DIR/fakehome" yf_beads_installed; then
-        echo "OK: beads found in registry"
+      if command -v bd >/dev/null 2>&1; then
+        if yf_bd_available; then
+          echo "OK: bd found in PATH"
+        else
+          echo "FAIL: bd should be found"
+          exit 1
+        fi
       else
-        echo "FAIL: beads not found in registry"
-        exit 1
+        echo "OK: skipped (bd not in test env)"
       fi
     assertions:
       - type: exit_code
@@ -139,18 +141,16 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 8: yf_beads_installed with empty registry
-  - name: "beads_not_in_registry"
+  # Case 8: yf_bd_available with bd NOT in PATH
+  - name: "bd_not_available"
     run: |
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
-      mkdir -p "$WORK_DIR/fakehome/.claude/plugins"
-      echo '{"other-plugin@1.0.0":{}}' > "$WORK_DIR/fakehome/.claude/plugins/installed_plugins.json"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
-      if HOME="$WORK_DIR/fakehome" PATH="/usr/bin:/bin" yf_beads_installed; then
-        echo "FAIL: should not find beads"
+      if PATH="/usr/bin:/bin" yf_bd_available; then
+        echo "FAIL: should not find bd"
         exit 1
       fi
-      echo "OK: beads not found"
+      echo "OK: bd not found"
     assertions:
       - type: exit_code
         value: "0"

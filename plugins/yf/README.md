@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.23.0
+# Yoshiko Flow (yf) Plugin — v2.24.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -24,39 +24,33 @@ Yoshiko Flow uses **explicit per-project activation**. Installing yf (globally o
 
 ### Prerequisites
 
-1. **beads-cli** — Git-backed issue tracker. See [beads-cli](https://github.com/dixson3/beads-cli) for installation.
-2. **beads plugin** — Claude Code plugin providing agent-facing task operations: `/install steveyegge/beads`
+1. **beads-cli** — Git-backed issue tracker. Install: `brew install dixson3/tap/beads-cli`. See [beads-cli](https://github.com/dixson3/beads-cli) for details.
 
 ### Three-Condition Gate
 
 yf is active only when ALL of:
 - `.yoshiko-flow/config.json` exists (created by `/yf:setup`)
 - `enabled` field is `true` in the config
-- The beads plugin (`steveyegge/beads`) is installed
+- The bd CLI is available
 
 When inactive, all skills except `/yf:setup` refuse to execute, and hooks exit silently.
 
 ## Getting Started
 
-1. **Install beads-cli** — See [beads-cli](https://github.com/dixson3/beads-cli) for installation.
+1. **Install beads-cli** — `brew install dixson3/tap/beads-cli`. See [beads-cli](https://github.com/dixson3/beads-cli) for details.
 
-2. **Install the beads plugin:**
-   ```
-   /install steveyegge/beads
-   ```
-
-3. **Load the marketplace:**
+2. **Load the marketplace:**
    ```bash
    claude --plugin-dir /path/to/yoshiko-studios-marketplace
    ```
 
-4. **Run setup:**
+3. **Run setup:**
    ```
    /yf:setup
    ```
-   Setup verifies beads is installed, writes the activation config, installs rules, creates directories, and initializes beads.
+   Setup verifies bd CLI is available, writes the activation config, installs rules, creates directories, and initializes beads.
 
-5. **Start planning** — Enter plan mode, write your plan, exit. Yoshiko Flow takes it from there. See [Plan Lifecycle](#plan-lifecycle) for details.
+4. **Start planning** — Enter plan mode, write your plan, exit. Yoshiko Flow takes it from there. See [Plan Lifecycle](#plan-lifecycle) for details.
 
 > **Note:** Beads uses an embedded dolt database for persistence. Writes are immediate — no sync step required.
 

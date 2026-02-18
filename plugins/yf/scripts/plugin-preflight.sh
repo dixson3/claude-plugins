@@ -67,8 +67,8 @@ fi
 
 # --- Beads dependency check ---
 if ! yf_beads_installed; then
-  echo "YF_DEPENDENCY_MISSING: beads"
-  echo "preflight: yf requires the beads plugin. Install: /install steveyegge/beads"
+  echo "YF_DEPENDENCY_MISSING: bd"
+  echo "preflight: yf requires beads-cli (bd). Install: brew install dixson3/tap/beads-cli"
 fi
 
 # --- Setup needed signal (fail-closed activation) ---
@@ -144,7 +144,7 @@ if ! yf_beads_installed; then
     echo "preflight: yf — removed (inactive) .claude/rules/$(basename "$F")"
   done
   rmdir "$PROJECT_DIR/.claude/rules/yf" 2>/dev/null || true
-  echo "preflight: inactive — beads plugin not installed"
+  echo "preflight: inactive — bd CLI not available"
   exit 0
 fi
 

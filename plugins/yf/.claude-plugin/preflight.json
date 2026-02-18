@@ -1,12 +1,5 @@
 {
   "mode": "symlink",
-  "dependencies": [
-    {
-      "name": "beads",
-      "marketplace": "steveyegge/beads",
-      "required": true
-    }
-  ],
   "artifacts": {
     "rules": [
       { "source": "rules/yf-rules.md", "target": ".claude/rules/yf/yf-rules.md" }

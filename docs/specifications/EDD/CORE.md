@@ -244,25 +244,25 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Context**: yf activated on every project where installed, even without setup. G7 said "fail-open" which conflated hook behavior (always exit 0 on errors) with activation behavior (enabled by default).
 
-**Decision**: Separate hook fail-open (TC-005, unchanged) from activation fail-closed. Three conditions: config exists + enabled:true + beads plugin installed. `yf_is_enabled()` enforces all three. `_yf_check_flag` remains fail-open for optional sub-config flags.
+**Decision**: Separate hook fail-open (TC-005, unchanged) from activation fail-closed. Three conditions: config exists + enabled:true + bd CLI available. `yf_is_enabled()` enforces all three. `_yf_check_flag` remains fail-open for optional sub-config flags.
 
-**Rationale**: User-scope installation should not impose yf on every project. Explicit activation (`/yf:setup`) is the only entry point. The beads plugin provides agent-facing skills that yf depends on.
+**Rationale**: User-scope installation should not impose yf on every project. Explicit activation (`/yf:setup`) is the only entry point. The bd CLI provides the task tracking infrastructure that yf depends on.
 
-**Consequences**: Projects without explicit setup become inactive. `YF_SETUP_NEEDED` signal in preflight guides users. Existing projects with `config.json` and `enabled: true` remain active if beads is installed.
-
-**Source**: Plan 42
-
-### DD-016: Hybrid Beads Routing
-
-**Context**: yf references `bd` CLI commands in rules, skills, and shell scripts. The beads plugin provides agent-facing skills (`/beads:create`, `/beads:close`, etc.) that offer richer context.
-
-**Decision**: Shell scripts and hooks continue using `bd` CLI directly (infrastructure layer). Agent-facing instructions (rules, skill steps) reference beads skills (`/beads:ready`, `/beads:close`, etc.) for operations. Both pathways remain available.
-
-**Rationale**: Shell scripts need deterministic CLI calls, not skill invocations. Agent instructions benefit from the beads skill layer which includes context, validation, and formatting. Declaring the dependency ensures beads skills are available.
-
-**Consequences**: Agent operations route through beads plugin skills. yf must declare and enforce beads plugin as a dependency (DD-015). Shell infrastructure is unaffected.
+**Consequences**: Projects without explicit setup become inactive. `YF_SETUP_NEEDED` signal in preflight guides users. Existing projects with `config.json` and `enabled: true` remain active if bd CLI is available.
 
 **Source**: Plan 42
+
+### DD-016: Hybrid Beads Routing — **Reversed**
+
+**Context**: yf references `bd` CLI commands in rules, skills, and shell scripts. The beads plugin provided agent-facing skills (`/beads:create`, `/beads:close`, etc.) that offered richer context.
+
+**Decision**: **Reversed.** The beads plugin (`steveyegge/beads`) has been uninstalled. All operations use `bd` CLI directly. yf's own rules provide the authoritative workflow context, and all bd operations are called directly from rules, skills, and shell scripts.
+
+**Rationale**: The beads plugin was only providing: (1) an activation gate check against `installed_plugins.json`, (2) a `dependencies` declaration in `preflight.json`, (3) `bd prime` context injection hooks, and (4) thin skill wrappers. None of these are needed since yf's own rules provide the authoritative workflow context and all bd operations are called directly.
+
+**Consequences**: No beads plugin dependency. Activation gate checks for `bd` CLI availability instead of plugin registry. `preflight.json` has no `dependencies` array.
+
+**Source**: Plan 42 (original), Plan 47 (reversed)
 
 ### DD-017: Session Close Enforcement via Blocking Hook + Orchestrator Skill
 

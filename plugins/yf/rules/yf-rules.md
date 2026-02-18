@@ -9,10 +9,10 @@ Rules are ordered by priority. Hard enforcement rules are checked first; advisor
 yf is INACTIVE when ANY of:
 - `.yoshiko-flow/config.json` does not exist
 - `.yoshiko-flow/config.json` has `enabled: false`
-- The beads plugin (`steveyegge/beads`) is not installed
+- The bd CLI is not available
 
 When inactive: all skills except `/yf:setup` refuse to execute, all hooks exit silently.
-To activate: install beads (`/install steveyegge/beads`), then run `/yf:setup`.
+To activate: install beads-cli (`brew install dixson3/tap/beads-cli`), then run `/yf:setup`.
 
 ### 1.1 Beads Are the Source of Truth
 
@@ -114,7 +114,7 @@ Budget: 1 retry per step (configurable via `max_retries`).
 
 When ending a work session, invoke `/yf:session_land`.
 The pre-push hook (`pre-push-land.sh`) enforces clean-tree and closed-beads prerequisites.
-This protocol supersedes the `bd prime` SESSION CLOSE PROTOCOL.
+This is the authoritative session close protocol.
 
 ---
 

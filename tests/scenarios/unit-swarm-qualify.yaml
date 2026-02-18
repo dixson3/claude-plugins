@@ -69,7 +69,7 @@ steps:
       jq -r '.version' "$PLUGIN_DIR/plugins/yf/.claude-plugin/plugin.json"
     assertions:
       - type: output_contains
-        value: "2.23.0"
+        value: "2.24.0"
 
   # Case 9: research-spike formula has planning_safe
   - name: "research_spike_planning_safe"

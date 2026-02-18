@@ -162,7 +162,7 @@ Yoshiko Flow uses **explicit per-project activation** (DD-015). Installing yf gl
 
 1. **Config exists** — `.yoshiko-flow/config.json` must be present
 2. **Enabled flag** — `enabled` field must not be `false`
-3. **Beads installed** — The beads plugin (`steveyegge/beads`) must be installed
+3. **bd available** — The bd CLI must be available
 
 When any condition fails, yf is inactive: skills refuse (via `yf-activation-check.sh`), hooks exit silently, and preflight removes rules.
 
@@ -179,7 +179,7 @@ All skills (except `/yf:setup`) include an activation guard that runs this scrip
 
 ### Beads Dependency
 
-yf declares a dependency on the beads plugin in `preflight.json`. The `yf_beads_installed()` function checks `~/.claude/plugins/installed_plugins.json` for a `beads@*` key, falling back to `command -v bd`.
+The `yf_bd_available()` function checks `command -v bd`. A backwards-compatible alias `yf_beads_installed()` is provided.
 
 ### Fail-Open vs. Fail-Closed
 
@@ -259,8 +259,8 @@ The `yf-config.sh` shell library provides accessor functions:
 | Function | Description |
 |----------|-------------|
 | `yf_merged_config` | Read merged config as JSON |
-| `yf_is_enabled` | Three-condition activation gate (config exists + enabled + beads installed) |
-| `yf_beads_installed` | Check if beads plugin is installed (registry + CLI fallback) |
+| `yf_is_enabled` | Three-condition activation gate (config exists + enabled + bd available) |
+| `yf_bd_available` | Check if bd CLI is available (`command -v bd`) |
 | `yf_read_field` | Read arbitrary config field |
 | `yf_config_exists` | Check if config file exists |
 

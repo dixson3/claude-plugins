@@ -10,7 +10,7 @@
 # Three conditions (DD-015):
 #   1. .yoshiko-flow/config.json exists
 #   2. enabled != false
-#   3. Beads plugin installed
+#   3. bd CLI available
 #
 # Environment:
 #   CLAUDE_PROJECT_DIR — project root (defaults to ".")
@@ -33,9 +33,9 @@ if command -v jq >/dev/null 2>&1; then
   fi
 fi
 
-# Check condition 3: beads plugin installed
-if ! yf_beads_installed; then
-  echo '{"active":false,"reason":"Beads plugin not installed","action":"Install beads plugin: /install steveyegge/beads"}'
+# Check condition 3: bd CLI available
+if ! yf_bd_available; then
+  echo '{"active":false,"reason":"bd CLI not available","action":"Install beads-cli: brew install dixson3/tap/beads-cli"}'
   exit 0
 fi
 

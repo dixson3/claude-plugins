@@ -36,7 +36,7 @@ The marketplace provides the plugin architecture for Claude Code -- plugin regis
 1. `preflight-wrapper.sh` triggers `plugin-preflight.sh`
 2. Script sources `yf-config.sh` for config access
 2.25. If no `.yoshiko-flow/config.json` exists: emit `YF_SETUP_NEEDED`, remove any existing rule symlinks, exit (fail-closed activation)
-2.5. Check beads plugin dependency: parse `~/.claude/plugins/installed_plugins.json` for `beads@*`. If missing: emit `YF_DEPENDENCY_MISSING`, remove rule symlinks, exit.
+2.5. Check bd CLI dependency: `command -v bd`. If missing: emit `YF_DEPENDENCY_MISSING`, remove rule symlinks, exit.
 3. Script checks fast path: version matches, rule count matches, all symlinks correct
 4. If fast path passes: exit in <50ms
 5. If full sync needed: for each rule in `preflight.json`:
@@ -79,13 +79,13 @@ The marketplace provides the plugin architecture for Claude Code -- plugin regis
 
 **Actor**: Operator
 
-**Preconditions**: yf plugin installed (user or project scope). beads plugin installed.
+**Preconditions**: yf plugin installed (user or project scope). bd CLI available.
 
 **Flow**:
 1. Operator runs `/yf:setup` in a project
-2. Skill checks beads plugin presence in `~/.claude/plugins/installed_plugins.json`
-3. If beads missing: report dependency, provide install instructions, stop
-4. If beads present: write `.yoshiko-flow/config.json` with `{enabled: true, config: {artifact_dir: "docs"}}`
+2. Skill checks bd CLI availability (`command -v bd`)
+3. If bd missing: report dependency, provide install instructions, stop
+4. If bd present: write `.yoshiko-flow/config.json` with `{enabled: true, config: {artifact_dir: "docs"}}`
 5. Run `plugin-preflight.sh` to install rules, directories, beads init
 6. Plugin is now active in this project
 

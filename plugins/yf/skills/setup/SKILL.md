@@ -14,26 +14,19 @@ Zero-question setup. Enables yf with sensible defaults.
 
 ## Behavior
 
-### Beads Dependency Check
+### Beads CLI Dependency Check
 
-Before any setup action, verify that the beads plugin is installed:
+Before any setup action, verify that the bd CLI is available:
 
 ```bash
-BEADS_REGISTRY="$HOME/.claude/plugins/installed_plugins.json"
-BEADS_FOUND=false
-if [ -f "$BEADS_REGISTRY" ] && command -v jq >/dev/null 2>&1; then
-  if jq -e 'keys[] | select(startswith("beads@"))' "$BEADS_REGISTRY" >/dev/null 2>&1; then
-    BEADS_FOUND=true
-  fi
-fi
-if [ "$BEADS_FOUND" != "true" ] && ! command -v bd >/dev/null 2>&1; then
-  BEADS_FOUND=false
+if ! command -v bd >/dev/null 2>&1; then
+  BD_AVAILABLE=false
 fi
 ```
 
-If `BEADS_FOUND` is `false`, tell the user:
+If `BD_AVAILABLE` is `false`, tell the user:
 
-> Yoshiko Flow requires the beads plugin. Install it first: `/install steveyegge/beads`
+> Yoshiko Flow requires beads-cli (bd). Install it first: `brew install dixson3/tap/beads-cli`
 
 Then stop. Do not write any config or run preflight.
 

@@ -242,19 +242,28 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 13: yf_beads_installed function
-  - name: "beads_installed_function"
+  # Case 13: yf_bd_available function and alias
+  - name: "bd_available_function"
     run: |
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
-      # Test with mock registry
-      mkdir -p "$WORK_DIR/fakehome/.claude/plugins"
-      echo '{"beads@0.50.0":{}}' > "$WORK_DIR/fakehome/.claude/plugins/installed_plugins.json"
-      if HOME="$WORK_DIR/fakehome" yf_beads_installed; then
-        echo "OK: found beads in registry"
+      # Test yf_bd_available with bd in PATH
+      if command -v bd >/dev/null 2>&1; then
+        if yf_bd_available; then
+          echo "OK: yf_bd_available found bd"
+        else
+          echo "FAIL: should find bd"
+          exit 1
+        fi
+        # Test backwards-compatible alias
+        if yf_beads_installed; then
+          echo "OK: alias works too"
+        else
+          echo "FAIL: alias should work"
+          exit 1
+        fi
       else
-        echo "FAIL: should find beads"
-        exit 1
+        echo "OK: skipped (bd not in test env)"
       fi
     assertions:
       - type: exit_code

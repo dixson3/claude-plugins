@@ -40,7 +40,7 @@ Maps each specification item to its test coverage. Status key: **tested** (behav
 | REQ-032 | Standards-driven code implementation | unit-code-implement.yaml | tested |
 | REQ-033 | Spec integrity gates at intake/completion | unit-spec-sanity.yaml | tested |
 | REQ-034 | Three-condition activation gate | unit-activation.yaml, unit-yf-config.yaml | tested |
-| REQ-035 | Beads plugin dependency enforcement | unit-activation.yaml, unit-preflight.yaml | tested |
+| REQ-035 | bd CLI dependency enforcement | unit-activation.yaml, unit-preflight.yaml | tested |
 | REQ-036 | User-scope install with per-project activation | unit-activation.yaml, unit-preflight.yaml | tested |
 | REQ-037 | Memory reconciliation | unit-memory-reconcile.yaml | existence-only |
 | REQ-038 | Skill-level chronicle auto-capture | unit-chronicle-worthiness.yaml | existence-only |
@@ -69,7 +69,7 @@ Aligned to EDD/CORE.md DD-001 through DD-014.
 | DD-013 | Standards-driven code implementation formula | unit-code-implement.yaml | tested |
 | DD-014 | Specifications as anchor documents | unit-spec-sanity.yaml | tested |
 | DD-015 | Three-condition activation model | unit-activation.yaml, unit-yf-config.yaml | tested |
-| DD-016 | Hybrid beads routing | — | untested |
+| DD-016 | Hybrid beads routing (reversed) | — | n/a |
 | DD-017 | Session close enforcement (hook + skill) | unit-pre-push-land.yaml, unit-session-land.yaml | untested |
 
 ## Non-Functional Requirements (NFR-xxx)

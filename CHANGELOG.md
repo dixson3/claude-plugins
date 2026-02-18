@@ -5,6 +5,24 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.24.0] - 2026-02-18
+
+### Removed
+
+- **Beads plugin dependency** (`steveyegge/beads`): yf no longer depends on the beads Claude Code plugin. All operations use `bd` CLI directly. The `dependencies` array has been removed from `preflight.json`.
+- **Stale `.beads/` artifacts**: Removed git-tracked hooks (`post-checkout`, `post-merge`, `pre-commit`, `pre-push`, `prepare-commit-msg`), `issues.jsonl`, `metadata.json`, and `README.md` — all no-ops with the dolt backend.
+- **`installed_plugins.json` registry check**: `yf_beads_installed()` no longer checks the plugin registry; replaced by `yf_bd_available()` which checks `command -v bd`.
+
+### Changed
+
+- **Activation gate simplified**: Condition 3 changed from "beads plugin installed" to "bd CLI available". `yf_bd_available()` is the new canonical function; `yf_beads_installed()` retained as backwards-compatible alias.
+- **DD-016 reversed**: Hybrid beads routing (agent operations through beads plugin skills) marked as reversed — all operations use `bd` CLI directly.
+- **Setup dependency check**: `/yf:setup` checks `command -v bd` instead of parsing `installed_plugins.json`.
+- **Preflight messages**: "beads plugin" references replaced with "bd CLI" / "beads-cli" throughout.
+- **`.beads/.gitignore`**: Added patterns for `hooks/`, `issues.jsonl`, `interactions.jsonl`, `metadata.json`, `README.md`.
+- **Plugin version**: 2.23.0 → 2.24.0.
+- **Test updates**: `unit-activation.yaml` cases 7-8 updated from registry checks to `yf_bd_available()` / PATH-based tests. `unit-yf-config.yaml` case 13 updated to test `yf_bd_available()` and alias.
+
 ## [2.23.0] - 2026-02-18
 
 ### Added

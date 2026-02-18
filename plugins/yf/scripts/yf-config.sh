@@ -51,23 +51,19 @@ _yf_check_flag() {
   [ "$val" != "false" ]
 }
 
-# yf_beads_installed — returns 0 if beads plugin is installed
-yf_beads_installed() {
-  local registry="$HOME/.claude/plugins/installed_plugins.json"
-  if [ -f "$registry" ] && command -v jq >/dev/null 2>&1; then
-    if jq -e 'keys[] | select(startswith("beads@"))' "$registry" >/dev/null 2>&1; then
-      return 0
-    fi
-  fi
-  # Fallback: check for bd CLI
+# yf_bd_available — returns 0 if bd CLI is available
+yf_bd_available() {
   command -v bd >/dev/null 2>&1
 }
+
+# Backwards-compatible alias
+yf_beads_installed() { yf_bd_available; }
 
 # yf_is_enabled — returns 0 if enabled, 1 if disabled
 # Three-condition activation gate (DD-015):
 #   1. Config exists
 #   2. enabled != false
-#   3. Beads plugin installed
+#   3. bd CLI available
 yf_is_enabled() {
   yf_config_exists || return 1
   if command -v jq >/dev/null 2>&1; then
@@ -75,7 +71,7 @@ yf_is_enabled() {
     val=$(yf_merged_config | jq -r 'if .enabled == null then true else .enabled end' 2>/dev/null)
     [ "$val" = "false" ] && return 1
   fi
-  yf_beads_installed || return 1
+  yf_bd_available || return 1
   return 0
 }
 
