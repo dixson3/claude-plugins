@@ -1,0 +1,130 @@
+name: "Integration: beads-setup — fresh project initialization"
+type: integration
+
+project:
+  git: true
+  beads: false
+  yf_enabled: false
+  plugin_link: true
+
+steps:
+  # Step 1: Run beads-setup.sh in fresh project (no beads yet)
+  - name: "beads_setup_fresh"
+    run: |
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "BEADS_SETUP_FAILED"; then
+        echo "SETUP_FAILED"
+        exit 1
+      fi
+      if echo "$OUTPUT" | grep -q "initialized .beads/\|healthy"; then
+        echo "SETUP_OK"
+      else
+        echo "UNEXPECTED: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "SETUP_OK"
+
+  # Step 2: Verify .beads directory exists
+  - name: "beads_dir_exists"
+    run: |
+      if [ -d "$WORK_DIR/.beads" ]; then
+        echo "OK"
+      else
+        echo "FAIL: .beads/ not created"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 3: Verify no-git-ops is set
+  - name: "no_git_ops_set"
+    run: |
+      VAL=$(cd "$WORK_DIR" && bd config get no-git-ops 2>/dev/null)
+      if [ "$VAL" = "true" ]; then
+        echo "OK: no-git-ops=true"
+      else
+        echo "FAIL: no-git-ops='$VAL'"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 4: Verify database name is "beads"
+  - name: "database_name_beads"
+    run: |
+      DB=$(cd "$WORK_DIR" && bd dolt show 2>/dev/null | grep "Database:" | awk '{print $2}')
+      if [ "$DB" = "beads" ]; then
+        echo "OK: database=beads"
+      else
+        echo "FAIL: database='$DB'"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 5: Verify no hooks installed
+  - name: "no_hooks_installed"
+    run: |
+      HOOKS_OUTPUT=$(cd "$WORK_DIR" && bd hooks list 2>/dev/null)
+      if echo "$HOOKS_OUTPUT" | grep -q '✓'; then
+        echo "FAIL: hooks are installed"
+        echo "$HOOKS_OUTPUT"
+        exit 1
+      else
+        echo "OK: no hooks installed"
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 6: Second run is idempotent
+  - name: "idempotent_rerun"
+    run: |
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh" 2>&1)
+      if echo "$OUTPUT" | grep -q "healthy"; then
+        CHANGES=$(echo "$OUTPUT" | grep -o '[0-9]* changes' | awk '{print $1}')
+        echo "OK: healthy with $CHANGES changes"
+      else
+        echo "FAIL: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 7: Full preflight works after beads-setup
+  - name: "preflight_after_setup"
+    run: |
+      # Enable yf config first
+      mkdir -p "$WORK_DIR/.yoshiko-flow"
+      echo '{"enabled": true, "config": {"artifact_dir": "docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "YF_BEADS_UNHEALTHY"; then
+        echo "PREFLIGHT_FAILED"
+        exit 1
+      fi
+      echo "PREFLIGHT_OK"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "PREFLIGHT_OK"

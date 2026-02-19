@@ -20,15 +20,16 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: preflight.json does NOT use --skip-hooks
-  - name: "preflight_no_skip_hooks"
+  # Case 2: preflight.json setup uses beads-setup.sh (consolidated setup)
+  - name: "preflight_uses_beads_setup_sh"
     run: |
-      RUN_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads") | .run' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
-      if echo "$RUN_CMD" | grep -q '\-\-skip-hooks'; then
-        echo "FAIL: preflight still uses --skip-hooks"
+      RUN_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads-setup") | .run' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
+      if echo "$RUN_CMD" | grep -q 'beads-setup.sh'; then
+        echo "OK: preflight uses beads-setup.sh"
+      else
+        echo "FAIL: preflight setup is '$RUN_CMD', expected beads-setup.sh"
         exit 1
       fi
-      echo "OK: preflight does not use --skip-hooks"
     assertions:
       - type: exit_code
         value: "0"
@@ -38,7 +39,7 @@ steps:
   # Case 3: preflight.json does NOT include bd hooks install (dolt mode — hooks are no-ops)
   - name: "preflight_no_hooks_install"
     run: |
-      RUN_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads") | .run' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
+      RUN_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads-setup") | .run' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
       if echo "$RUN_CMD" | grep -q 'bd hooks install'; then
         echo "FAIL: preflight still includes bd hooks install"
         exit 1
@@ -138,7 +139,7 @@ steps:
   # Case 10: preflight.json does NOT contain sync.branch config
   - name: "preflight_no_sync_branch"
     run: |
-      RUN_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads") | .run' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
+      RUN_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads-setup") | .run' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
       if echo "$RUN_CMD" | grep -q 'sync.branch'; then
         echo "FAIL: preflight still references sync.branch"
         exit 1
@@ -164,14 +165,14 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 12: preflight setup command is exactly "bd init" (no chained commands)
-  - name: "preflight_setup_is_bd_init_only"
+  # Case 12: preflight setup check validates both .beads dir AND no-git-ops
+  - name: "preflight_setup_check_validates_both"
     run: |
-      RUN_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads") | .run' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
-      if [ "$RUN_CMD" = "bd init" ]; then
-        echo "OK: preflight setup is exactly 'bd init'"
+      CHECK_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads-setup") | .check' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
+      if echo "$CHECK_CMD" | grep -q 'test -d .beads' && echo "$CHECK_CMD" | grep -q 'no-git-ops'; then
+        echo "OK: preflight check validates .beads dir and no-git-ops"
       else
-        echo "FAIL: preflight setup is '$RUN_CMD', expected 'bd init'"
+        echo "FAIL: preflight check is '$CHECK_CMD', expected both .beads and no-git-ops"
         exit 1
       fi
     assertions:

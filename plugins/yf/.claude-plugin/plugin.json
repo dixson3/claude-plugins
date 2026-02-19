@@ -1,7 +1,7 @@
 {
   "name": "yf",
-  "version": "2.24.0",
-  "description": "Yoshiko Flow — plan lifecycle, swarm execution with implicit formula triggering, context persistence, diary generation, research/decision archiving, specification artifacts, standards-driven code generation, automatic bead pruning, and zero-question setup",
+  "version": "2.25.0",
+  "description": "Yoshiko Flow — plan lifecycle, swarm execution with implicit formula triggering, context persistence, diary generation, research/decision archiving, specification artifacts, standards-driven code generation, automatic bead pruning, zero-question setup, and doctor-driven beads repair",
   "author": {
     "name": "James Dixson",
     "email": "dixson3@gmail.com"

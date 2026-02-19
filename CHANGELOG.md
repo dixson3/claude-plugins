@@ -5,6 +5,29 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.25.0] - 2026-02-19
+
+### Added
+
+- **`/yf:beads_setup` skill**: Doctor-driven beads initialization and repair. Runs `bd doctor`, classifies warnings as must-fix vs acceptable, attempts auto-repair for must-fix issues, and goes inactive on failure. Idempotent and fail-open.
+- **`beads-setup.sh` script**: Standalone repair script encoding all beads configuration knowledge. Handles: stale metadata.json, database name normalization, no-git-ops enforcement, hook removal, dolt change commits, and full doctor validation.
+- **Integration test infrastructure**: New `TestProject` factory (`project.go`) provisions real git repos with bare remotes, cloned working copies, optional beads init, and symlinked plugin sources. 7 new assertion types: `bd_list_contains`, `bd_count`, `git_log_contains`, `git_status_clean`, `remote_has_ref`, `symlink_exists`, `config_value`.
+- **5 integration test scenarios**: `integ-beads-setup.yaml` (fresh project E2E), `integ-activation-gate.yaml` (three-condition gate), `integ-preflight-sync.yaml` (rule symlinks, directories, gitignore), `integ-code-gate.yaml` (plan-gate enforcement), `integ-pre-push.yaml` (landing enforcement).
+- **`--integration-only` flag**: Test harness supports filtering to integration scenarios only.
+- **`type: integration` field**: YAML scenarios declare their type for filtering.
+
+### Changed
+
+- **Preflight setup consolidated**: Replaced two separate setup entries (`beads` + `beads-no-git-ops`) with single `beads-setup` entry that runs `beads-setup.sh`.
+- **`plugin-preflight.sh`**: Now detects `BEADS_SETUP_FAILED` signal from setup commands and deactivates plugin (removes rules, emits `YF_BEADS_UNHEALTHY`).
+- **`run-tests.sh`**: Integration test section now auto-discovers `integ-*.yaml` files.
+- **Test harness**: `runner.go` wires project provisioning, expands `$REMOTE_DIR`, passes extra env vars. `scenario.go` adds `Type` and `Project` fields.
+- **Plugin version**: 2.24.0 → 2.25.0.
+
+### Fixed
+
+- **This project's beads**: Fixed stale `metadata.json` (SQLite-era values), committed 5 pending dolt changes.
+
 ## [2.24.0] - 2026-02-18
 
 ### Removed

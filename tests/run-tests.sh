@@ -27,14 +27,29 @@ FLAGS=""
 if $VERBOSE; then FLAGS="$FLAGS --verbose"; fi
 if $KEEP; then FLAGS="$FLAGS --keep"; fi
 
+UNIT_EXIT=0
+INTEG_EXIT=0
+
 echo ""
 echo "=== Unit Tests ==="
 $HARNESS --plugin-dir "$PLUGIN_DIR" --unit-only $FLAGS \
-    "$SCENARIOS"/unit-*.yaml
+    "$SCENARIOS"/unit-*.yaml || UNIT_EXIT=$?
 
 if ! $UNIT_ONLY; then
-    echo ""
-    echo "=== Integration Tests ==="
-    # Integration tests removed in Plan 41 — coverage migrated to unit tests
-    echo "(no integration tests remaining)"
+    # Check if any integration test files exist
+    INTEG_FILES=("$SCENARIOS"/integ-*.yaml)
+    if [ -e "${INTEG_FILES[0]}" ]; then
+        echo ""
+        echo "=== Integration Tests ==="
+        $HARNESS --plugin-dir "$PLUGIN_DIR" $FLAGS "${INTEG_FILES[@]}" || INTEG_EXIT=$?
+    else
+        echo ""
+        echo "=== Integration Tests ==="
+        echo "(no integration test scenarios found)"
+    fi
+fi
+
+# Exit with failure if either section failed
+if [ "$UNIT_EXIT" -ne 0 ] || [ "$INTEG_EXIT" -ne 0 ]; then
+    exit 1
 fi

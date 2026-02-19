@@ -1,0 +1,133 @@
+name: "Integration: preflight sync — rule symlinks, directories, gitignore"
+type: integration
+
+project:
+  git: true
+  beads: true
+  yf_enabled: true
+  plugin_link: true
+
+steps:
+  # Step 1: Run preflight in provisioned project
+  - name: "preflight_runs"
+    run: |
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "preflight:"; then
+        echo "PREFLIGHT_RAN"
+      else
+        echo "FAIL: no preflight output"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "PREFLIGHT_RAN"
+
+  # Step 2: Rule symlink exists and points to plugin source
+  - name: "rule_symlink_valid"
+    run: |
+      LINK="$WORK_DIR/.claude/rules/yf/yf-rules.md"
+      if [ -L "$LINK" ]; then
+        TARGET=$(readlink "$LINK")
+        if [ -f "$LINK" ]; then
+          echo "OK: symlink valid, target readable"
+        else
+          echo "FAIL: symlink exists but target not readable: $TARGET"
+          exit 1
+        fi
+      else
+        echo "FAIL: not a symlink"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 3: Artifact directories created
+  - name: "artifact_dirs_created"
+    run: |
+      MISSING=""
+      for DIR in docs/plans docs/diary docs/research docs/decisions docs/specifications; do
+        if [ ! -d "$WORK_DIR/$DIR" ]; then
+          MISSING="$MISSING $DIR"
+        fi
+      done
+      if [ -z "$MISSING" ]; then
+        echo "OK: all artifact directories exist"
+      else
+        echo "FAIL: missing directories:$MISSING"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 4: .gitignore has yf-managed block
+  - name: "gitignore_managed_block"
+    run: |
+      if grep -q '# >>> yf-managed >>>' "$WORK_DIR/.gitignore"; then
+        echo "OK: gitignore has yf-managed block"
+      else
+        echo "FAIL: gitignore missing yf-managed block"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 5: .yoshiko-flow/.gitignore correct
+  - name: "yf_gitignore_correct"
+    run: |
+      if grep -q '!config.json' "$WORK_DIR/.yoshiko-flow/.gitignore"; then
+        echo "OK: .yoshiko-flow/.gitignore preserves config.json"
+      else
+        echo "FAIL: .yoshiko-flow/.gitignore incorrect"
+        cat "$WORK_DIR/.yoshiko-flow/.gitignore" 2>/dev/null
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 6: Lock file written
+  - name: "lock_file_written"
+    run: |
+      LOCK="$WORK_DIR/.yoshiko-flow/lock.json"
+      if [ -f "$LOCK" ] && jq -e '.preflight.plugins.yf.version' "$LOCK" >/dev/null 2>&1; then
+        echo "OK: lock file valid with version"
+      else
+        echo "FAIL: lock file missing or invalid"
+        cat "$LOCK" 2>/dev/null
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 7: Fast path on second run
+  - name: "fast_path_second_run"
+    run: |
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      if echo "$OUTPUT" | grep -q "up to date"; then
+        echo "OK: fast path activated"
+      else
+        echo "FAIL: expected fast path, got: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

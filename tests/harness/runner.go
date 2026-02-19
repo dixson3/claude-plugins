@@ -12,21 +12,67 @@ import (
 
 // Options controls runner behavior.
 type Options struct {
-	PluginDir string
-	WorkDir   string
-	Keep      bool
-	UnitOnly  bool
-	Verbose   bool
-	Timeout   time.Duration
+	PluginDir       string
+	WorkDir         string
+	Keep            bool
+	UnitOnly        bool
+	IntegrationOnly bool
+	Verbose         bool
+	Timeout         time.Duration
 }
 
 // RunScenario executes a single test scenario and returns a report.
 func RunScenario(scenario Scenario, opts Options) Report {
 	var results []StepResult
 
+	// Skip integration tests in unit-only mode
+	if opts.UnitOnly && scenario.Type == "integration" {
+		if opts.Verbose {
+			fmt.Printf("  [skip] integration scenario in unit-only mode\n")
+		}
+		return Report{ScenarioName: scenario.Name}
+	}
+
+	// Skip unit tests in integration-only mode
+	if opts.IntegrationOnly && scenario.Type != "integration" {
+		if opts.Verbose {
+			fmt.Printf("  [skip] unit scenario in integration-only mode\n")
+		}
+		return Report{ScenarioName: scenario.Name}
+	}
+
+	// Resolve plugin dir early (needed for project provisioning)
+	pluginDir := resolvePluginDir(scenario.PluginDir, opts.PluginDir)
+
+	// Provision test project if configured
+	var project *TestProject
+	var remoteDir string
+	var localPluginDir string
+
+	if scenario.Project != nil && scenario.Project.Git {
+		var err error
+		project, err = ProvisionProject(pluginDir, *scenario.Project)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error provisioning project: %v\n", err)
+			if project != nil && !opts.Keep {
+				project.Cleanup()
+			}
+			return Report{ScenarioName: scenario.Name}
+		}
+		if !opts.Keep {
+			defer project.Cleanup()
+		}
+	}
+
 	// Create or use work dir
 	workDir := opts.WorkDir
-	if workDir == "" {
+	if project != nil {
+		workDir = project.WorkDir
+		remoteDir = project.RemoteDir
+		if project.PluginDir != "" {
+			localPluginDir = project.PluginDir
+		}
+	} else if workDir == "" {
 		tmp, err := os.MkdirTemp("", "test-harness-*")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating temp dir: %v\n", err)
@@ -40,18 +86,33 @@ func RunScenario(scenario Scenario, opts Options) Report {
 
 	if opts.Verbose {
 		fmt.Printf("  Work dir: %s\n", workDir)
+		if remoteDir != "" {
+			fmt.Printf("  Remote dir: %s\n", remoteDir)
+		}
 	}
 
-	// Resolve plugin dir
-	pluginDir := resolvePluginDir(scenario.PluginDir, opts.PluginDir)
+	// Build extra environment for project-aware steps
+	extraEnv := map[string]string{}
+	if remoteDir != "" {
+		extraEnv["REMOTE_DIR"] = remoteDir
+	}
+	if localPluginDir != "" {
+		extraEnv["LOCAL_PLUGIN_DIR"] = localPluginDir
+	}
+
+	// Determine effective plugin dir for sessions
+	sessionPluginDir := pluginDir
+	if localPluginDir != "" {
+		sessionPluginDir = localPluginDir
+	}
 
 	// Run setup commands
 	for i, cmd := range scenario.Setup {
-		expanded := expandWorkDir(cmd, workDir)
+		expanded := expandVars(cmd, workDir, remoteDir)
 		if opts.Verbose {
 			fmt.Printf("  [setup %d] %s\n", i+1, expanded)
 		}
-		out, code := runShell(workDir, expanded, pluginDir, opts.Timeout)
+		out, code := runShell(workDir, expanded, pluginDir, extraEnv, opts.Timeout)
 		if code != 0 {
 			fmt.Fprintf(os.Stderr, "  Setup command %d failed (exit %d): %s\n%s\n", i+1, code, expanded, out)
 			return Report{ScenarioName: scenario.Name, Results: results}
@@ -59,11 +120,11 @@ func RunScenario(scenario Scenario, opts Options) Report {
 	}
 
 	// Execute steps
-	session := &Session{WorkDir: workDir, PluginDir: pluginDir}
+	session := &Session{WorkDir: workDir, PluginDir: sessionPluginDir}
 
 	for _, step := range scenario.Steps {
 		if step.NewSession {
-			session = &Session{WorkDir: workDir, PluginDir: pluginDir}
+			session = &Session{WorkDir: workDir, PluginDir: sessionPluginDir}
 		}
 		if len(step.AllowedTools) > 0 {
 			session.Allowed = step.AllowedTools
@@ -74,11 +135,11 @@ func RunScenario(scenario Scenario, opts Options) Report {
 
 		if step.Run != "" {
 			// Shell command step
-			expanded := expandWorkDir(step.Run, workDir)
+			expanded := expandVars(step.Run, workDir, remoteDir)
 			if opts.Verbose {
 				fmt.Printf("  [run: %s] %s\n", step.Name, expanded)
 			}
-			output, exitCode = runShell(workDir, expanded, pluginDir, opts.Timeout)
+			output, exitCode = runShell(workDir, expanded, pluginDir, extraEnv, opts.Timeout)
 			if opts.Verbose {
 				fmt.Printf("  [exit: %d] %s\n", exitCode, truncate(output, 200))
 			}
@@ -119,18 +180,18 @@ func RunScenario(scenario Scenario, opts Options) Report {
 
 	// Run teardown commands
 	for i, cmd := range scenario.Teardown {
-		expanded := expandWorkDir(cmd, workDir)
+		expanded := expandVars(cmd, workDir, remoteDir)
 		if opts.Verbose {
 			fmt.Printf("  [teardown %d] %s\n", i+1, expanded)
 		}
-		runShell(workDir, expanded, pluginDir, opts.Timeout)
+		runShell(workDir, expanded, pluginDir, extraEnv, opts.Timeout)
 	}
 
 	return Report{ScenarioName: scenario.Name, Results: results}
 }
 
 // runShell executes a shell command in the given directory and returns output + exit code.
-func runShell(dir, command, pluginDir string, timeout time.Duration) (string, int) {
+func runShell(dir, command, pluginDir string, extraEnv map[string]string, timeout time.Duration) (string, int) {
 	if timeout == 0 {
 		timeout = 2 * time.Minute
 	}
@@ -143,6 +204,9 @@ func runShell(dir, command, pluginDir string, timeout time.Duration) (string, in
 	)
 	if pluginDir != "" {
 		cmd.Env = append(cmd.Env, "PLUGIN_DIR="+pluginDir)
+	}
+	for k, v := range extraEnv {
+		cmd.Env = append(cmd.Env, k+"="+v)
 	}
 
 	output, err := cmd.CombinedOutput()
@@ -186,9 +250,13 @@ func resolvePluginDir(scenarioDir, flagDir string) string {
 	return ""
 }
 
-// expandWorkDir replaces $WORK_DIR in shell commands.
-func expandWorkDir(cmd, workDir string) string {
-	return strings.ReplaceAll(cmd, "$WORK_DIR", workDir)
+// expandVars replaces $WORK_DIR and $REMOTE_DIR in shell commands.
+func expandVars(cmd, workDir, remoteDir string) string {
+	result := strings.ReplaceAll(cmd, "$WORK_DIR", workDir)
+	if remoteDir != "" {
+		result = strings.ReplaceAll(result, "$REMOTE_DIR", remoteDir)
+	}
+	return result
 }
 
 // truncate shortens a string for display.

@@ -14,6 +14,7 @@ func main() {
 	workDir := flag.String("work-dir", "", "Working directory (default: temp dir per scenario)")
 	keep := flag.Bool("keep", false, "Don't clean up work dir after tests")
 	unitOnly := flag.Bool("unit-only", false, "Skip steps that call claude (run only 'run' steps)")
+	integrationOnly := flag.Bool("integration-only", false, "Run only integration scenarios")
 	verbose := flag.Bool("verbose", false, "Show full command/claude output")
 	timeout := flag.Duration("timeout", 2*time.Minute, "Per-step timeout")
 
@@ -30,12 +31,13 @@ func main() {
 	}
 
 	opts := Options{
-		PluginDir: *pluginDir,
-		WorkDir:   *workDir,
-		Keep:      *keep,
-		UnitOnly:  *unitOnly,
-		Verbose:   *verbose,
-		Timeout:   *timeout,
+		PluginDir:       *pluginDir,
+		WorkDir:         *workDir,
+		Keep:            *keep,
+		UnitOnly:        *unitOnly,
+		IntegrationOnly: *integrationOnly,
+		Verbose:         *verbose,
+		Timeout:         *timeout,
 	}
 
 	totalPass := 0
@@ -124,6 +126,20 @@ func assertionSummary(a Assertion) string {
 		return fmt.Sprintf("exit_code(%s)%s", a.Value, neg)
 	case "json_field":
 		return fmt.Sprintf("json_field(%s, %q)%s", a.Path, a.Value, neg)
+	case "bd_list_contains":
+		return fmt.Sprintf("bd_list_contains(%q)%s", a.Value, neg)
+	case "bd_count":
+		return fmt.Sprintf("bd_count(%s)%s", a.Value, neg)
+	case "git_log_contains":
+		return fmt.Sprintf("git_log_contains(%q)%s", a.Value, neg)
+	case "git_status_clean":
+		return fmt.Sprintf("git_status_clean()%s", neg)
+	case "remote_has_ref":
+		return fmt.Sprintf("remote_has_ref(%s, %q)%s", a.Path, a.Value, neg)
+	case "symlink_exists":
+		return fmt.Sprintf("symlink_exists(%s)%s", a.Path, neg)
+	case "config_value":
+		return fmt.Sprintf("config_value(%s, %q)%s", a.Path, a.Value, neg)
 	default:
 		return fmt.Sprintf("%s(%s, %q)%s", a.Type, a.Path, a.Value, neg)
 	}

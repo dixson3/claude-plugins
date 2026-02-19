@@ -1,0 +1,115 @@
+name: "Integration: activation gate — three-condition control"
+type: integration
+
+project:
+  git: true
+  beads: false
+  yf_enabled: false
+  plugin_link: true
+
+steps:
+  # Step 1: No config → yf inactive (YF_SETUP_NEEDED)
+  - name: "no_config_inactive"
+    run: |
+      # Ensure no config exists
+      rm -rf "$WORK_DIR/.yoshiko-flow"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "YF_SETUP_NEEDED"; then
+        echo "GATE_CLOSED"
+      else
+        echo "FAIL: expected YF_SETUP_NEEDED"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "GATE_CLOSED"
+
+  # Step 2: No rules symlinks when inactive
+  - name: "no_rules_when_inactive"
+    run: |
+      if [ -d "$WORK_DIR/.claude/rules/yf" ] && ls "$WORK_DIR/.claude/rules/yf"/*.md >/dev/null 2>&1; then
+        echo "FAIL: rules exist when inactive"
+        exit 1
+      fi
+      echo "OK: no rules when inactive"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 3: Setup activates yf
+  - name: "setup_activates"
+    run: |
+      # Initialize beads first
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh" >/dev/null 2>&1
+      # Create config (simulating /yf:setup)
+      mkdir -p "$WORK_DIR/.yoshiko-flow"
+      echo '{"enabled": true, "config": {"artifact_dir": "docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      # Run preflight
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "YF_SETUP_NEEDED\|YF_BEADS_UNHEALTHY"; then
+        echo "FAIL: yf still inactive after setup"
+        exit 1
+      fi
+      echo "ACTIVATED"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "ACTIVATED"
+
+  # Step 4: Rules installed after activation
+  - name: "rules_installed"
+    run: |
+      if [ -L "$WORK_DIR/.claude/rules/yf/yf-rules.md" ]; then
+        echo "OK: rules symlink installed"
+      else
+        echo "FAIL: rules symlink not found"
+        ls -la "$WORK_DIR/.claude/rules/yf/" 2>&1 || echo "(dir doesn't exist)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 5: Disable removes rules
+  - name: "disable_removes_rules"
+    run: |
+      # Disable yf
+      jq '.enabled = false' "$WORK_DIR/.yoshiko-flow/config.json" > "$WORK_DIR/.yoshiko-flow/config.json.tmp"
+      mv "$WORK_DIR/.yoshiko-flow/config.json.tmp" "$WORK_DIR/.yoshiko-flow/config.json"
+      # Run preflight
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      echo "$OUTPUT"
+      if echo "$OUTPUT" | grep -q "disabled"; then
+        echo "DEACTIVATED"
+      else
+        echo "FAIL: expected disabled message"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "DEACTIVATED"
+
+  # Step 6: Rules removed after disable
+  - name: "rules_removed_after_disable"
+    run: |
+      if [ -e "$WORK_DIR/.claude/rules/yf/yf-rules.md" ]; then
+        echo "FAIL: rules still exist after disable"
+        exit 1
+      fi
+      echo "OK: rules removed"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

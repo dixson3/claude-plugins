@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // checkAssertion evaluates a single assertion against the current state.
@@ -99,6 +100,88 @@ func checkAssertion(workDir string, a Assertion, output string, exitCode int) (b
 			}
 		}
 
+	case "bd_list_contains":
+		out, code := runAssertionCmd(workDir, "bd list --json 2>/dev/null")
+		if code != 0 {
+			result = false
+			detail = "bd list --json failed"
+		} else {
+			result = strings.Contains(out, a.Value)
+			if !result {
+				detail = fmt.Sprintf("bd list does not contain %q", a.Value)
+			}
+		}
+
+	case "bd_count":
+		out, code := runAssertionCmd(workDir, "bd count 2>/dev/null")
+		if code != 0 {
+			result = false
+			detail = "bd count failed"
+		} else {
+			result = strings.TrimSpace(out) == a.Value
+			if !result {
+				detail = fmt.Sprintf("bd count is %q, expected %q", strings.TrimSpace(out), a.Value)
+			}
+		}
+
+	case "git_log_contains":
+		out, code := runAssertionCmd(workDir, "git log --oneline 2>/dev/null")
+		if code != 0 {
+			result = false
+			detail = "git log failed"
+		} else {
+			result = strings.Contains(out, a.Value)
+			if !result {
+				detail = fmt.Sprintf("git log does not contain %q", a.Value)
+			}
+		}
+
+	case "git_status_clean":
+		out, code := runAssertionCmd(workDir, "git status --porcelain 2>/dev/null")
+		if code != 0 {
+			result = false
+			detail = "git status failed"
+		} else {
+			result = strings.TrimSpace(out) == ""
+			if !result {
+				detail = fmt.Sprintf("git working tree is not clean: %s", strings.TrimSpace(out))
+			}
+		}
+
+	case "remote_has_ref":
+		cmd := fmt.Sprintf("git -C %q show-ref --verify %s 2>/dev/null", a.Path, a.Value)
+		_, code := runAssertionCmd(workDir, cmd)
+		result = code == 0
+		if !result {
+			detail = fmt.Sprintf("remote %q does not have ref %q", a.Path, a.Value)
+		}
+
+	case "symlink_exists":
+		path := filepath.Join(workDir, a.Path)
+		fi, err := os.Lstat(path)
+		if err != nil {
+			result = false
+			detail = fmt.Sprintf("path %q does not exist", a.Path)
+		} else {
+			result = fi.Mode()&os.ModeSymlink != 0
+			if !result {
+				detail = fmt.Sprintf("path %q exists but is not a symlink", a.Path)
+			}
+		}
+
+	case "config_value":
+		path := filepath.Join(workDir, a.Path)
+		data, err := os.ReadFile(path)
+		if err != nil {
+			result = false
+			detail = fmt.Sprintf("cannot read %q: %v", a.Path, err)
+		} else {
+			result = checkJSONField(data, a.Value)
+			if !result {
+				detail = fmt.Sprintf("config field check failed for %q in %q", a.Value, a.Path)
+			}
+		}
+
 	default:
 		result = false
 		detail = fmt.Sprintf("unknown assertion type %q", a.Type)
@@ -114,6 +197,11 @@ func checkAssertion(workDir string, a Assertion, output string, exitCode int) (b
 	}
 
 	return result, detail
+}
+
+// runAssertionCmd runs a shell command for assertion checking.
+func runAssertionCmd(workDir, command string) (string, int) {
+	return runShell(workDir, command, "", nil, 30*time.Second)
 }
 
 // checkJSONField does a simple key existence check in JSON data.

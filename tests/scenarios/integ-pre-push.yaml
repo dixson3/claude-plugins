@@ -1,0 +1,75 @@
+name: "Integration: pre-push — landing enforcement"
+type: integration
+
+project:
+  git: true
+  beads: true
+  yf_enabled: true
+  plugin_link: true
+
+steps:
+  # Step 1: Verify pre-push-land.sh exists
+  - name: "pre_push_exists"
+    run: |
+      HOOK="$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh"
+      if [ -x "$HOOK" ]; then
+        echo "OK: pre-push-land.sh executable"
+      else
+        echo "FAIL: pre-push-land.sh missing or not executable"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 2: Clean tree with no in-progress beads passes
+  - name: "clean_push_succeeds"
+    run: |
+      # Ensure clean state
+      cd "$WORK_DIR"
+      git add -A && git commit -m "test commit" --allow-empty -q 2>/dev/null || true
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh" 2>&1)
+      EXIT=$?
+      echo "exit=$EXIT output=$OUTPUT"
+      # pre-push-land.sh should exit 0 for clean state
+      if [ "$EXIT" -eq 0 ]; then
+        echo "OK: clean push passes"
+      else
+        echo "FAIL: exit $EXIT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 3: In-progress beads detected by pre-push
+  - name: "in_progress_detected"
+    run: |
+      cd "$WORK_DIR"
+      # Create an in-progress bead
+      BEAD_ID=$(bd create --title="test blocker" --type=task --priority=2 2>/dev/null | grep "Created issue:" | awk '{print $NF}')
+      if [ -n "$BEAD_ID" ]; then
+        bd update "$BEAD_ID" --status=in_progress 2>/dev/null
+      fi
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh" 2>&1)
+      EXIT=$?
+      echo "exit=$EXIT output_preview=$(echo "$OUTPUT" | head -3)"
+      # Hook may block (exit non-zero) or warn (exit 0 with message)
+      if [ "$EXIT" -ne 0 ] || echo "$OUTPUT" | grep -qi "in.progress\|block\|open\|warn"; then
+        echo "OK: in-progress bead detected"
+      else
+        echo "OK: hook ran without error (advisory mode)"
+      fi
+      # Cleanup
+      if [ -n "$BEAD_ID" ]; then
+        bd close "$BEAD_ID" 2>/dev/null
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

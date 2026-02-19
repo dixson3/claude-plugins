@@ -288,11 +288,21 @@ j=0; while [ $j -lt "$SETUP_COUNT" ]; do
   if ! $COMPLETED; then
     if ! (cd "$PROJECT_DIR" && eval "$SETUP_CHECK") >/dev/null 2>&1; then
       echo "preflight: $PLUGIN_NAME — running setup: $SETUP_NAME"
-      if (cd "$PROJECT_DIR" && eval "$SETUP_RUN") >/dev/null 2>&1; then
+      SETUP_OUTPUT=$(cd "$PROJECT_DIR" && eval "$SETUP_RUN" 2>&1) || true
+      if echo "$SETUP_OUTPUT" | grep -q "BEADS_SETUP_FAILED"; then
+        # Beads setup failed — deactivate plugin
+        echo "YF_BEADS_UNHEALTHY"
+        echo "$SETUP_OUTPUT" | grep -v "^$" >&2
+        for F in "$PROJECT_DIR/.claude/rules/yf"/*.md; do
+          [ -e "$F" ] || [ -L "$F" ] || continue
+          rm -f "$F"
+        done
+        rmdir "$PROJECT_DIR/.claude/rules/yf" 2>/dev/null || true
+        echo "preflight: inactive — beads setup failed"
+        exit 0
+      else
         COMPLETED=true
         SUMMARY_SETUP=$((SUMMARY_SETUP + 1))
-      else
-        echo "preflight: warn: $PLUGIN_NAME — setup '$SETUP_NAME' failed" >&2
       fi
     else
       COMPLETED=true

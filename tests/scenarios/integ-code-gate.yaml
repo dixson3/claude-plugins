@@ -1,0 +1,94 @@
+name: "Integration: code-gate — plan-gate enforcement"
+type: integration
+
+project:
+  git: true
+  beads: true
+  yf_enabled: true
+  plugin_link: true
+
+steps:
+  # Step 1: Verify code-gate.sh exists and is executable
+  - name: "code_gate_exists"
+    run: |
+      GATE="$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh"
+      if [ -x "$GATE" ]; then
+        echo "OK: code-gate.sh executable"
+      else
+        echo "FAIL: code-gate.sh missing or not executable"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 2: No gate when no plan-gate marker
+  - name: "no_gate_without_marker"
+    run: |
+      # Ensure no plan-gate marker
+      rm -f "$WORK_DIR/.yoshiko-flow/plan-gate"
+      TOOL_INPUT='{"tool_name":"Edit","tool_input":{"file_path":"test.py","old_string":"a","new_string":"b"}}'
+      OUTPUT=$(echo "$TOOL_INPUT" | CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      EXIT=$?
+      if [ "$EXIT" -eq 0 ]; then
+        echo "OK: no block without plan-gate"
+      else
+        echo "FAIL: exit $EXIT, expected 0"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 3: Gate blocks Edit when plan-gate is set
+  - name: "gate_blocks_edit"
+    run: |
+      # Create plan-gate marker
+      echo "test-plan" > "$WORK_DIR/.yoshiko-flow/plan-gate"
+      TOOL_INPUT='{"tool_name":"Edit","tool_input":{"file_path":"src/main.py","old_string":"a","new_string":"b"}}'
+      OUTPUT=$(echo "$TOOL_INPUT" | CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      EXIT=$?
+      if [ "$EXIT" -eq 2 ]; then
+        echo "OK: Edit blocked by code-gate (exit 2)"
+      else
+        echo "FAIL: exit $EXIT (expected 2), output: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 4: Gate allows non-code files (e.g., docs, CLAUDE.md)
+  # Note: code-gate uses glob patterns like */docs/plans/* which require a path prefix
+  - name: "gate_allows_docs"
+    run: |
+      echo "test-plan" > "$WORK_DIR/.yoshiko-flow/plan-gate"
+      TOOL_INPUT="{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$WORK_DIR/docs/plans/plan-1.md\",\"old_string\":\"a\",\"new_string\":\"b\"}}"
+      OUTPUT=$(echo "$TOOL_INPUT" | CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      EXIT=$?
+      if [ "$EXIT" -eq 0 ]; then
+        echo "OK: docs file not blocked"
+      else
+        echo "FAIL: docs file blocked (exit $EXIT)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Step 5: Clean up plan-gate marker
+  - name: "cleanup_gate"
+    run: |
+      rm -f "$WORK_DIR/.yoshiko-flow/plan-gate"
+      echo "OK: cleaned up"
+    assertions:
+      - type: exit_code
+        value: "0"

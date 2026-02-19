@@ -2,12 +2,14 @@ package main
 
 // Scenario represents a YAML test scenario file.
 type Scenario struct {
-	Name      string   `yaml:"name"`
-	PluginDir string   `yaml:"plugin_dir"`
-	Remote    string   `yaml:"remote"`
-	Setup     []string `yaml:"setup"`
-	Teardown  []string `yaml:"teardown"`
-	Steps     []Step   `yaml:"steps"`
+	Name      string         `yaml:"name"`
+	Type      string         `yaml:"type"` // "unit" (default) or "integration"
+	PluginDir string         `yaml:"plugin_dir"`
+	Remote    string         `yaml:"remote"`
+	Project   *ProjectConfig `yaml:"project"` // test project provisioning
+	Setup     []string       `yaml:"setup"`
+	Teardown  []string       `yaml:"teardown"`
+	Steps     []Step         `yaml:"steps"`
 }
 
 // Step is a single test step — either a Claude prompt or a shell command.
