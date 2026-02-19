@@ -17,7 +17,7 @@
 | TODO-011 | ~~Root README.md plugin table shows version 2.11.0, behind actual version 2.17.0~~ | P1 | `README.md` line 18 | Resolved |
 | TODO-012 | Monitor symlinks on different platforms or CI environments for compatibility issues | P3 | Diary 26-02-08.19-00 (Next Steps) | Open |
 | TODO-013 | Consider per-subsystem EDD files for complex projects (currently only CORE.md template) | P3 | Plan 34 (artifact structure) | Deferred |
-| TODO-014 | Integration tests (non-unit) have not been maintained since Plan 06 -- scenarios may be outdated | P2 | `tests/scenarios/gate-enforcement.yaml`, `full-lifecycle.yaml`, `dismiss-gate.yaml` | Open |
+| TODO-014 | ~~Integration tests not maintained since Plan 06~~ — replaced by 5 new integration scenarios in Plan 48 (old files already removed in Plan 41) | P2 | `tests/scenarios/integ-*.yaml` | Resolved |
 | TODO-015 | `bd create --type=gate` produces validation errors in some beads-cli versions; gates created as tasks with `ys:gate` labels as workaround | P2 | Diary 26-02-08.19-00, Diary 26-02-13.22-30 | Open |
 | TODO-016 | Verify config pruning works on an existing installation with old chronicler/archivist toggle keys | P2 | Diary 26-02-14.14-30 (Next Steps) | Open |
 | TODO-017 | ~~Plan 24 and Plan 26 status still shows "Draft" in plan files but work appears completed~~ | P1 | `docs/plans/plan-24.md`, `docs/plans/plan-26.md` | Resolved |
@@ -30,10 +30,13 @@
 | TODO-024 | End-to-end test: code-researcher checks existing IGs before researching standards | P2 | Plan 35 Phase 5 (coder capability) | Open |
 | TODO-025 | End-to-end test: reactive bugfix triggers on REVIEW:BLOCK within code-implement swarm | P2 | Plan 35 Phase 5 (coder capability) | Open |
 | TODO-026 | E2E validation of intake integrity gate during real plan with spec changes | P2 | Plan 40 (spec integrity gates) | Open |
-| TODO-027 | E2E validation of activation gate: verify skill refusal when bd CLI missing, when config absent, and when `enabled: false` | P2 | Plan 42 (activation gate) | Open |
+| TODO-027 | ~~E2E validation of activation gate~~ — covered by `integ-activation-gate.yaml` (Plan 48) | P2 | Plan 42 (activation gate) | Resolved |
 | TODO-028 | ~~Validate hybrid beads routing~~ — moot after DD-016 reversal (beads plugin removed) | P2 | Plan 42 (activation gate) | Resolved |
 | TODO-029 | E2E validation of memory reconciliation with real MEMORY.md and spec files | P2 | Plan 43 (memory reconcile) | Open |
 | TODO-030 | E2E validation of skill-level chronicle capture during real plan execution | P2 | Plan 44 (chronicle worthiness) | Open |
+| TODO-031 | Fix `unit-chronicle-check.yaml` test failures — uses relative `./plugins/yf/` paths that resolve to WORK_DIR instead of PLUGIN_DIR | P2 | Plan 48 (test overhaul) | Open |
+| TODO-032 | `code-gate.sh` glob patterns (e.g. `*/docs/plans/*`) require absolute path prefix — relative paths like `docs/plans/plan-1.md` don't match case statements | P3 | Plan 48 (integ-code-gate) | Open |
+| TODO-033 | Define and use a subagent for plan-to-beads breakdown to keep beads creation work out of primary operator context | P2 | GitHub issue #17 | Open |
 
 ## Completed Items
 
