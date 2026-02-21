@@ -18,8 +18,9 @@ Beads-cli is the external persistence layer that provides git-backed issue track
 3. No AGENTS.md is created — the plugin provides beads workflow context via its own rule file (`yf-rules.md`)
 4. All task operations (create, update, close, list) use `bd` CLI directly.
 5. Beads manages its own `.beads/.gitignore`
+6. Remove `bd prime` Claude Code hooks if present: beads-cli can install its own `SessionStart`/`PreCompact` hooks via `bd setup claude`, but yf supersedes these with plugin-level hooks (`session-recall.sh`, `pre-compact.sh`). Both `plugin-preflight.sh` (before fast-path) and `beads-setup.sh` (Step 5b) detect `bd prime` in `.claude/settings.local.json` and run `bd setup claude --remove --project` to prevent duplicate context injection (~3k chars wasted per session).
 
-**Postconditions**: Beads initialized with `dolt` backend. Writes persist immediately. No AGENTS.md. No hooks installed. No sync branch configured.
+**Postconditions**: Beads initialized with `dolt` backend. Writes persist immediately. No AGENTS.md. No hooks installed. No sync branch configured. No `bd prime` Claude Code hooks.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/.claude-plugin/preflight.json`

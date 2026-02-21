@@ -114,7 +114,7 @@ Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–00
 | UC-022 | Plugin registration | marketplace | unit-yf-structure.yaml | existence-only |
 | UC-023 | Preflight artifact sync | marketplace | unit-preflight.yaml, unit-preflight-symlinks.yaml | tested |
 | UC-024 | Running tests | marketplace | unit-yf-structure.yaml | existence-only |
-| UC-025 | Beads setup and git workflow | beads-integration | unit-beads-git.yaml | tested |
+| UC-025 | Beads setup and git workflow | beads-integration | unit-beads-git.yaml, unit-beads-setup.yaml, unit-preflight.yaml | tested |
 | UC-026 | Bead lifecycle during plan execution | beads-integration | unit-plan-exec-gate.yaml | existence-only |
 | UC-027 | Automatic bead pruning | beads-integration | unit-plan-prune.yaml | tested |
 | UC-028 | Session close protocol | beads-integration | unit-pre-push-chronicle-check.yaml | existence-only |
@@ -142,7 +142,7 @@ Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–00
 | UC | 41 | 21 | 16 | 4 |
 | **Total** | **106** | **64** | **33** | **9** |
 
-Total assertions: **667** (across all unit test scenarios)
+Total assertions: **673** (across all unit test scenarios)
 
 ## Priority Gaps
 

@@ -100,6 +100,15 @@ if [ "$HOOKS_INSTALLED" -gt 0 ] 2>/dev/null; then
   fi
 fi
 
+# Step 5b: Remove beads Claude hooks (yf plugin provides its own)
+SETTINGS_LOCAL="$PROJECT_DIR/.claude/settings.local.json"
+if [ -f "$SETTINGS_LOCAL" ] && grep -q "bd prime" "$SETTINGS_LOCAL" 2>/dev/null; then
+  if (cd "$PROJECT_DIR" && bd setup claude --remove --project) 2>/dev/null; then
+    CHANGES=$((CHANGES + 1))
+    echo "beads-setup: removed beads Claude hooks (yf supersedes)"
+  fi
+fi
+
 # Step 6: Commit any uncommitted dolt changes (always try — idempotent)
 COMMIT_OUT=$(cd "$PROJECT_DIR" && bd vc commit -m "beads-setup: auto-commit" 2>&1) || true
 if echo "$COMMIT_OUT" | grep -q "Created commit"; then

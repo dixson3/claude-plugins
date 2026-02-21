@@ -160,6 +160,22 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 10b: script removes bd prime Claude hooks (Step 5b)
+  - name: "removes_bd_prime_hooks"
+    run: |
+      if grep -q 'bd prime' "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh" && \
+         grep -q 'bd setup claude --remove --project' "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh"; then
+        echo "OK: Step 5b detects and removes bd prime hooks"
+      else
+        echo "FAIL: missing bd prime hook removal logic"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
   # Cases below require real bd — guarded with command -v check
 
   # Case 11: fresh init in git repo (requires bd)

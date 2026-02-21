@@ -186,6 +186,15 @@ CUR_VER=$(jq -r '.version' "$PJSON" 2>/dev/null)
 # --- Fast path: check version + symlink targets match ---
 FAST_PATH=true
 
+# --- Remove bd prime hooks (yf supersedes) ---
+SETTINGS_LOCAL="$PROJECT_DIR/.claude/settings.local.json"
+if [ -f "$SETTINGS_LOCAL" ] && grep -q "bd prime" "$SETTINGS_LOCAL" 2>/dev/null; then
+  if (cd "$PROJECT_DIR" && bd setup claude --remove --project) 2>/dev/null; then
+    FAST_PATH=false
+    echo "preflight: removed bd prime hooks from .claude/settings.local.json — reset context (/clear) for changes to take effect"
+  fi
+fi
+
 LOCK_VER=$(echo "$LOCK" | jq -r ".plugins.\"$PLUGIN_NAME\".version // \"\"" 2>/dev/null)
 if [ "$CUR_VER" != "$LOCK_VER" ]; then
   FAST_PATH=false
