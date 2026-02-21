@@ -74,7 +74,7 @@ fi
 # --- Setup needed signal (fail-closed activation) ---
 if ! yf_config_exists; then
   echo "YF_SETUP_NEEDED"
-  echo "preflight: no config found — run /yf:setup to configure"
+  echo "preflight: no config found — run /yf:plugin_setup to configure"
   # Remove any existing rule symlinks (inactive project)
   for F in "$PROJECT_DIR/.claude/rules/yf"/*.md; do
     [ -e "$F" ] || [ -L "$F" ] || continue

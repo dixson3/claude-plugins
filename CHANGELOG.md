@@ -5,6 +5,33 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.26.0] - 2026-02-21
+
+### Added
+
+- **`plugin` capability** (replaces Core): Merged the existing `setup` skill into the new `plugin` prefix. `/yf:setup` renamed to `/yf:plugin_setup`. Added `/yf:plugin_issue` skill for reporting bugs and enhancements against the plugin repository via `gh`.
+- **`issue` capability**: Full project issue tracking lifecycle with deferred staging, agent-driven triage, and multi-backend submission.
+  - `/yf:issue_capture` — Stage project issues as `ys:issue` beads (deferred submission)
+  - `/yf:issue_process` — Evaluate, consolidate, and submit staged issues via `yf_issue_triage` agent
+  - `/yf:issue_list` — Combined view of remote tracker issues and locally staged beads
+  - `/yf:issue_plan` — Pull a remote issue into a yf planning session
+  - `/yf:issue_disable` — Close staged issues without submission
+  - Agent: `yf_issue_triage` — Evaluates open issue beads, detects duplicates, augments existing remote issues
+- **`tracker-detect.sh` script**: Auto-detects project tracker from config or git remote origin. Supports GitHub, GitLab, and file fallback. Bash 3.2 compatible.
+- **`tracker-api.sh` script**: Tracker abstraction layer with uniform `create`, `list`, `view`, `transition` interface across GitHub (`gh`), GitLab (`glab`), and file backends.
+- **Config accessors**: `yf_plugin_repo`, `yf_project_tracker`, `yf_project_slug`, `yf_tracker_tool` in `yf-config.sh`.
+- **Rule 1.5 — Issue Disambiguation**: Hard enforcement preventing cross-routing between plugin issues and project issues.
+- **Rule 5.6 — Issue Worthiness**: Advisory monitoring that suggests `/yf:issue_capture` for deferred improvements, incidental bugs, and technical debt.
+- **Pre-push advisory**: `pre-push-diary.sh` now warns about open `ys:issue` beads before push.
+- **File-based issue backend**: `docs/specifications/TODO.md` register with `docs/todos/TODO-NNN/` artifact folders.
+- **Unit tests**: `unit-tracker-detect.yaml` (8 cases), `unit-tracker-api.yaml` (8 cases), `unit-issue-disambiguation.yaml` (6 cases).
+
+### Changed
+
+- **`/yf:setup` → `/yf:plugin_setup`**: Renamed across all active files (~25 files). Historical docs (plans, diary) left as-is.
+- **Capability table**: Core capability merged into Plugin. Issue capability added.
+- **Plugin version**: 2.25.0 → 2.26.0.
+
 ## [2.25.0] - 2026-02-19
 
 ### Added

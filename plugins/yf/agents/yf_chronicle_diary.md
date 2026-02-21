@@ -171,7 +171,7 @@ If beads-cli is not available:
 ```json
 {
   "error": "beads-cli not found",
-  "message": "Run /yf:setup to configure Yoshiko Flow."
+  "message": "Run /yf:plugin_setup to configure Yoshiko Flow."
 }
 ```
 

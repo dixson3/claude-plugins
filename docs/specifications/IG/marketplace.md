@@ -75,14 +75,14 @@ The marketplace provides the plugin architecture for Claude Code -- plugin regis
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/yf-activation-check.sh`
 
-### UC-036: Per-Project Activation via /yf:setup
+### UC-036: Per-Project Activation via /yf:plugin_setup
 
 **Actor**: Operator
 
 **Preconditions**: yf plugin installed (user or project scope). bd CLI available.
 
 **Flow**:
-1. Operator runs `/yf:setup` in a project
+1. Operator runs `/yf:plugin_setup` in a project
 2. Skill checks bd CLI availability (`command -v bd`)
 3. If bd missing: report dependency, provide install instructions, stop
 4. If bd present: write `.yoshiko-flow/config.json` with `{enabled: true, config: {artifact_dir: "docs"}}`
@@ -92,8 +92,8 @@ The marketplace provides the plugin architecture for Claude Code -- plugin regis
 **Postconditions**: `.yoshiko-flow/config.json` committed. Rules symlinked. Beads initialized.
 
 **Key Files**:
-- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/setup/SKILL.md`
-- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/plugin-preflight.sh`
+- `plugins/yf/skills/plugin_setup/SKILL.md`
+- `plugins/yf/scripts/plugin-preflight.sh`
 
 ### UC-024: Running Tests
 

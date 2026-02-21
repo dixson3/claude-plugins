@@ -91,3 +91,47 @@ yf_sanity_check_mode() {
     echo "$mode"
   fi
 }
+
+# yf_plugin_repo — returns plugin repo slug (default: dixson3/d3-claude-plugins)
+yf_plugin_repo() {
+  local repo
+  repo=$(yf_read_field '.config.plugin_repo' 2>/dev/null)
+  if [ -z "$repo" ] || [ "$repo" = "null" ]; then
+    echo "dixson3/d3-claude-plugins"
+  else
+    echo "$repo"
+  fi
+}
+
+# yf_project_tracker — returns project tracker type (github|gitlab|file|auto)
+yf_project_tracker() {
+  local tracker
+  tracker=$(yf_read_field '.config.project_tracking.tracker' 2>/dev/null)
+  if [ -z "$tracker" ] || [ "$tracker" = "null" ]; then
+    echo "auto"
+  else
+    echo "$tracker"
+  fi
+}
+
+# yf_project_slug — returns project owner/repo slug
+yf_project_slug() {
+  local slug
+  slug=$(yf_read_field '.config.project_tracking.project' 2>/dev/null)
+  if [ -z "$slug" ] || [ "$slug" = "null" ]; then
+    echo ""
+  else
+    echo "$slug"
+  fi
+}
+
+# yf_tracker_tool — returns tracker CLI tool override (gh|glab)
+yf_tracker_tool() {
+  local tool
+  tool=$(yf_read_field '.config.project_tracking.tracker_tool' 2>/dev/null)
+  if [ -z "$tool" ] || [ "$tool" = "null" ]; then
+    echo ""
+  else
+    echo "$tool"
+  fi
+}

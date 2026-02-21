@@ -75,7 +75,8 @@ Current capabilities:
 | Memory | `memory` | memory_reconcile | — |
 | Beads | `beads` | beads_setup | — |
 | Session | `session` | session_land | — |
-| Core | (none) | setup | — |
+| Plugin | `plugin` | plugin_setup, plugin_issue | — |
+| Issue | `issue` | issue_capture, issue_process, issue_disable, issue_list, issue_plan | yf_issue_triage |
 
 ### Adding a New Capability
 
@@ -155,7 +156,7 @@ Current capabilities:
 
 ## Activation Model
 
-Yoshiko Flow uses **explicit per-project activation** (DD-015). Installing yf globally does not activate it — each project must run `/yf:setup` to opt in.
+Yoshiko Flow uses **explicit per-project activation** (DD-015). Installing yf globally does not activate it — each project must run `/yf:plugin_setup` to opt in.
 
 ### Three-Condition Gate
 
@@ -173,10 +174,10 @@ When any condition fails, yf is inactive: skills refuse (via `yf-activation-chec
 
 ```json
 {"active": true}
-{"active": false, "reason": "No .yoshiko-flow/config.json found", "action": "Run /yf:setup to configure this project"}
+{"active": false, "reason": "No .yoshiko-flow/config.json found", "action": "Run /yf:plugin_setup to configure this project"}
 ```
 
-All skills (except `/yf:setup`) include an activation guard that runs this script before executing.
+All skills (except `/yf:plugin_setup`) include an activation guard that runs this script before executing.
 
 ### Beads Dependency
 

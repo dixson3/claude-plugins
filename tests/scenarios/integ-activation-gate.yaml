@@ -46,7 +46,7 @@ steps:
     run: |
       # Initialize beads first
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh" >/dev/null 2>&1
-      # Create config (simulating /yf:setup)
+      # Create config (simulating /yf:plugin_setup)
       mkdir -p "$WORK_DIR/.yoshiko-flow"
       echo '{"enabled": true, "config": {"artifact_dir": "docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       # Run preflight

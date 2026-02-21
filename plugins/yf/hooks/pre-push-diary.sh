@@ -51,4 +51,9 @@ warn_open_beads "ys:archive" \
     "ARCHIVIST: Open archives detected" \
     "/yf:archive_process" "/yf:archive_disable"
 
+# ── Issue tracker check: warn about staged issue beads ─────────────
+warn_open_beads "ys:issue" \
+    "ISSUE TRACKER: Staged issues detected" \
+    "/yf:issue_process" "/yf:issue_disable"
+
 exit 0

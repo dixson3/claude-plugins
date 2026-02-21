@@ -1,0 +1,129 @@
+name: "Unit: issue disambiguation — plugin repo vs project tracker isolation"
+
+setup:
+  - "mkdir -p .yoshiko-flow"
+
+steps:
+  # Case 1: Plugin repo default differs from auto-detected project
+  - name: "default_plugin_repo_differs"
+    run: |
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      PLUGIN_REPO=$(yf_plugin_repo)
+      # Auto-detect project tracker
+      TRACKER_JSON=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-detect.sh")
+      PROJECT_SLUG=$(echo "$TRACKER_JSON" | jq -r '.project')
+      if [ "$PLUGIN_REPO" != "$PROJECT_SLUG" ]; then
+        echo "OK: plugin repo ($PLUGIN_REPO) differs from project ($PROJECT_SLUG)"
+      else
+        echo "FAIL: plugin repo and project slug are the same: $PLUGIN_REPO"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Custom plugin repo
+  - name: "custom_plugin_repo"
+    run: |
+      echo '{"enabled":true,"config":{"plugin_repo":"custom/plugin-repo"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      PLUGIN_REPO=$(yf_plugin_repo)
+      if [ "$PLUGIN_REPO" = "custom/plugin-repo" ]; then
+        echo "OK: custom plugin repo returned"
+      else
+        echo "FAIL: got $PLUGIN_REPO"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Plugin repo matches project tracker (collision detection)
+  - name: "collision_detection"
+    run: |
+      echo '{"enabled":true,"config":{"plugin_repo":"myorg/myrepo","project_tracking":{"tracker":"github","project":"myorg/myrepo"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      PLUGIN_REPO=$(yf_plugin_repo)
+      TRACKER_JSON=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-detect.sh")
+      PROJECT_SLUG=$(echo "$TRACKER_JSON" | jq -r '.project')
+      if [ "$PLUGIN_REPO" = "$PROJECT_SLUG" ]; then
+        echo "OK: collision detected ($PLUGIN_REPO = $PROJECT_SLUG)"
+      else
+        echo "FAIL: expected collision but got plugin=$PLUGIN_REPO project=$PROJECT_SLUG"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK: collision detected"
+
+  # Case 4: File tracker never collides with plugin repo
+  - name: "file_tracker_no_collision"
+    run: |
+      echo '{"enabled":true,"config":{"project_tracking":{"tracker":"file"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      PLUGIN_REPO=$(yf_plugin_repo)
+      TRACKER_JSON=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-detect.sh")
+      PROJECT_SLUG=$(echo "$TRACKER_JSON" | jq -r '.project')
+      if [ "$PLUGIN_REPO" != "$PROJECT_SLUG" ]; then
+        echo "OK: file tracker (project=$PROJECT_SLUG) doesn't collide with plugin repo ($PLUGIN_REPO)"
+      else
+        echo "FAIL: unexpected collision"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: yf_project_tracker defaults to auto
+  - name: "tracker_defaults_auto"
+    run: |
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      TRACKER=$(yf_project_tracker)
+      if [ "$TRACKER" = "auto" ]; then
+        echo "OK: defaults to auto"
+      else
+        echo "FAIL: got $TRACKER"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: yf_project_slug defaults to empty
+  - name: "slug_defaults_empty"
+    run: |
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      SLUG=$(yf_project_slug)
+      if [ -z "$SLUG" ]; then
+        echo "OK: defaults to empty"
+      else
+        echo "FAIL: got $SLUG"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .yoshiko-flow/config.json"

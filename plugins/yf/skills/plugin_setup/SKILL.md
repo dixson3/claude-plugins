@@ -1,5 +1,5 @@
 ---
-name: yf:setup
+name: yf:plugin_setup
 description: Configure Yoshiko Flow for this project (zero-question setup)
 user_invocable: true
 arguments:
@@ -8,7 +8,7 @@ arguments:
     required: false
 ---
 
-# /yf:setup — Project Configuration
+# /yf:plugin_setup — Project Configuration
 
 Zero-question setup. Enables yf with sensible defaults.
 
@@ -93,4 +93,4 @@ Then run preflight.
 
 - No `AskUserQuestion` calls — this is zero-question setup
 - Config writes only `{enabled, config: {artifact_dir}}`
-- The only way to disable yf is `/yf:setup disable`
+- The only way to disable yf is `/yf:plugin_setup disable`

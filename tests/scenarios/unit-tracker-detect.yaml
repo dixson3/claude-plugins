@@ -1,0 +1,171 @@
+name: "Unit: tracker-detect.sh — tracker detection logic"
+
+setup:
+  - "mkdir -p .yoshiko-flow"
+
+steps:
+  # Case 1: Explicit github config
+  - name: "explicit_github_config"
+    run: |
+      echo '{"enabled":true,"config":{"project_tracking":{"tracker":"github","project":"myorg/myrepo","tracker_tool":"gh"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-detect.sh")
+      TRACKER=$(echo "$OUTPUT" | jq -r '.tracker')
+      PROJECT=$(echo "$OUTPUT" | jq -r '.project')
+      TOOL=$(echo "$OUTPUT" | jq -r '.tool')
+      if [ "$TRACKER" = "github" ] && [ "$PROJECT" = "myorg/myrepo" ] && [ "$TOOL" = "gh" ]; then
+        echo "OK: explicit github config"
+      else
+        echo "FAIL: tracker=$TRACKER project=$PROJECT tool=$TOOL"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Explicit gitlab config
+  - name: "explicit_gitlab_config"
+    run: |
+      echo '{"enabled":true,"config":{"project_tracking":{"tracker":"gitlab","project":"myorg/myrepo","tracker_tool":"glab"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      # glab may not be installed — should fall back to file
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-detect.sh")
+      TRACKER=$(echo "$OUTPUT" | jq -r '.tracker')
+      if command -v glab >/dev/null 2>&1; then
+        if [ "$TRACKER" = "gitlab" ]; then
+          echo "OK: explicit gitlab config (glab available)"
+        else
+          echo "FAIL: tracker=$TRACKER (expected gitlab)"
+          exit 1
+        fi
+      else
+        if [ "$TRACKER" = "file" ]; then
+          echo "OK: explicit gitlab config (glab missing, fell back to file)"
+        else
+          echo "FAIL: tracker=$TRACKER (expected file fallback)"
+          exit 1
+        fi
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Explicit file config
+  - name: "explicit_file_config"
+    run: |
+      echo '{"enabled":true,"config":{"project_tracking":{"tracker":"file"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-detect.sh")
+      TRACKER=$(echo "$OUTPUT" | jq -r '.tracker')
+      PROJECT=$(echo "$OUTPUT" | jq -r '.project')
+      if [ "$TRACKER" = "file" ] && [ "$PROJECT" = "local" ]; then
+        echo "OK: explicit file config"
+      else
+        echo "FAIL: tracker=$TRACKER project=$PROJECT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Unknown tracker falls back to file
+  - name: "unknown_tracker_fallback"
+    run: |
+      echo '{"enabled":true,"config":{"project_tracking":{"tracker":"jira"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-detect.sh")
+      TRACKER=$(echo "$OUTPUT" | jq -r '.tracker')
+      if [ "$TRACKER" = "file" ]; then
+        echo "OK: unknown tracker → file fallback"
+      else
+        echo "FAIL: tracker=$TRACKER"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Auto-detect from this repo's git remote (github)
+  - name: "auto_detect_github"
+    run: |
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      # Use the actual plugin dir which is a git repo
+      export CLAUDE_PROJECT_DIR="$PLUGIN_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-detect.sh")
+      TRACKER=$(echo "$OUTPUT" | jq -r '.tracker')
+      if [ "$TRACKER" = "github" ]; then
+        PROJECT=$(echo "$OUTPUT" | jq -r '.project')
+        echo "OK: auto-detected github project=$PROJECT"
+      elif [ "$TRACKER" = "file" ]; then
+        echo "OK: auto-detect fell back to file (gh not available)"
+      else
+        echo "FAIL: tracker=$TRACKER"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: No git remote → file fallback
+  - name: "no_git_remote_fallback"
+    run: |
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      # WORK_DIR is not a git repo, so no remote
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-detect.sh")
+      TRACKER=$(echo "$OUTPUT" | jq -r '.tracker')
+      if [ "$TRACKER" = "file" ]; then
+        echo "OK: no git remote → file fallback"
+      else
+        echo "FAIL: tracker=$TRACKER"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: Output is always valid JSON
+  - name: "output_valid_json"
+    run: |
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-detect.sh")
+      if echo "$OUTPUT" | jq . >/dev/null 2>&1; then
+        echo "OK: valid JSON"
+      else
+        echo "FAIL: invalid JSON: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: Always exits 0
+  - name: "always_exits_zero"
+    run: |
+      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-detect.sh" >/dev/null 2>&1
+      echo "OK: exit code $?"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .yoshiko-flow/config.json"

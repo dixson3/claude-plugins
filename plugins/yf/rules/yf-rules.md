@@ -11,8 +11,8 @@ yf is INACTIVE when ANY of:
 - `.yoshiko-flow/config.json` has `enabled: false`
 - The bd CLI is not available
 
-When inactive: all skills except `/yf:setup` refuse to execute, all hooks exit silently.
-To activate: install beads-cli (`brew install dixson3/tap/beads-cli`), then run `/yf:setup`.
+When inactive: all skills except `/yf:plugin_setup` refuse to execute, all hooks exit silently.
+To activate: install beads-cli (`brew install dixson3/tap/beads-cli`), then run `/yf:plugin_setup`.
 
 ### 1.1 Beads Are the Source of Truth
 
@@ -45,6 +45,19 @@ When `<artifact_dir>/specifications/` exists, specifications define the contract
 - Tests reference specification items (REQ-xxx, UC-xxx, DD-xxx) as their primary basis.
 - All spec changes require explicit operator approval via AskUserQuestion.
 - When in doubt, read the spec. When the spec is silent, extend it.
+
+### 1.5 Issue Disambiguation
+
+Plugin issues and project issues are distinct destinations. Never cross-route.
+
+- **Plugin issues** (`/yf:plugin_issue`): Bugs, enhancements, and feedback about the yf plugin or beads-cli. Targets the plugin repo (default: `dixson3/d3-claude-plugins`). **Manually initiated only** — never suggest proactively.
+- **Project issues** (`/yf:issue_capture`): Bugs, enhancements, and technical debt in the user's project. Stages a `ys:issue` bead for deferred submission to the project's tracker.
+
+**Guards:**
+- `plugin_issue`: If the issue references project-specific code (not plugin internals), warn and redirect to `/yf:issue_capture`.
+- `issue_capture`: If the issue references yf, beads, or plugin internals, warn and redirect to `/yf:plugin_issue`.
+- `issue_process`: Before submission, verify the plugin repo slug differs from the project tracker slug.
+- When ambiguous, ask the user.
 
 ---
 
@@ -149,3 +162,17 @@ At most once every 15-20 minutes.
 
 If specs exist, watch for PRD/EDD/IG drift (new functionality not traced to spec entries, contradictions, NFR violations).
 Suggest `/yf:engineer_update type:<type>`. At most once every 15-20 minutes.
+
+### 5.6 Issue Worthiness
+
+During planning, design, implementation, and testing, watch for:
+- **Deferred improvements**: Plan identifies a possible enhancement but scopes it out for later
+- **Incidental bugs**: Testing or implementation reveals a non-critical bug that should be tracked
+- **Enhancement opportunities**: Code review surfaces patterns that could be improved
+- **Technical debt**: Workarounds, TODOs in code, or shortcuts that should be addressed
+
+Suggest `/yf:issue_capture` with appropriate type and priority context.
+At most once every 15 minutes.
+Project issues ONLY — never suggest `/yf:plugin_issue` proactively. Plugin issues are exclusively manually initiated.
+
+NOT issue-worthy: routine completions, formatting, config tweaks, typos, issues already captured as beads, work that is part of the current plan's scope.

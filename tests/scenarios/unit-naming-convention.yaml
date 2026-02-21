@@ -151,7 +151,8 @@ steps:
       for skill in chronicle_capture chronicle_recall chronicle_diary chronicle_disable \
                    archive_capture archive_process archive_disable archive_suggest \
                    plan_engage plan_create_beads plan_execute plan_pump plan_breakdown \
-                   plan_select_agent plan_dismiss_gate plan_intake setup; do
+                   plan_select_agent plan_dismiss_gate plan_intake plugin_setup \
+                   plugin_issue issue_capture issue_process issue_disable issue_list issue_plan; do
         if [ ! -d "$PLUGIN_DIR/plugins/yf/skills/$skill" ]; then
           MISSING="$MISSING $skill"
         fi
@@ -171,7 +172,7 @@ steps:
   - name: "new_agent_files_exist"
     run: |
       MISSING=""
-      for agent in yf_chronicle_recall yf_chronicle_diary yf_archive_process; do
+      for agent in yf_chronicle_recall yf_chronicle_diary yf_archive_process yf_issue_triage; do
         if [ ! -f "$PLUGIN_DIR/plugins/yf/agents/${agent}.md" ]; then
           MISSING="$MISSING $agent"
         fi

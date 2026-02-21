@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.24.0
+# Yoshiko Flow (yf) Plugin — v2.26.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -8,7 +8,7 @@ The natural state of software is _maintenance_. How hard or easy that maintenanc
 
 Traditionally, producing this content is a chore that requires real organizational discipline. Agentic coding makes the problem worse: agents generate context faster than humans can catalog it, and each session starts with a blank slate. Yoshiko Flow automates the discipline — capturing plans, observations, and decisions as structured artifacts without requiring the operator to remember to do it.
 
-It does this through seven capabilities:
+It does this through nine capabilities:
 
 1. **Plan Lifecycle** — Breaks plans into a dependency graph of tracked tasks, with automatic decomposition, scheduling, and dispatch
 2. **Swarm Execution** — Runs structured, parallel agent workflows using formula templates, wisps, and a dispatch loop
@@ -17,10 +17,12 @@ It does this through seven capabilities:
 5. **Engineer** — Synthesizes and maintains specification artifacts (PRD, EDD, Implementation Guides, TODO register), reconciling plans against specs before execution
 6. **Coder** — Standards-driven code generation with dedicated research, implementation, testing, and review agents working through a structured formula
 7. **Session** — Mechanical enforcement of session close-out with pre-push blocking, dirty-tree awareness, and operator-confirmed push
+8. **Plugin** — Plugin-level concerns: per-project activation and issue reporting against the plugin repo
+9. **Issue** — Project issue tracking with deferred staging, agent-driven triage, and multi-backend submission (GitHub, GitLab, file-based)
 
 ## Activation
 
-Yoshiko Flow uses **explicit per-project activation**. Installing yf (globally or per-project) does not activate it — you must run `/yf:setup` in each project where you want it active.
+Yoshiko Flow uses **explicit per-project activation**. Installing yf (globally or per-project) does not activate it — you must run `/yf:plugin_setup` in each project where you want it active.
 
 ### Prerequisites
 
@@ -29,11 +31,11 @@ Yoshiko Flow uses **explicit per-project activation**. Installing yf (globally o
 ### Three-Condition Gate
 
 yf is active only when ALL of:
-- `.yoshiko-flow/config.json` exists (created by `/yf:setup`)
+- `.yoshiko-flow/config.json` exists (created by `/yf:plugin_setup`)
 - `enabled` field is `true` in the config
 - The bd CLI is available
 
-When inactive, all skills except `/yf:setup` refuse to execute, and hooks exit silently.
+When inactive, all skills except `/yf:plugin_setup` refuse to execute, and hooks exit silently.
 
 ## Getting Started
 
@@ -46,7 +48,7 @@ When inactive, all skills except `/yf:setup` refuse to execute, and hooks exit s
 
 3. **Run setup:**
    ```
-   /yf:setup
+   /yf:plugin_setup
    ```
    Setup verifies bd CLI is available, writes the activation config, installs rules, creates directories, and initializes beads.
 
@@ -330,6 +332,86 @@ Behavioral rules alone cannot guarantee that agents commit their work, close the
 |-------|-------------|
 | `/yf:session_land` | Orchestrate full session close-out with operator confirmation |
 
+## Plugin (Issue Reporting & Setup)
+
+### Why
+
+The plugin itself needs a way to receive bug reports and enhancement requests. Without a built-in reporting mechanism, users must manually navigate to the correct repository and file issues by hand, losing the context that triggered the report.
+
+### How It Works
+
+- **Setup**: `/yf:plugin_setup` configures per-project activation (zero questions — detects environment and writes config)
+- **Issue reporting**: `/yf:plugin_issue` reports bugs or enhancements against the plugin repository via `gh`. Includes disambiguation guards to prevent project issues from being routed to the plugin repo.
+
+Plugin issue reporting is **manually initiated only** — never suggested proactively. The skill verifies `gh` authentication, lists recent plugin issues for duplicate checking, and confirms with the operator before creating.
+
+### Skills
+
+| Skill | Description |
+|-------|-------------|
+| `/yf:plugin_setup` | Per-project activation and configuration |
+| `/yf:plugin_issue` | Report or comment on issues against the plugin repo |
+
+## Issue (Project Tracking)
+
+### Why
+
+During development, bugs, enhancement opportunities, and technical debt surface naturally — a test reveals a non-critical bug, a code review spots an improvement, or a plan explicitly defers work for later. Without integrated issue tracking, these observations are lost or require manual context switching to file. The issue capability captures these as beads (matching the chronicle/archive capture pattern), then batch-processes them through an agent-driven triage before submission to the project's tracker.
+
+### How It Works
+
+- **Capture**: `/yf:issue_capture` stages a project issue as a `ys:issue` bead. No immediate API call — issues are deferred for batch processing.
+- **Processing**: `/yf:issue_process` launches the `yf_issue_triage` agent to evaluate all staged beads, consolidate duplicates, match against existing remote issues, and produce a triage plan. The operator approves before submission.
+- **Listing**: `/yf:issue_list` shows a combined view of remote tracker issues and locally staged beads.
+- **Planning**: `/yf:issue_plan` pulls a remote issue into a yf planning session, setting up the plan-issue link for traceability.
+- **Disabling**: `/yf:issue_disable` closes staged beads without submission (matches chronicle/archive disable pattern).
+- **Advisory**: Rule 5.6 suggests `/yf:issue_capture` when deferred improvements, incidental bugs, or technical debt are detected (at most once per 15 minutes).
+
+### Tracker Backends
+
+Three backends are supported, with automatic detection:
+
+| Backend | Tool | Detection |
+|---------|------|-----------|
+| GitHub | `gh` | Auto-detected from `git remote origin` |
+| GitLab | `glab` | Auto-detected from `git remote origin` |
+| File | — | Fallback: `docs/specifications/TODO.md` + `docs/todos/` |
+
+Config override via `.yoshiko-flow/config.json`:
+```json
+{
+  "config": {
+    "project_tracking": {
+      "tracker": "github",
+      "project": "owner/repo"
+    }
+  }
+}
+```
+
+### Disambiguation
+
+Plugin issues and project issues are strictly separated (Rule 1.5):
+- Plugin issues target the plugin repo (`/yf:plugin_issue`)
+- Project issues target the project tracker (`/yf:issue_capture`)
+- Cross-routing is blocked by guards in both skills
+
+### Artifacts
+
+- **Staged beads**: `ys:issue` labeled beads in `.beads/`
+- **File backend**: `docs/specifications/TODO.md` + `docs/todos/TODO-NNN/`
+
+### Skills & Agents
+
+| Skill / Agent | Description |
+|---------------|-------------|
+| `/yf:issue_capture` | Stage a project issue as a bead |
+| `/yf:issue_process` | Triage and submit staged issues |
+| `/yf:issue_list` | Combined view of remote and staged issues |
+| `/yf:issue_plan` | Pull a remote issue into planning |
+| `/yf:issue_disable` | Close staged issues without submission |
+| Agent: `yf_issue_triage` | Evaluates, consolidates, and cross-references staged issues |
+
 ## Configuration
 
 Config lives in `.yoshiko-flow/config.json` (committed to git), while lock state lives in `.yoshiko-flow/lock.json` (gitignored).
@@ -350,7 +432,7 @@ Chronicler and archivist are always on when yf is enabled. Old configs with `chr
 
 Lock state (`lock.json`) is managed by `plugin-preflight.sh` — do not edit manually.
 
-Run `/yf:setup` to create or reconfigure this file interactively.
+Run `/yf:plugin_setup` to create or reconfigure this file interactively.
 
 ## Internals
 

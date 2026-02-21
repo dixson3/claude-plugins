@@ -87,7 +87,7 @@ N chronicles recalled. Use /yf:chronicle_capture to save new context.
 
 If beads-cli is not available:
 ```
-Error: beads-cli not found. Run /yf:setup to configure Yoshiko Flow.
+Error: beads-cli not found. Run /yf:plugin_setup to configure Yoshiko Flow.
 ```
 
 If no open chronicles:

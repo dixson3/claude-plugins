@@ -15,7 +15,7 @@ On first session start, the preflight system automatically installs rules and cr
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, swarm execution, context persistence, diary generation, specification artifacts, standards-driven code generation, and research/decision archiving | 2.24.0 |
+| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, swarm execution, context persistence, diary generation, specification artifacts, standards-driven code generation, research/decision archiving, plugin issue reporting, and project issue tracking | 2.26.0 |
 
 ## Yoshiko Flow (yf)
 
@@ -33,7 +33,7 @@ Yoshiko Flow freezes the context that makes software maintainable. It breaks pla
    ```
    Then inside your Claude session:
    ```
-   /yf:setup
+   /yf:plugin_setup
    ```
 
 4. **Start planning** — Enter plan mode, write your plan, exit. Yoshiko Flow takes it from there: saving the plan, creating tracked tasks, and beginning execution.
@@ -105,14 +105,14 @@ Standards-driven code generation with dedicated agents for research, implementat
 
 ### Configuration
 
-Run `/yf:setup` to enable Yoshiko Flow. Config lives in `.yoshiko-flow/config.json` (committed to git).
+Run `/yf:plugin_setup` to enable Yoshiko Flow. Config lives in `.yoshiko-flow/config.json` (committed to git).
 
 | Setting | Description |
 |---------|-------------|
 | `enabled` | Master switch — when `false`, all rule symlinks are removed |
 | `artifact_dir` | Base directory for plans and diary (default: `docs`) |
 
-Chronicler and archivist are always on when yf is enabled. Use `/yf:setup disable` to disable yf entirely.
+Chronicler and archivist are always on when yf is enabled. Use `/yf:plugin_setup disable` to disable yf entirely.
 
 ## Contributing
 

@@ -20,7 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Check condition 1: config exists
 if ! yf_config_exists; then
-  echo '{"active":false,"reason":"No .yoshiko-flow/config.json found","action":"Run /yf:setup to configure this project"}'
+  echo '{"active":false,"reason":"No .yoshiko-flow/config.json found","action":"Run /yf:plugin_setup to configure this project"}'
   exit 0
 fi
 
@@ -28,7 +28,7 @@ fi
 if command -v jq >/dev/null 2>&1; then
   val=$(yf_merged_config | jq -r 'if .enabled == null then true else .enabled end' 2>/dev/null)
   if [ "$val" = "false" ]; then
-    echo '{"active":false,"reason":"Plugin is disabled in config","action":"Run /yf:setup to reactivate"}'
+    echo '{"active":false,"reason":"Plugin is disabled in config","action":"Run /yf:plugin_setup to reactivate"}'
     exit 0
   fi
 fi

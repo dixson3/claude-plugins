@@ -158,13 +158,13 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 ### DD-008: Zero-Question Setup with Always-On Capabilities
 
-**Context**: The `/yf:setup` wizard originally asked 4 interactive questions (enable yf, artifact dir, chronicler, archivist). Chronicler and archivist were always enabled in practice.
+**Context**: The `/yf:plugin_setup` wizard originally asked 4 interactive questions (enable yf, artifact dir, chronicler, archivist). Chronicler and archivist were always enabled in practice.
 
 **Decision**: Remove all interactive questions. Setup enables everything silently with `docs/` as default artifact dir. Old config fields (`chronicler_enabled`, `archivist_enabled`) are auto-pruned on first preflight run.
 
 **Rationale**: The toggle served no real purpose since both features were recommended-on by default, and the conditional branches they guarded were effectively dead code. Removing ~80 lines of feature-toggle logic from preflight.
 
-**Consequences**: No per-feature opt-out. `/yf:setup disable` disables the entire plugin. Config pruning handles legacy configs silently.
+**Consequences**: No per-feature opt-out. `/yf:plugin_setup disable` disables the entire plugin. Config pruning handles legacy configs silently.
 
 **Source**: Plan 33, diary `26-02-14.14-30.simplify-setup.md`
 
@@ -246,7 +246,7 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Decision**: Separate hook fail-open (TC-005, unchanged) from activation fail-closed. Three conditions: config exists + enabled:true + bd CLI available. `yf_is_enabled()` enforces all three. `_yf_check_flag` remains fail-open for optional sub-config flags.
 
-**Rationale**: User-scope installation should not impose yf on every project. Explicit activation (`/yf:setup`) is the only entry point. The bd CLI provides the task tracking infrastructure that yf depends on.
+**Rationale**: User-scope installation should not impose yf on every project. Explicit activation (`/yf:plugin_setup`) is the only entry point. The bd CLI provides the task tracking infrastructure that yf depends on.
 
 **Consequences**: Projects without explicit setup become inactive. `YF_SETUP_NEEDED` signal in preflight guides users. Existing projects with `config.json` and `enabled: true` remain active if bd CLI is available.
 
@@ -275,6 +275,42 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 **Consequences**: `git push` is blocked until the working tree is clean and all beads are closed or updated. The `bd prime` SESSION CLOSE PROTOCOL no longer includes `bd sync` or `git push` steps. Dirty-tree markers bridge uncommitted state across sessions.
 
 **Source**: Plan 46
+
+### DD-018: Core Capability Merged into Plugin Prefix
+
+**Context**: The "Core" capability (prefix-less, containing only `setup`) was the only capability without a namespace prefix. As new plugin-level concerns (issue reporting) were added, the lack of prefix created ambiguity.
+
+**Decision**: Merge Core into `plugin` prefix. Rename `setup` → `plugin_setup`. Group all plugin-level concerns (activation, issue reporting) under the `plugin` capability.
+
+**Rationale**: Consistent with the capability-prefixed naming convention used by all other capabilities. Eliminates the special-case of a prefix-less capability.
+
+**Consequences**: ~56 references across ~25 files updated. Historical documents (plans, diary) left as-is since they document past state.
+
+**Source**: Plan 50
+
+### DD-019: Tracker Abstraction with File-Based Fallback
+
+**Context**: Project issue tracking needs to support multiple backends (GitHub, GitLab) while remaining functional for projects without a remote tracker.
+
+**Decision**: Three-layer detection: (1) explicit config override, (2) git remote auto-detect, (3) file-based fallback. `tracker-detect.sh` outputs JSON with tracker type, project slug, and CLI tool. `tracker-api.sh` provides a uniform interface for create/list/view/transition operations. File backend uses `docs/specifications/TODO.md` + `docs/todos/` directories.
+
+**Rationale**: File fallback ensures issue tracking is always available — `tracker-detect.sh` never returns "none". The abstraction layer isolates skill/agent code from backend differences.
+
+**Consequences**: Additional backends (Linear, Jira, beads) deferred to follow-up issues. No tracker state caching in v1 — CLI calls are lightweight.
+
+**Source**: Plan 50
+
+### DD-020: Plugin vs Project Issue Disambiguation
+
+**Context**: Two issue destinations exist — the plugin repository (for yf bugs/enhancements) and the project's own tracker (for project issues). Without disambiguation, issues could be mis-routed.
+
+**Decision**: Hard enforcement rule (Rule 1.5) prevents cross-routing. Each skill includes a guard: `plugin_issue` checks if the issue is about the project and redirects to `issue_capture`; `issue_capture` checks if the issue is about yf/beads and redirects to `plugin_issue`. Cross-route guard compares plugin repo slug against project tracker slug — error if they match.
+
+**Rationale**: Mis-routing an issue wastes context and effort. The guards are cheap (string comparison) and provide early feedback. Ambiguous cases ask the user.
+
+**Consequences**: Plugin issues are manually initiated only — never suggested proactively. Project issues are suggested via Rule 5.6 advisory.
+
+**Source**: Plan 50
 
 ## Non-Functional Requirements
 

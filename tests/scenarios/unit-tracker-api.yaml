@@ -1,0 +1,172 @@
+name: "Unit: tracker-api.sh — action routing and file backend"
+
+setup:
+  - "mkdir -p .yoshiko-flow docs/specifications docs/todos"
+
+steps:
+  # Case 1: Unknown action returns error JSON
+  - name: "unknown_action_error"
+    run: |
+      echo '{"enabled":true,"config":{"project_tracking":{"tracker":"file"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" badaction)
+      if echo "$OUTPUT" | jq -r '.error' | grep -q "Unknown action"; then
+        echo "OK: unknown action returns error"
+      else
+        echo "FAIL: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Create requires --title
+  - name: "create_requires_title"
+    run: |
+      echo '{"enabled":true,"config":{"project_tracking":{"tracker":"file"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" create)
+      if echo "$OUTPUT" | jq -r '.error' | grep -q "title"; then
+        echo "OK: create requires title"
+      else
+        echo "FAIL: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: File backend create
+  - name: "file_create"
+    run: |
+      echo '{"enabled":true,"config":{"artifact_dir":"docs","project_tracking":{"tracker":"file"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" create --title "Test issue" --body "Test body")
+      ID=$(echo "$OUTPUT" | jq -r '.id')
+      if [ "$ID" = "TODO-001" ]; then
+        echo "OK: created $ID"
+      else
+        echo "FAIL: id=$ID output=$OUTPUT"
+        exit 1
+      fi
+      # Verify TODO.md was created
+      if [ -f "$WORK_DIR/docs/specifications/TODO.md" ]; then
+        echo "OK: TODO.md exists"
+      else
+        echo "FAIL: TODO.md not created"
+        exit 1
+      fi
+      # Verify content
+      if grep -q "TODO-001: Test issue" "$WORK_DIR/docs/specifications/TODO.md"; then
+        echo "OK: content correct"
+      else
+        echo "FAIL: content missing"
+        cat "$WORK_DIR/docs/specifications/TODO.md"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK: created TODO-001"
+
+  # Case 4: File backend auto-increment
+  - name: "file_auto_increment"
+    run: |
+      echo '{"enabled":true,"config":{"artifact_dir":"docs","project_tracking":{"tracker":"file"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" create --title "Second issue" --body "Body 2")
+      ID=$(echo "$OUTPUT" | jq -r '.id')
+      if [ "$ID" = "TODO-002" ]; then
+        echo "OK: auto-incremented to $ID"
+      else
+        echo "FAIL: id=$ID"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: File backend list
+  - name: "file_list"
+    run: |
+      echo '{"enabled":true,"config":{"artifact_dir":"docs","project_tracking":{"tracker":"file"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" list --state open)
+      COUNT=$(echo "$OUTPUT" | jq 'length')
+      if [ "$COUNT" -ge 2 ]; then
+        echo "OK: listed $COUNT issues"
+      else
+        echo "FAIL: count=$COUNT output=$OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: File backend view
+  - name: "file_view"
+    run: |
+      echo '{"enabled":true,"config":{"artifact_dir":"docs","project_tracking":{"tracker":"file"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" view --issue TODO-001)
+      ID=$(echo "$OUTPUT" | jq -r '.id')
+      if [ "$ID" = "TODO-001" ]; then
+        echo "OK: viewed TODO-001"
+      else
+        echo "FAIL: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: File backend view non-existent
+  - name: "file_view_missing"
+    run: |
+      echo '{"enabled":true,"config":{"artifact_dir":"docs","project_tracking":{"tracker":"file"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" view --issue TODO-999)
+      if echo "$OUTPUT" | jq -r '.error' | grep -q "not found"; then
+        echo "OK: missing issue returns error"
+      else
+        echo "FAIL: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: View requires --issue
+  - name: "view_requires_issue"
+    run: |
+      echo '{"enabled":true,"config":{"project_tracking":{"tracker":"file"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" view)
+      if echo "$OUTPUT" | jq -r '.error' | grep -q "issue"; then
+        echo "OK: view requires --issue"
+      else
+        echo "FAIL: $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -f .yoshiko-flow/config.json"
+  - "rm -rf docs/specifications/TODO.md docs/todos"
