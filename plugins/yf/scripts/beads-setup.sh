@@ -136,7 +136,7 @@ DOCTOR_OUTPUT=$(cd "$PROJECT_DIR" && bd doctor 2>&1) || true
 #   Git Hooks / Git Merge Driver / Git Upstream / Git Working Tree — yf uses no-git-ops
 #   Claude Plugin / Claude Integration — yf manages its own integration
 #   Sync Branch / Dolt-JSONL Sync — not applicable for local scratchpad
-#   Dolt Status / Dolt Locks — transient from normal bd operations
+#   Dolt Status / Dolt Lock — transient from normal bd operations
 #   Database / Repo Fingerprint / Sync Divergence — bd init bootstrapping
 ACCEPTABLE_PATTERNS=(
   "Git Hooks"
@@ -148,7 +148,7 @@ ACCEPTABLE_PATTERNS=(
   "Sync Branch"
   "Dolt-JSONL Sync"
   "Dolt Status"
-  "Dolt Locks"
+  "Dolt Lock"
   "Database"
   "Repo Fingerprint"
   "Sync Divergence"
