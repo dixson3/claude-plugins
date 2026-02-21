@@ -4,6 +4,10 @@
 *.db-journal
 *.db-wal
 *.db-shm
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
 
 # Daemon runtime files
 daemon.lock
