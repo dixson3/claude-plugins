@@ -165,14 +165,37 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 12: preflight setup check validates both .beads dir AND no-git-ops
-  - name: "preflight_setup_check_validates_both"
+  # Case 12: preflight setup check validates .beads dir, no-git-ops, AND gitignore marker
+  - name: "preflight_setup_check_validates_all"
     run: |
       CHECK_CMD=$(jq -r '.artifacts.setup[] | select(.name == "beads-setup") | .check' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
-      if echo "$CHECK_CMD" | grep -q 'test -d .beads' && echo "$CHECK_CMD" | grep -q 'no-git-ops'; then
-        echo "OK: preflight check validates .beads dir and no-git-ops"
+      if echo "$CHECK_CMD" | grep -q 'test -d .beads' && echo "$CHECK_CMD" | grep -q 'no-git-ops' && echo "$CHECK_CMD" | grep -q '!config.yaml'; then
+        echo "OK: preflight check validates .beads dir, no-git-ops, and gitignore allowlist"
       else
-        echo "FAIL: preflight check is '$CHECK_CMD', expected both .beads and no-git-ops"
+        echo "FAIL: preflight check is '$CHECK_CMD', expected .beads, no-git-ops, and !config.yaml"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 13: repo .beads/.gitignore uses allowlist pattern
+  - name: "beads_gitignore_allowlist"
+    run: |
+      GI="$PLUGIN_DIR/.beads/.gitignore"
+      if [ ! -f "$GI" ]; then
+        echo "FAIL: .beads/.gitignore not found"
+        exit 1
+      fi
+      FAIL=0
+      grep -qF '!config.yaml' "$GI" || { echo "FAIL: missing !config.yaml"; FAIL=1; }
+      grep -qF '!.gitignore' "$GI" || { echo "FAIL: missing !.gitignore"; FAIL=1; }
+      grep -q '^\*$' "$GI" || { echo "FAIL: missing * (ignore-all) entry"; FAIL=1; }
+      if [ "$FAIL" -eq 0 ]; then
+        echo "OK: .beads/.gitignore uses allowlist pattern"
+      else
         exit 1
       fi
     assertions:

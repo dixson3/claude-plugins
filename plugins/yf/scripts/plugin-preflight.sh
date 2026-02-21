@@ -104,13 +104,6 @@ if [ "$YF_ENABLED" = "false" ]; then
     REMOVED=$((REMOVED + 1))
     echo "preflight: yf — removed (disabled) .claude/rules/yf/$(basename "$F")"
   done
-  # Also remove legacy flat yf-* rules from pre-subdirectory era
-  for F in "$PROJECT_DIR/.claude/rules"/yf-*.md; do
-    [ -e "$F" ] || [ -L "$F" ] || continue
-    rm -f "$F"
-    REMOVED=$((REMOVED + 1))
-    echo "preflight: yf — removed (disabled) .claude/rules/$(basename "$F")"
-  done
   rmdir "$PROJECT_DIR/.claude/rules/yf" 2>/dev/null || true
   # Write minimal preflight state to lock file
   CUR_VER=$(jq -r '.version' "$PJSON" 2>/dev/null)
@@ -136,12 +129,6 @@ if ! yf_bd_available; then
     rm -f "$F"
     REMOVED=$((REMOVED + 1))
     echo "preflight: yf — removed (inactive) .claude/rules/yf/$(basename "$F")"
-  done
-  for F in "$PROJECT_DIR/.claude/rules"/yf-*.md; do
-    [ -e "$F" ] || [ -L "$F" ] || continue
-    rm -f "$F"
-    REMOVED=$((REMOVED + 1))
-    echo "preflight: yf — removed (inactive) .claude/rules/$(basename "$F")"
   done
   rmdir "$PROJECT_DIR/.claude/rules/yf" 2>/dev/null || true
   echo "preflight: inactive — bd CLI not available"
@@ -185,15 +172,6 @@ CUR_VER=$(jq -r '.version' "$PJSON" 2>/dev/null)
 
 # --- Fast path: check version + symlink targets match ---
 FAST_PATH=true
-
-# --- Remove bd prime hooks (yf supersedes) ---
-SETTINGS_LOCAL="$PROJECT_DIR/.claude/settings.local.json"
-if [ -f "$SETTINGS_LOCAL" ] && grep -q "bd prime" "$SETTINGS_LOCAL" 2>/dev/null; then
-  if (cd "$PROJECT_DIR" && bd setup claude --remove --project) 2>/dev/null; then
-    FAST_PATH=false
-    echo "preflight: removed bd prime hooks from .claude/settings.local.json — reset context (/clear) for changes to take effect"
-  fi
-fi
 
 LOCK_VER=$(echo "$LOCK" | jq -r ".plugins.\"$PLUGIN_NAME\".version // \"\"" 2>/dev/null)
 if [ "$CUR_VER" != "$LOCK_VER" ]; then

@@ -17,8 +17,9 @@ Beads-cli is the external persistence layer that provides git-backed issue track
 2. If `.beads/` does not exist: runs `bd init` (uses `dolt` backend by default since 0.50.0; writes persist immediately)
 3. No AGENTS.md is created — the plugin provides beads workflow context via its own rule file (`yf-rules.md`)
 4. All task operations (create, update, close, list) use `bd` CLI directly.
-5. Beads manages its own `.beads/.gitignore`
-6. Remove `bd prime` Claude Code hooks if present: beads-cli can install its own `SessionStart`/`PreCompact` hooks via `bd setup claude`, but yf supersedes these with plugin-level hooks (`session-recall.sh`, `pre-compact.sh`). Both `plugin-preflight.sh` (before fast-path) and `beads-setup.sh` (Step 5b) detect `bd prime` in `.claude/settings.local.json` and run `bd setup claude --remove --project` to prevent duplicate context injection (~3k chars wasted per session).
+5. `.beads/.gitignore` uses allowlist pattern (`*`, `!.gitignore`, `!config.yaml`). `beads-setup.sh` enforces this on every run, overwriting any blocklist from `bd init`.
+6. Remove `bd prime` Claude Code hooks if present: beads-cli can install its own `SessionStart`/`PreCompact` hooks via `bd setup claude`, but yf supersedes these with plugin-level hooks (`session-recall.sh`, `pre-compact.sh`). `beads-setup.sh` (Step 2) detects `bd prime` in `.claude/settings.local.json` and runs `bd setup claude --remove --project` to prevent duplicate context injection (~3k chars wasted per session).
+7. In git worktrees, `beads-setup.sh` detects the worktree and creates a `.beads/redirect` file pointing to the main repo's `.beads/` directory. Phase 2 repair is skipped — config lives in the main repo.
 
 **Postconditions**: Beads initialized with `dolt` backend. Writes persist immediately. No AGENTS.md. No hooks installed. No sync branch configured. No `bd prime` Claude Code hooks.
 

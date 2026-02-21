@@ -5,6 +5,9 @@
 # warnings into must-fix vs acceptable. Attempts auto-repair for must-fix
 # issues. If any must-fix issue remains, emits BEADS_SETUP_FAILED.
 #
+# Worktree-aware: detects git worktrees and creates a redirect to the main
+# repo's .beads/ instead of running bd init.
+#
 # Compatible with bash 3.2+ (macOS default).
 # Fail-open: always exits 0.
 #
@@ -42,13 +45,27 @@ fi
 CHANGES=0
 
 if [ ! -d "$PROJECT_DIR/.beads" ]; then
-  echo "beads-setup: initializing beads..."
-  if (cd "$PROJECT_DIR" && bd init --skip-hooks -q) 2>/dev/null; then
-    CHANGES=$((CHANGES + 1))
-    echo "beads-setup: initialized .beads/"
+  # Detect git worktree
+  GIT_COMMON=$(cd "$PROJECT_DIR" && git rev-parse --git-common-dir 2>/dev/null)
+  GIT_DIR=$(cd "$PROJECT_DIR" && git rev-parse --git-dir 2>/dev/null)
+
+  if [ -n "$GIT_COMMON" ] && [ -n "$GIT_DIR" ] && [ "$GIT_COMMON" != "$GIT_DIR" ]; then
+    # In a worktree — resolve main repo root and create redirect
+    MAIN_REPO=$(cd "$PROJECT_DIR" && cd "$(git rev-parse --git-common-dir)/.." && pwd)
+    if [ -d "$MAIN_REPO/.beads" ]; then
+      mkdir -p "$PROJECT_DIR/.beads"
+      # Write relative path from worktree .beads/ to main .beads/
+      python3 -c "import os; print(os.path.relpath('$MAIN_REPO/.beads', '$PROJECT_DIR/.beads'))" > "$PROJECT_DIR/.beads/redirect"
+      CHANGES=$((CHANGES + 1))
+      echo "beads-setup: created worktree redirect to main repo .beads/"
+    else
+      echo "beads-setup: skip — main repo has no .beads/ yet"
+      exit 0
+    fi
   else
-    # Try without --skip-hooks (older bd versions)
-    if (cd "$PROJECT_DIR" && bd init -q) 2>/dev/null; then
+    # Main repo — normal init
+    echo "beads-setup: initializing beads..."
+    if (cd "$PROJECT_DIR" && bd init --skip-hooks -q) 2>/dev/null; then
       CHANGES=$((CHANGES + 1))
       echo "beads-setup: initialized .beads/"
     else
@@ -60,29 +77,16 @@ if [ ! -d "$PROJECT_DIR/.beads" ]; then
 fi
 
 # ============================================================
-# Phase 2 — Repair (always runs, idempotent)
+# Phase 2 — Repair (main repo only, idempotent)
 # ============================================================
 
-# Step 2: Fix metadata.json stale SQLite values
-METADATA="$PROJECT_DIR/.beads/metadata.json"
-if [ -f "$METADATA" ]; then
-  if grep -q '\.db"' "$METADATA" 2>/dev/null || grep -q 'interactions\.jsonl' "$METADATA" 2>/dev/null; then
-    echo '{}' > "$METADATA"
-    CHANGES=$((CHANGES + 1))
-    echo "beads-setup: fixed stale metadata.json values"
-  fi
+# Skip repair in worktree — config lives in main repo
+if [ -f "$PROJECT_DIR/.beads/redirect" ]; then
+  echo "beads-setup: healthy (worktree redirect, $CHANGES changes)"
+  exit 0
 fi
 
-# Step 3: Normalize database name to "beads"
-DB_NAME=$(cd "$PROJECT_DIR" && bd dolt show 2>/dev/null | grep "Database:" | awk '{print $2}')
-if [ -n "$DB_NAME" ] && [ "$DB_NAME" != "beads" ]; then
-  if (cd "$PROJECT_DIR" && bd dolt set database beads) 2>/dev/null; then
-    CHANGES=$((CHANGES + 1))
-    echo "beads-setup: normalized database name to 'beads'"
-  fi
-fi
-
-# Step 4: Ensure no-git-ops is true
+# Step 1: Ensure no-git-ops is true
 NO_GIT_OPS=$(cd "$PROJECT_DIR" && bd config get no-git-ops 2>/dev/null)
 if [ "$NO_GIT_OPS" != "true" ]; then
   if (cd "$PROJECT_DIR" && bd config set no-git-ops true) 2>/dev/null; then
@@ -91,16 +95,7 @@ if [ "$NO_GIT_OPS" != "true" ]; then
   fi
 fi
 
-# Step 5: Uninstall any hooks
-HOOKS_INSTALLED=$(cd "$PROJECT_DIR" && bd hooks list 2>/dev/null | grep -c '✓' || echo "0")
-if [ "$HOOKS_INSTALLED" -gt 0 ] 2>/dev/null; then
-  if (cd "$PROJECT_DIR" && bd hooks uninstall) 2>/dev/null; then
-    CHANGES=$((CHANGES + 1))
-    echo "beads-setup: uninstalled beads git hooks"
-  fi
-fi
-
-# Step 5b: Remove beads Claude hooks (yf plugin provides its own)
+# Step 2: Remove beads Claude hooks (yf plugin provides its own)
 SETTINGS_LOCAL="$PROJECT_DIR/.claude/settings.local.json"
 if [ -f "$SETTINGS_LOCAL" ] && grep -q "bd prime" "$SETTINGS_LOCAL" 2>/dev/null; then
   if (cd "$PROJECT_DIR" && bd setup claude --remove --project) 2>/dev/null; then
@@ -109,19 +104,33 @@ if [ -f "$SETTINGS_LOCAL" ] && grep -q "bd prime" "$SETTINGS_LOCAL" 2>/dev/null;
   fi
 fi
 
-# Step 6: Commit any uncommitted dolt changes (always try — idempotent)
+# Step 3: Commit any uncommitted dolt changes (always try — idempotent)
 COMMIT_OUT=$(cd "$PROJECT_DIR" && bd vc commit -m "beads-setup: auto-commit" 2>&1) || true
 if echo "$COMMIT_OUT" | grep -q "Created commit"; then
   CHANGES=$((CHANGES + 1))
   echo "beads-setup: committed pending dolt changes"
 fi
 
-# Step 7: Advisory — check .beads/.gitignore has dolt/
+# Step 4: Ensure .beads/.gitignore uses allowlist
 BEADS_GI="$PROJECT_DIR/.beads/.gitignore"
-if [ -f "$BEADS_GI" ]; then
-  if ! grep -q 'dolt/' "$BEADS_GI" 2>/dev/null; then
-    echo "beads-setup: advisory — .beads/.gitignore may need 'dolt/' entry" >&2
-  fi
+EXPECTED_GI_MARKER='!config.yaml'
+if [ ! -f "$BEADS_GI" ] || ! grep -qF "$EXPECTED_GI_MARKER" "$BEADS_GI"; then
+  cat > "$BEADS_GI" <<'GITIGNORE_EOF'
+# Ignore everything except config.yaml and this file
+*
+!.gitignore
+!config.yaml
+GITIGNORE_EOF
+  CHANGES=$((CHANGES + 1))
+  echo "beads-setup: updated .beads/.gitignore to allowlist"
+fi
+
+# Step 5: Ensure .beads/ is NOT in project .gitignore
+PROJECT_GI="$PROJECT_DIR/.gitignore"
+if [ -f "$PROJECT_GI" ] && grep -q '^\.beads/' "$PROJECT_GI" 2>/dev/null; then
+  sed '/^\.beads\//d' "$PROJECT_GI" > "$PROJECT_GI.tmp" && mv "$PROJECT_GI.tmp" "$PROJECT_GI"
+  CHANGES=$((CHANGES + 1))
+  echo "beads-setup: removed .beads/ from project .gitignore"
 fi
 
 # ============================================================
@@ -130,28 +139,31 @@ fi
 
 DOCTOR_OUTPUT=$(cd "$PROJECT_DIR" && bd doctor 2>&1) || true
 
-# Acceptable warning patterns (yf intentionally diverges from bd defaults)
-# These are matched against doctor output lines
 # Acceptable warning patterns (yf intentionally diverges or cannot fix)
 #   Git Hooks / Git Merge Driver / Git Upstream / Git Working Tree — yf uses no-git-ops
+#   Gitignore — yf enforces allowlist pattern, bd doctor expects blocklist
 #   Claude Plugin / Claude Integration — yf manages its own integration
 #   Sync Branch / Dolt-JSONL Sync — not applicable for local scratchpad
 #   Dolt Status / Dolt Lock — transient from normal bd operations
-#   Database / Repo Fingerprint / Sync Divergence — bd init bootstrapping
+#   Database / Repo Fingerprint / Sync Divergence / Peer Connectivity / Federation — bd init bootstrapping
 ACCEPTABLE_PATTERNS=(
   "Git Hooks"
   "Git Merge Driver"
   "Git Upstream"
   "Git Working Tree"
+  "Gitignore"
   "Claude Plugin"
   "Claude Integration"
   "Sync Branch"
   "Dolt-JSONL Sync"
   "Dolt Status"
   "Dolt Lock"
+  "Dolt Mode"
   "Database"
   "Repo Fingerprint"
   "Sync Divergence"
+  "Peer Connectivity"
+  "Federation"
 )
 
 # Extract warning lines (⚠ markers)

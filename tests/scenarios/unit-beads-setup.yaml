@@ -85,13 +85,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: script checks for stale metadata.json
-  - name: "checks_stale_metadata"
+  # Case 6: script contains allowlist repair logic
+  - name: "has_allowlist_repair"
     run: |
-      if grep -q '\.db"' "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh"; then
-        echo "OK: checks for stale .db references in metadata"
+      if grep -qF '!config.yaml' "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh"; then
+        echo "OK: contains allowlist repair logic"
       else
-        echo "FAIL: does not check for stale metadata"
+        echo "FAIL: missing allowlist repair logic"
         exit 1
       fi
     assertions:
@@ -100,13 +100,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: script normalizes database name
-  - name: "normalizes_db_name"
+  # Case 7: script contains worktree detection logic
+  - name: "has_worktree_detection"
     run: |
-      if grep -q 'bd dolt set database beads' "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh"; then
-        echo "OK: normalizes database name to beads"
+      if grep -q 'git-common-dir' "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh"; then
+        echo "OK: contains worktree detection (git-common-dir)"
       else
-        echo "FAIL: does not normalize database name"
+        echo "FAIL: missing worktree detection logic"
         exit 1
       fi
     assertions:
@@ -130,13 +130,25 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 9: script uninstalls hooks
-  - name: "uninstalls_hooks"
+  # Case 9: legacy migration steps absent (no pre-dolt deployments)
+  - name: "no_legacy_migration"
     run: |
+      FAIL=0
+      if grep -q 'metadata\.json' "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh"; then
+        echo "FAIL: still references metadata.json (legacy)"
+        FAIL=1
+      fi
+      if grep -q 'bd dolt set database' "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh"; then
+        echo "FAIL: still has db_name normalization (legacy)"
+        FAIL=1
+      fi
       if grep -q 'bd hooks uninstall' "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh"; then
-        echo "OK: uninstalls hooks"
+        echo "FAIL: still has hooks uninstall (legacy)"
+        FAIL=1
+      fi
+      if [ "$FAIL" -eq 0 ]; then
+        echo "OK: legacy migration steps removed"
       else
-        echo "FAIL: does not uninstall hooks"
         exit 1
       fi
     assertions:
@@ -160,12 +172,12 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 10b: script removes bd prime Claude hooks (Step 5b)
+  # Case 10b: script removes bd prime Claude hooks (Step 2)
   - name: "removes_bd_prime_hooks"
     run: |
       if grep -q 'bd prime' "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh" && \
          grep -q 'bd setup claude --remove --project' "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh"; then
-        echo "OK: Step 5b detects and removes bd prime hooks"
+        echo "OK: Step 2 detects and removes bd prime hooks"
       else
         echo "FAIL: missing bd prime hook removal logic"
         exit 1
@@ -253,8 +265,8 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 14: database name normalized (requires bd)
-  - name: "database_name_normalized"
+  # Case 14: .beads/.gitignore uses allowlist after setup (requires bd)
+  - name: "gitignore_allowlist_after_setup"
     run: |
       if ! command -v bd >/dev/null 2>&1; then
         echo "OK: skipped (bd not available)"
@@ -263,11 +275,11 @@ steps:
       TMPDIR=$(mktemp -d)
       cd "$TMPDIR" && git init -q && git commit --allow-empty -m "init" -q
       CLAUDE_PROJECT_DIR="$TMPDIR" bash "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh" >/dev/null 2>&1
-      DB=$(cd "$TMPDIR" && bd dolt show 2>/dev/null | grep "Database:" | awk '{print $2}')
-      if [ "$DB" = "beads" ]; then
-        echo "OK: database name is beads"
+      GI="$TMPDIR/.beads/.gitignore"
+      if grep -qF '!config.yaml' "$GI" && grep -q '^\*$' "$GI"; then
+        echo "OK: .beads/.gitignore uses allowlist after setup"
       else
-        echo "FAIL: database name is '$DB'"
+        echo "FAIL: .beads/.gitignore content: $(cat "$GI")"
         rm -rf "$TMPDIR"
         exit 1
       fi
