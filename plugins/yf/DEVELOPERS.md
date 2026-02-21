@@ -180,7 +180,7 @@ All skills (except `/yf:setup`) include an activation guard that runs this scrip
 
 ### Beads Dependency
 
-The `yf_bd_available()` function checks `command -v bd`. A backwards-compatible alias `yf_beads_installed()` is provided.
+The `yf_bd_available()` function checks `command -v bd`.
 
 ### Fail-Open vs. Fail-Closed
 

@@ -56,9 +56,6 @@ yf_bd_available() {
   command -v bd >/dev/null 2>&1
 }
 
-# Backwards-compatible alias
-yf_beads_installed() { yf_bd_available; }
-
 # yf_is_enabled — returns 0 if enabled, 1 if disabled
 # Three-condition activation gate (DD-015):
 #   1. Config exists

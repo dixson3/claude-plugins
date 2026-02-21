@@ -66,7 +66,7 @@ fi
 . "$SCRIPT_DIR/yf-config.sh"
 
 # --- Beads dependency check ---
-if ! yf_beads_installed; then
+if ! yf_bd_available; then
   echo "YF_DEPENDENCY_MISSING: bd"
   echo "preflight: yf requires beads-cli (bd). Install: brew install dixson3/tap/beads-cli"
 fi
@@ -128,8 +128,8 @@ if [ "$YF_ENABLED" = "false" ]; then
   exit 0
 fi
 
-# --- Inactive: beads not installed ---
-if ! yf_beads_installed; then
+# --- Inactive: bd CLI not available ---
+if ! yf_bd_available; then
   REMOVED=0
   for F in "$PROJECT_DIR/.claude/rules/yf"/*.md; do
     [ -e "$F" ] || [ -L "$F" ] || continue

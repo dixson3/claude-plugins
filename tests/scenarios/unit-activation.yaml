@@ -44,7 +44,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: enabled:true + beads installed → active
+  # Case 3: enabled:true + bd CLI available → active
   - name: "enabled_with_beads_active"
     run: |
       echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"

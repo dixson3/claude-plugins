@@ -255,13 +255,7 @@ steps:
           echo "FAIL: should find bd"
           exit 1
         fi
-        # Test backwards-compatible alias
-        if yf_beads_installed; then
-          echo "OK: alias works too"
-        else
-          echo "FAIL: alias should work"
-          exit 1
-        fi
+        # yf_bd_available already verified above
       else
         echo "OK: skipped (bd not in test env)"
       fi
