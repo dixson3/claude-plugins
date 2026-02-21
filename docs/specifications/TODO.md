@@ -29,12 +29,6 @@
 | TODO-030 | E2E validation of skill-level chronicle capture during real plan execution | P2 | Plan 44 (chronicle worthiness) | Open | [#21](https://github.com/dixson3/claude-plugins/issues/21) |
 | TODO-031 | Fix `unit-chronicle-check.yaml` test failures — uses relative `./plugins/yf/` paths that resolve to WORK_DIR instead of PLUGIN_DIR | P2 | Plan 48 (test overhaul) | Open | [#28](https://github.com/dixson3/claude-plugins/issues/28) |
 | TODO-032 | `code-gate.sh` glob patterns (e.g. `*/docs/plans/*`) require absolute path prefix — relative paths like `docs/plans/plan-1.md` don't match case statements | P3 | Plan 48 (integ-code-gate) | Open | [#29](https://github.com/dixson3/claude-plugins/issues/29) |
-| TODO-034 | E2E validation of issue capture → process → submit pipeline with real GitHub tracker | P2 | Plan 50 (issue tracking) | Open | [#34](https://github.com/dixson3/claude-plugins/issues/34) |
-| TODO-035 | E2E validation of tracker-detect.sh in a project with GitLab remote | P3 | Plan 50 (issue tracking) | Open | [#35](https://github.com/dixson3/claude-plugins/issues/35) |
-| TODO-036 | `issue_config` skill for interactive tracker setup (deferred from Plan 50) | P3 | Plan 50 (deferred) | Deferred | [#36](https://github.com/dixson3/claude-plugins/issues/36) |
-| TODO-037 | `issue_migrate` skill to move issues between tracker backends (deferred from Plan 50) | P3 | Plan 50 (deferred) | Deferred | [#37](https://github.com/dixson3/claude-plugins/issues/37) |
-| TODO-038 | Linear and Jira tracker backends for `tracker-api.sh` (deferred from Plan 50) | P3 | Plan 50 (deferred) | Deferred | [#38](https://github.com/dixson3/claude-plugins/issues/38) |
-| TODO-039 | `default_labels` config for issue creation (deferred from Plan 50) | P3 | Plan 50 (deferred) | Deferred | [#39](https://github.com/dixson3/claude-plugins/issues/39) |
 
 ## Completed Items
 
