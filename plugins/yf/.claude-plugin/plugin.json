@@ -1,7 +1,7 @@
 {
   "name": "yf",
-  "version": "2.28.0",
-  "description": "Yoshiko Flow — plan lifecycle, swarm execution with implicit formula triggering and worktree isolation, context persistence, diary generation, research/decision archiving, specification artifacts, standards-driven code generation, hash-based IDs, epic worktree lifecycle, automatic bead pruning, zero-question setup, doctor-driven beads repair, plugin issue reporting, and project issue tracking",
+  "version": "2.29.0",
+  "description": "Yoshiko Flow — plan lifecycle, swarm execution with implicit formula triggering and worktree isolation, WorktreeCreate hooks, context persistence, diary generation, research/decision archiving, specification artifacts, standards-driven code generation, hash-based IDs, epic worktree lifecycle, automatic bead pruning, zero-question setup, doctor-driven beads repair, plugin issue reporting, and project issue tracking",
   "author": {
     "name": "James Dixson",
     "email": "dixson3@gmail.com"
@@ -130,6 +130,26 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post-push-prune.sh"
+          }
+        ]
+      }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/worktree-create.sh"
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/worktree-remove.sh"
           }
         ]
       }

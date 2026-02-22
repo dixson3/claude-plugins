@@ -1,0 +1,219 @@
+name: "Unit: worktree hooks — create and remove"
+
+steps:
+  # === worktree-create.sh ===
+
+  # Case 1: creates worktree with name, stdout is absolute path
+  - name: "creates_worktree_with_name"
+    run: |
+      TMPDIR=$(mktemp -d)
+      cd "$TMPDIR" && git init -q && git commit --allow-empty -m "init" -q
+      OUTPUT=$(echo '{"name":"test-wt","cwd":"'"$TMPDIR"'"}' | bash "$PLUGIN_DIR/plugins/yf/hooks/worktree-create.sh" 2>/dev/null)
+      WT_DIR="$TMPDIR/.claude/worktrees/test-wt"
+      if [ "$OUTPUT" = "$WT_DIR" ] && [ -d "$WT_DIR" ]; then
+        # Verify it's a valid git worktree
+        if git -C "$WT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+          echo "OK: worktree created, stdout is absolute path"
+        else
+          echo "FAIL: directory exists but is not a valid git worktree"
+          rm -rf "$TMPDIR"
+          exit 1
+        fi
+      else
+        echo "FAIL: expected $WT_DIR, got: $OUTPUT"
+        rm -rf "$TMPDIR"
+        exit 1
+      fi
+      rm -rf "$TMPDIR"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: stdout is exactly one line (the absolute path)
+  - name: "stdout_only_path"
+    run: |
+      TMPDIR=$(mktemp -d)
+      cd "$TMPDIR" && git init -q && git commit --allow-empty -m "init" -q
+      OUTPUT=$(echo '{"name":"path-test","cwd":"'"$TMPDIR"'"}' | bash "$PLUGIN_DIR/plugins/yf/hooks/worktree-create.sh" 2>/dev/null)
+      LINE_COUNT=$(echo "$OUTPUT" | wc -l | tr -d ' ')
+      if [ "$LINE_COUNT" = "1" ] && echo "$OUTPUT" | grep -q "^/"; then
+        echo "OK: stdout is exactly one absolute path"
+      else
+        echo "FAIL: expected 1 line starting with /, got $LINE_COUNT lines: $OUTPUT"
+        rm -rf "$TMPDIR"
+        exit 1
+      fi
+      rm -rf "$TMPDIR"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: creates beads redirect when yf active (requires bd)
+  - name: "creates_beads_redirect_when_active"
+    run: |
+      if ! command -v bd >/dev/null 2>&1; then
+        echo "OK: skipped (bd not available)"
+        exit 0
+      fi
+      TMPDIR=$(mktemp -d)
+      cd "$TMPDIR" && git init -q && git commit --allow-empty -m "init" -q
+      # Set up yf active state
+      mkdir -p "$TMPDIR/.yoshiko-flow"
+      echo '{"enabled":true}' > "$TMPDIR/.yoshiko-flow/config.json"
+      # Initialize beads in main repo
+      (cd "$TMPDIR" && bd init --skip-hooks -q 2>/dev/null) || true
+      if [ ! -d "$TMPDIR/.beads" ]; then
+        echo "OK: skipped (bd init failed)"
+        rm -rf "$TMPDIR"
+        exit 0
+      fi
+      OUTPUT=$(echo '{"name":"beads-test","cwd":"'"$TMPDIR"'"}' | bash "$PLUGIN_DIR/plugins/yf/hooks/worktree-create.sh" 2>/dev/null)
+      WT_DIR="$TMPDIR/.claude/worktrees/beads-test"
+      if [ -f "$WT_DIR/.beads/redirect" ]; then
+        echo "OK: beads redirect created in worktree"
+      else
+        echo "FAIL: no .beads/redirect in worktree"
+        rm -rf "$TMPDIR"
+        exit 1
+      fi
+      rm -rf "$TMPDIR"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: skips yf setup when inactive
+  - name: "skips_yf_setup_when_inactive"
+    run: |
+      TMPDIR=$(mktemp -d)
+      cd "$TMPDIR" && git init -q && git commit --allow-empty -m "init" -q
+      # No .yoshiko-flow/config.json = yf inactive
+      OUTPUT=$(echo '{"name":"no-yf","cwd":"'"$TMPDIR"'"}' | bash "$PLUGIN_DIR/plugins/yf/hooks/worktree-create.sh" 2>/dev/null)
+      WT_DIR="$TMPDIR/.claude/worktrees/no-yf"
+      if [ -d "$WT_DIR" ] && [ ! -f "$WT_DIR/.beads/redirect" ]; then
+        echo "OK: worktree created, no beads redirect (yf inactive)"
+      else
+        echo "FAIL: unexpected state"
+        rm -rf "$TMPDIR"
+        exit 1
+      fi
+      rm -rf "$TMPDIR"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: idempotent — creating twice succeeds both times
+  - name: "idempotent_existing_worktree"
+    run: |
+      TMPDIR=$(mktemp -d)
+      cd "$TMPDIR" && git init -q && git commit --allow-empty -m "init" -q
+      JSON='{"name":"idem-test","cwd":"'"$TMPDIR"'"}'
+      OUT1=$(echo "$JSON" | bash "$PLUGIN_DIR/plugins/yf/hooks/worktree-create.sh" 2>/dev/null)
+      EXIT1=$?
+      OUT2=$(echo "$JSON" | bash "$PLUGIN_DIR/plugins/yf/hooks/worktree-create.sh" 2>/dev/null)
+      EXIT2=$?
+      if [ "$EXIT1" -eq 0 ] && [ "$EXIT2" -eq 0 ] && [ "$OUT1" = "$OUT2" ]; then
+        echo "OK: idempotent, both runs exit 0 with same path"
+      else
+        echo "FAIL: exit1=$EXIT1 exit2=$EXIT2 out1=$OUT1 out2=$OUT2"
+        rm -rf "$TMPDIR"
+        exit 1
+      fi
+      rm -rf "$TMPDIR"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: branch already exists — falls back to existing branch
+  - name: "branch_already_exists"
+    run: |
+      TMPDIR=$(mktemp -d)
+      cd "$TMPDIR" && git init -q && git commit --allow-empty -m "init" -q
+      # Pre-create the branch
+      git -C "$TMPDIR" branch "worktree/pre-branch" HEAD
+      OUTPUT=$(echo '{"name":"pre-branch","cwd":"'"$TMPDIR"'"}' | bash "$PLUGIN_DIR/plugins/yf/hooks/worktree-create.sh" 2>/dev/null)
+      EXIT=$?
+      WT_DIR="$TMPDIR/.claude/worktrees/pre-branch"
+      if [ "$EXIT" -eq 0 ] && [ -d "$WT_DIR" ]; then
+        echo "OK: succeeded with pre-existing branch"
+      else
+        echo "FAIL: exit=$EXIT, dir exists=$([ -d "$WT_DIR" ] && echo yes || echo no)"
+        rm -rf "$TMPDIR"
+        exit 1
+      fi
+      rm -rf "$TMPDIR"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # === worktree-remove.sh ===
+
+  # Case 7: exits zero with empty input
+  - name: "exits_zero_no_path"
+    run: |
+      EXIT_CODE=0
+      echo '{}' | bash "$PLUGIN_DIR/plugins/yf/hooks/worktree-remove.sh" 2>/dev/null || EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ]; then
+        echo "OK: exits 0 with empty path"
+      else
+        echo "FAIL: exit $EXIT_CODE"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: exits zero when path has no yf config
+  - name: "exits_zero_inactive"
+    run: |
+      TMPDIR=$(mktemp -d)
+      EXIT_CODE=0
+      echo '{"worktree_path":"'"$TMPDIR"'"}' | bash "$PLUGIN_DIR/plugins/yf/hooks/worktree-remove.sh" 2>/dev/null || EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ]; then
+        echo "OK: exits 0 for path without yf artifacts"
+      else
+        echo "FAIL: exit $EXIT_CODE"
+        rm -rf "$TMPDIR"
+        exit 1
+      fi
+      rm -rf "$TMPDIR"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: cleans rule symlinks
+  - name: "cleans_rule_symlinks"
+    run: |
+      TMPDIR=$(mktemp -d)
+      # Create fake rule symlinks
+      mkdir -p "$TMPDIR/.claude/rules/yf"
+      touch "$TMPDIR/.claude/rules/yf/test-rule.md"
+      echo '{"worktree_path":"'"$TMPDIR"'"}' | bash "$PLUGIN_DIR/plugins/yf/hooks/worktree-remove.sh" 2>/dev/null
+      if [ ! -d "$TMPDIR/.claude/rules/yf" ]; then
+        echo "OK: .claude/rules/yf/ removed"
+      else
+        echo "FAIL: .claude/rules/yf/ still exists"
+        rm -rf "$TMPDIR"
+        exit 1
+      fi
+      rm -rf "$TMPDIR"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

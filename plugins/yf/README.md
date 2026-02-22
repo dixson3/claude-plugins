@@ -427,6 +427,8 @@ Parallel agents writing to the same working tree can clobber each other's change
 
 **Swarm Isolation** — Write-capable swarm agents (code writers, testers) are dispatched with `isolation: "worktree"` on the Task tool call. Claude Code creates the worktree implicitly. After the agent returns, the dispatch loop rebases and merges changes back sequentially, using `-X theirs` for automatic conflict resolution with escalation to Claude-driven resolution if needed.
 
+**WorktreeCreate Hooks** — When Claude Code creates any worktree (`claude --worktree`, `EnterWorktree`, or Task `isolation: "worktree"`), the `worktree-create.sh` hook automatically sets up beads redirect and rule symlinks. This ensures yf is fully functional in worktrees without manual setup. Activation-gated: the hook always creates the git worktree, but only runs yf setup when yf is active. The `worktree-remove.sh` hook cleans up yf artifacts when a worktree is removed.
+
 ### Artifacts
 
 - **Hash ID library**: `plugins/yf/scripts/yf-id.sh`
@@ -510,7 +512,7 @@ All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to 
 | `worktree-ops.sh` | Epic worktree lifecycle operations (create, validate, rebase, land) |
 | `swarm-worktree.sh` | Swarm agent worktree isolation helpers (setup, merge, cleanup, conflict detection) |
 
-### Hooks (7)
+### Hooks (9)
 
 | Hook | Trigger | Description |
 |------|---------|-------------|
@@ -521,6 +523,8 @@ All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to 
 | `pre-push-diary.sh` | `git push` | Auto-creates draft chronicles and reminds about open chronicles before push |
 | `session-end.sh` | SessionEnd | Auto-creates draft chronicles and writes pending-diary marker |
 | `pre-compact.sh` | PreCompact | Auto-creates draft chronicles before context compaction |
+| `worktree-create.sh` | WorktreeCreate | Creates git worktree with beads redirect and rule symlinks |
+| `worktree-remove.sh` | WorktreeRemove | Cleans up yf artifacts from removed worktree |
 
 ## Dependencies
 

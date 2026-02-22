@@ -5,6 +5,20 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.29.0] - 2026-02-22
+
+### Added
+
+- **WorktreeCreate/WorktreeRemove hooks**: Automatic yf setup in any worktree context (`claude --worktree`, `EnterWorktree`, Task `isolation: "worktree"`).
+  - `worktree-create.sh` — Creates git worktree, sets up beads redirect and rule symlinks when yf is active. Activation-gated: always creates worktree, only runs yf setup when active.
+  - `worktree-remove.sh` — Fire-and-forget cleanup of yf artifacts (rule symlinks, `.yoshiko-flow` symlink).
+  - Registered in `plugin.json` as `WorktreeCreate` and `WorktreeRemove` hook types.
+- **Worktree hook tests**: `unit-worktree-hooks.yaml` with 9 test cases covering creation, idempotency, beads redirect, activation gating, branch fallback, and cleanup.
+
+### Changed
+
+- **Plugin version**: 2.28.0 → 2.29.0.
+
 ## [2.28.0] - 2026-02-22
 
 ### Added
