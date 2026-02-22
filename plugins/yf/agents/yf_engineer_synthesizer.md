@@ -87,7 +87,7 @@ Return a JSON structure with content for each requested spec type:
 
 ### PRD Synthesis
 - Extract requirements from plan completion criteria and functional specifications
-- Assign REQ-xxx IDs sequentially
+- Generate hash-based REQ IDs: run `bash -c '. plugins/yf/scripts/yf-id.sh && yf_generate_id "REQ"'` for each new requirement
 - Set priority based on plan priority or context
 - Link code references where identifiable from plans
 - Focus on WHAT and WHY, not HOW
@@ -95,20 +95,20 @@ Return a JSON structure with content for each requested spec type:
 ### EDD Synthesis
 - Extract design decisions from archived decisions (`docs/decisions/`)
 - Identify NFRs from plan constraints and technical requirements
-- Assign DD-xxx and NFR-xxx IDs sequentially
+- Generate hash-based IDs: run `bash -c '. plugins/yf/scripts/yf-id.sh && yf_generate_id "DD"'` and `yf_generate_id "NFR"` for each new entry
 - Use ADR format (Context, Decision, Rationale, Consequences)
 - Focus on HOW, not WHAT
 
 ### IG Synthesis
 - Create per-feature guides based on major plan features
 - Extract use cases from plan task descriptions
-- Assign UC-xxx IDs sequentially
+- Generate hash-based UC IDs: run `bash -c '. plugins/yf/scripts/yf-id.sh && yf_generate_id "UC"'` for each new use case
 - Include implementation patterns from code structure
 
 ### TODO Synthesis
 - Gather deferred items from plan "Future Work" sections
 - Include items from diary entries marked as follow-ups
-- Assign TODO-xxx IDs sequentially
+- Generate hash-based TODO IDs: run `bash -c '. plugins/yf/scripts/yf-id.sh && yf_generate_id "TODO"'` for each new item
 - Set source to the originating document
 
 ## Guidelines

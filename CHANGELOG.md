@@ -5,6 +5,35 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.27.0] - 2026-02-21
+
+### Added
+
+- **Hash-based ID generation** (`yf-id.sh`): All generated IDs (plan, TODO, REQ, DD, NFR, UC, DEC) now use SHA-256 hashed, base36-encoded, 5-character identifiers instead of sequential numbers. Collision-safe across parallel worktrees with 36^5 = 60M value space. macOS compatible (`shasum -a 256`). Existing sequential IDs remain valid — both formats coexist.
+- **`worktree` capability**: Epic worktree lifecycle for isolated development branches.
+  - `/yf:worktree_create` — Create a git worktree with new branch, `.beads/redirect` setup, and worktree-aware config resolution.
+  - `/yf:worktree_land` — Validate, rebase, re-validate, and fast-forward merge a worktree back into the base branch with automatic cleanup.
+  - `worktree-ops.sh` script — Core operations: create, validate, rebase, land.
+  - `yf-worktree-lifecycle.md` rule — Enforces use of yf skills (not raw git commands) for epic worktree operations.
+- **Swarm worktree isolation**: Write-capable swarm agents dispatch with `isolation: "worktree"` via Claude Code's Task tool parameter.
+  - `swarm-worktree.sh` script — Helper for setup, merge-back (`-X theirs` strategy), cleanup, and conflict detection.
+  - `swarm_dispatch/SKILL.md` Step 3b — Determines isolation mode per step (read-only agents skip isolation).
+  - `swarm_dispatch/SKILL.md` Step 4 — Adds `isolation: "worktree"` and beads-setup injection for write-capable agents.
+  - `swarm_dispatch/SKILL.md` Step 6a — Sequential merge-back with escalating conflict resolution (theirs → Claude-driven → re-dispatch → human escalation).
+- **Worktree-aware config resolution**: `yf-config.sh` falls back to main repo's `.yoshiko-flow/config.json` when in a worktree.
+  - `yf_main_repo_root()` — Resolves main repo root from a worktree.
+  - `yf_is_worktree()` — Detects worktree context.
+
+### Changed
+
+- **Plan ID generation**: `exit-plan-gate.sh` generates hash-based plan IDs (`plan-a3x7m.md`) instead of sequential (`plan-52.md`). Collision guard with retry.
+- **TODO ID generation**: `tracker-api.sh` `_next_todo_id()` generates hash-based IDs (`TODO-b7rpz`) instead of sequential (`TODO-034`).
+- **DEC ID generation**: `archive_capture/SKILL.md` generates hash-based DEC IDs instead of sequential (`DEC-k4m9q`).
+- **Spec ID generation**: `engineer_update/SKILL.md` and `yf_engineer_synthesizer.md` use `yf_generate_id()` for REQ, DD, NFR, UC, and TODO IDs instead of sequential assignment.
+- **Spec sanity check**: `spec-sanity-check.sh` contiguity check replaced with uniqueness check (no duplicate IDs) — sequential contiguity no longer applies for hash IDs.
+- **Sed pattern widening**: Plan ID extraction patterns in 4 scripts (`exit-plan-gate.sh`, `code-gate.sh`, `bd-safety-net.sh`, `session-recall.sh`) widened from `[0-9]*` to `[a-z0-9]*` — backwards compatible with existing sequential IDs.
+- **Plugin version**: 2.26.0 → 2.27.0.
+
 ## [2.26.0] - 2026-02-21
 
 ### Added

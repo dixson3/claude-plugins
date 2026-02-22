@@ -77,6 +77,7 @@ Current capabilities:
 | Session | `session` | session_land | — |
 | Plugin | `plugin` | plugin_setup, plugin_issue | — |
 | Issue | `issue` | issue_capture, issue_process, issue_disable, issue_list, issue_plan | yf_issue_triage |
+| Worktree | `worktree` | worktree_create, worktree_land | — |
 
 ### Adding a New Capability
 

@@ -78,15 +78,41 @@ If no `SUBAGENT:` annotation, default to `general-purpose`.
 ```
 If `compose` is present and the current swarm `depth < 2`, this step will be dispatched as a nested swarm instead of a bare Task call.
 
+### Step 3b: Determine Isolation Mode
+
+For each ready step, determine whether to use worktree isolation:
+
+| Agent Type | Isolation |
+|---|---|
+| `Explore` | None (read-only, no conflict risk) |
+| `yf:yf_swarm_researcher` | None (read-only) |
+| `yf:yf_swarm_reviewer` | None (read-only) |
+| `yf:yf_code_researcher` | None (read-only) |
+| `yf:yf_code_reviewer` | None (read-only) |
+| `general-purpose` | `isolation: "worktree"` |
+| `yf:yf_code_writer` | `isolation: "worktree"` |
+| `yf:yf_swarm_tester` | `isolation: "worktree"` |
+| `yf:yf_code_tester` | `isolation: "worktree"` |
+| (no annotation / default) | `isolation: "worktree"` (safe default) |
+
+Read-only agents cannot modify files, so they have no conflict risk and run directly in the main tree for efficiency.
+
 ### Step 4: Dispatch Ready Steps
 
-For each ready step, launch a Task tool call:
+For each ready step, launch a Task tool call. Add `isolation: "worktree"` for write-capable agents (determined in Step 3b). For isolated agents, inject beads-setup into the prompt so `.beads/redirect` is established.
 
 ```
 Task(
   subagent_type = "<parsed agent type>",
   description = "Swarm step: <step title>",
+  isolation = "worktree",  // only for write-capable agents per Step 3b
   prompt = "You are working on a swarm step.
+
+<if isolation: worktree>
+## Worktree Setup
+Run this first to establish beads access:
+  bash ${CLAUDE_PLUGIN_ROOT}/scripts/beads-setup.sh
+</if>
 
 Molecule: <mol_id>
 Step: <step_id> — <step_title>
@@ -143,6 +169,36 @@ When Task calls return:
 1. Verify the agent posted a comment on the parent bead
 2. Mark done in swarm state: `bash plugins/yf/scripts/dispatch-state.sh swarm mark-done <step-id>`
 3. Check if the step bead was closed by the agent; if not, close it
+
+### Step 6a: Merge-Back Worktree-Isolated Agents
+
+After each worktree-isolated agent returns, merge its changes back. Process returns **sequentially** (one merge at a time) to avoid race conditions.
+
+1. **If the agent made changes** (Task tool returns worktree path and branch):
+   ```bash
+   RESULT=$(bash plugins/yf/scripts/swarm-worktree.sh merge <worktree-path>)
+   STATUS=$(echo "$RESULT" | jq -r '.status')
+   ```
+
+   - **`ok`**: Changes merged. Clean up:
+     ```bash
+     bash plugins/yf/scripts/swarm-worktree.sh cleanup <worktree-path>
+     ```
+
+   - **`conflict`**: Escalate through resolution levels:
+
+     | Level | Strategy | When |
+     |-------|----------|------|
+     | 1 | `-X theirs` (already attempted by merge) | First attempt — accepts agent's version |
+     | 2 | Claude-driven resolution | Read conflict markers, use Read+Edit to resolve each file, then `git add` and `git rebase --continue` |
+     | 3 | Abort + re-dispatch | `git rebase --abort`, mark step for retry with post-merge state as context |
+     | 4 | Human escalation | Leave branch intact, mark step as `conflict` in dispatch state |
+
+   - **`error`**: Log warning, clean up worktree, continue with other steps.
+
+2. **If no changes**: Worktree was auto-cleaned by Claude Code — no action needed.
+
+3. Each subsequent merge rebases onto the updated HEAD (which includes prior merges).
 
 ### Step 6b: Reactive Failure Check
 

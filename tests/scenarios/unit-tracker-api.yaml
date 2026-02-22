@@ -40,14 +40,15 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: File backend create
+  # Case 3: File backend create (hash-based ID)
   - name: "file_create"
     run: |
       echo '{"enabled":true,"config":{"artifact_dir":"docs","project_tracking":{"tracker":"file"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" create --title "Test issue" --body "Test body")
       ID=$(echo "$OUTPUT" | jq -r '.id')
-      if [ "$ID" = "TODO-001" ]; then
+      # Hash-based IDs: TODO-xxxxx (5-char base36)
+      if echo "$ID" | grep -qE '^TODO-[a-z0-9]{5}$'; then
         echo "OK: created $ID"
       else
         echo "FAIL: id=$ID output=$OUTPUT"
@@ -60,31 +61,34 @@ steps:
         echo "FAIL: TODO.md not created"
         exit 1
       fi
-      # Verify content
-      if grep -q "TODO-001: Test issue" "$WORK_DIR/docs/specifications/TODO.md"; then
+      # Verify content contains the hash ID and title
+      if grep -q "$ID: Test issue" "$WORK_DIR/docs/specifications/TODO.md"; then
         echo "OK: content correct"
       else
         echo "FAIL: content missing"
         cat "$WORK_DIR/docs/specifications/TODO.md"
         exit 1
       fi
+      # Save ID for later tests
+      echo "$ID" > "$WORK_DIR/.test-todo-id"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
-        value: "OK: created TODO-001"
+        value: "OK: created TODO-"
 
-  # Case 4: File backend auto-increment
+  # Case 4: File backend creates unique hash IDs
   - name: "file_auto_increment"
     run: |
       echo '{"enabled":true,"config":{"artifact_dir":"docs","project_tracking":{"tracker":"file"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      FIRST_ID=$(cat "$WORK_DIR/.test-todo-id")
       OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" create --title "Second issue" --body "Body 2")
       ID=$(echo "$OUTPUT" | jq -r '.id')
-      if [ "$ID" = "TODO-002" ]; then
-        echo "OK: auto-incremented to $ID"
+      if echo "$ID" | grep -qE '^TODO-[a-z0-9]{5}$' && [ "$ID" != "$FIRST_ID" ]; then
+        echo "OK: unique hash ID $ID"
       else
-        echo "FAIL: id=$ID"
+        echo "FAIL: id=$ID (first=$FIRST_ID)"
         exit 1
       fi
     assertions:
@@ -112,15 +116,16 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: File backend view
+  # Case 6: File backend view (using saved hash ID)
   - name: "file_view"
     run: |
       echo '{"enabled":true,"config":{"artifact_dir":"docs","project_tracking":{"tracker":"file"}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
-      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" view --issue TODO-001)
+      SAVED_ID=$(cat "$WORK_DIR/.test-todo-id")
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" view --issue "$SAVED_ID")
       ID=$(echo "$OUTPUT" | jq -r '.id')
-      if [ "$ID" = "TODO-001" ]; then
-        echo "OK: viewed TODO-001"
+      if [ "$ID" = "$SAVED_ID" ]; then
+        echo "OK: viewed $ID"
       else
         echo "FAIL: $OUTPUT"
         exit 1

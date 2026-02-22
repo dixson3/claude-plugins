@@ -3,6 +3,7 @@
 #
 # Sourceable shell library (bash 3.2 compatible) providing config access.
 # Config: .yoshiko-flow/config.json (committed to git).
+# Worktree-aware: falls back to main repo's config when in a worktree.
 #
 # Usage:
 #   . "$SCRIPT_DIR/yf-config.sh"
@@ -11,8 +12,43 @@
 # Environment:
 #   CLAUDE_PROJECT_DIR — project root (defaults to ".")
 
+# --- Worktree detection helpers (defined first for config resolution) ---
+
+# yf_main_repo_root — returns the main repo root when in a worktree, or current project dir
+yf_main_repo_root() {
+  local proj="${CLAUDE_PROJECT_DIR:-.}"
+  local git_common git_dir
+  git_common=$(cd "$proj" && git rev-parse --git-common-dir 2>/dev/null) || { echo "$proj"; return; }
+  git_dir=$(cd "$proj" && git rev-parse --git-dir 2>/dev/null) || { echo "$proj"; return; }
+  if [ -n "$git_common" ] && [ -n "$git_dir" ] && [ "$git_common" != "$git_dir" ]; then
+    # In a worktree — resolve main repo root
+    (cd "$proj" && cd "$(git rev-parse --git-common-dir)/.." && pwd)
+  else
+    echo "$proj"
+  fi
+}
+
+# yf_is_worktree — returns 0 if currently in a git worktree, 1 otherwise
+yf_is_worktree() {
+  local proj="${CLAUDE_PROJECT_DIR:-.}"
+  local git_common git_dir
+  git_common=$(cd "$proj" && git rev-parse --git-common-dir 2>/dev/null) || return 1
+  git_dir=$(cd "$proj" && git rev-parse --git-dir 2>/dev/null) || return 1
+  [ -n "$git_common" ] && [ -n "$git_dir" ] && [ "$git_common" != "$git_dir" ]
+}
+
+# --- Config resolution ---
+
 _YF_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 _YF_JSON="$_YF_PROJECT_DIR/.yoshiko-flow/config.json"
+
+# Worktree-aware config resolution: fall back to main repo's config
+if [ ! -f "$_YF_JSON" ]; then
+  _YF_MAIN=$(yf_main_repo_root 2>/dev/null || echo "$_YF_PROJECT_DIR")
+  [ -f "$_YF_MAIN/.yoshiko-flow/config.json" ] && _YF_JSON="$_YF_MAIN/.yoshiko-flow/config.json"
+fi
+
+# --- Config access functions ---
 
 # yf_config_exists — returns 0 if config file exists
 yf_config_exists() {

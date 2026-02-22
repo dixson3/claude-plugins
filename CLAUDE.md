@@ -67,4 +67,4 @@ See [DEVELOPERS.md](DEVELOPERS.md) for the marketplace developer guide and [plug
 
 ## Current Plugins
 
-- **yf** (v2.26.0) — Yoshiko Flow — plan lifecycle, swarm execution, context persistence, diary generation, specification artifacts, standards-driven code generation, specification integrity gates, activation gating, session close enforcement, doctor-driven beads repair, plugin issue reporting, and project issue tracking
+- **yf** (v2.27.0) — Yoshiko Flow — plan lifecycle, swarm execution with worktree isolation, context persistence, diary generation, specification artifacts, standards-driven code generation, hash-based IDs, epic worktree lifecycle, specification integrity gates, activation gating, session close enforcement, doctor-driven beads repair, plugin issue reporting, and project issue tracking

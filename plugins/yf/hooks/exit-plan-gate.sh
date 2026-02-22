@@ -37,46 +37,47 @@ if [[ -z "$PLAN_FILE" ]]; then
     exit 0
 fi
 
-# Determine next plan index by scanning existing docs/plans/plan-*.md
-HIGHEST=0
-if [[ -d "$PLANS_DIR" ]]; then
-    for f in "$PLANS_DIR"/plan-*.md; do
-        [[ -e "$f" ]] || continue
-        idx=$(basename "$f" | sed -n 's/^plan-\([0-9]*\).*/\1/p')
-        if [[ -n "$idx" ]]; then
-            idx_num=$((10#$idx))
-            if (( idx_num > HIGHEST )); then
-                HIGHEST=$idx_num
-            fi
-        fi
-    done
-fi
+# Generate hash-based plan ID (collision-safe across parallel worktrees)
+. "$SCRIPT_DIR/scripts/yf-id.sh"
 
-NEXT=$(( HIGHEST + 1 ))
-NEXT_PAD=$(printf "%02d" "$NEXT")
-
-# Ensure docs/plans/ exists
 mkdir -p "$PLANS_DIR"
 
+# Generate ID with collision check
+MAX_RETRIES=5
+RETRY=0
+while true; do
+    PLAN_ID=$(yf_generate_id "plan" | sed 's/^plan-//')
+    DEST="$PLANS_DIR/plan-${PLAN_ID}.md"
+    if [[ ! -f "$DEST" ]]; then
+        break
+    fi
+    RETRY=$((RETRY + 1))
+    if (( RETRY >= MAX_RETRIES )); then
+        # Extremely unlikely — fall back to timestamp
+        PLAN_ID="t$(date +%s)"
+        DEST="$PLANS_DIR/plan-${PLAN_ID}.md"
+        break
+    fi
+done
+
 # Copy the plan
-DEST="$PLANS_DIR/plan-${NEXT_PAD}.md"
 cp "$PLAN_FILE" "$DEST"
 
 # Create the gate file
 mkdir -p "$PROJECT_DIR/.yoshiko-flow"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 printf '{"plan_idx":"%s","plan_file":"docs/plans/plan-%s.md","created":"%s"}\n' \
-    "$NEXT_PAD" "$NEXT_PAD" "$TIMESTAMP" > "$GATE_FILE"
+    "$PLAN_ID" "$PLAN_ID" "$TIMESTAMP" > "$GATE_FILE"
 
 # Inform the agent
 # Deterministic chronicle: capture plan-save boundary
-bash "$SCRIPT_DIR/scripts/plan-chronicle.sh" save "plan:${NEXT_PAD}" "$DEST" 2>/dev/null || true
+bash "$SCRIPT_DIR/scripts/plan-chronicle.sh" save "plan:${PLAN_ID}" "$DEST" 2>/dev/null || true
 
 cat <<EOF
-Plan saved to docs/plans/plan-${NEXT_PAD}.md
+Plan saved to docs/plans/plan-${PLAN_ID}.md
 Plan gate activated. Auto-chaining plan lifecycle...
-PLAN_IDX=${NEXT_PAD}
-PLAN_FILE=docs/plans/plan-${NEXT_PAD}.md
+PLAN_IDX=${PLAN_ID}
+PLAN_FILE=docs/plans/plan-${PLAN_ID}.md
 EOF
 
 exit 0

@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.26.0
+# Yoshiko Flow (yf) Plugin — v2.27.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -8,7 +8,7 @@ The natural state of software is _maintenance_. How hard or easy that maintenanc
 
 Traditionally, producing this content is a chore that requires real organizational discipline. Agentic coding makes the problem worse: agents generate context faster than humans can catalog it, and each session starts with a blank slate. Yoshiko Flow automates the discipline — capturing plans, observations, and decisions as structured artifacts without requiring the operator to remember to do it.
 
-It does this through nine capabilities:
+It does this through ten capabilities:
 
 1. **Plan Lifecycle** — Breaks plans into a dependency graph of tracked tasks, with automatic decomposition, scheduling, and dispatch
 2. **Swarm Execution** — Runs structured, parallel agent workflows using formula templates, wisps, and a dispatch loop
@@ -19,6 +19,7 @@ It does this through nine capabilities:
 7. **Session** — Mechanical enforcement of session close-out with pre-push blocking, dirty-tree awareness, and operator-confirmed push
 8. **Plugin** — Plugin-level concerns: per-project activation and issue reporting against the plugin repo
 9. **Issue** — Project issue tracking with deferred staging, agent-driven triage, and multi-backend submission (GitHub, GitLab, file-based)
+10. **Worktree** — Epic worktree lifecycle for isolated development branches, plus swarm agent isolation via Claude Code's worktree mechanism
 
 ## Activation
 
@@ -412,6 +413,33 @@ Plugin issues and project issues are strictly separated (Rule 1.5):
 | `/yf:issue_disable` | Close staged issues without submission |
 | Agent: `yf_issue_triage` | Evaluates, consolidates, and cross-references staged issues |
 
+## Worktree Isolation
+
+### Why
+
+Parallel agents writing to the same working tree can clobber each other's changes. Sequential ID generation (`plan-NN`, `TODO-NNN`) creates collision risk when two agents mint the same ID in parallel worktrees. The worktree capability solves both problems: hash-based IDs eliminate sequential collision risk, epic worktrees provide isolated development branches for multi-session features, and swarm agents run in Claude Code-managed worktrees with automatic merge-back.
+
+### How It Works
+
+**Hash-Based IDs** — All generated IDs (plan, TODO, REQ, DD, NFR, UC, DEC) use SHA-256 hashed, base36-encoded, 5-character identifiers instead of sequential numbers. This makes ID generation safe across parallel worktrees. Existing sequential IDs remain valid — both formats coexist.
+
+**Epic Worktrees** — `/yf:worktree_create` creates a git worktree with its own branch and a `.beads/redirect` to share the main repo's beads database. `/yf:worktree_land` validates, rebases, and fast-forward merges the worktree back, then cleans up.
+
+**Swarm Isolation** — Write-capable swarm agents (code writers, testers) are dispatched with `isolation: "worktree"` on the Task tool call. Claude Code creates the worktree implicitly. After the agent returns, the dispatch loop rebases and merges changes back sequentially, using `-X theirs` for automatic conflict resolution with escalation to Claude-driven resolution if needed.
+
+### Artifacts
+
+- **Hash ID library**: `plugins/yf/scripts/yf-id.sh`
+- **Worktree operations**: `plugins/yf/scripts/worktree-ops.sh`
+- **Swarm worktree helper**: `plugins/yf/scripts/swarm-worktree.sh`
+
+### Skills
+
+| Skill | Description |
+|-------|-------------|
+| `/yf:worktree_create` | Create an epic worktree for isolated development |
+| `/yf:worktree_land` | Land an epic worktree back into the base branch |
+
 ## Configuration
 
 Config lives in `.yoshiko-flow/config.json` (committed to git), while lock state lives in `.yoshiko-flow/lock.json` (gitignored).
@@ -436,7 +464,7 @@ Run `/yf:plugin_setup` to create or reconfigure this file interactively.
 
 ## Internals
 
-### Rules (24)
+### Rules (25)
 
 All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to `plugins/yf/rules/`):
 
@@ -464,8 +492,9 @@ All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to 
 | `engineer-reconcile-on-plan.md` | Reconciles plans against specs during auto-chain |
 | `watch-for-spec-drift.md` | Advisory: monitors for specification drift during work |
 | `engineer-suggest-on-completion.md` | Suggests spec updates after plan completion |
+| `yf-worktree-lifecycle.md` | Enforces use of yf skills for epic worktree create/land |
 
-### Scripts (9)
+### Scripts (12)
 
 | Script | Description |
 |--------|-------------|
@@ -477,6 +506,9 @@ All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to 
 | `chronicle-check.sh` | Auto-creates draft chronicle beads from significant git activity (detects wisp squashes) |
 | `session-recall.sh` | Outputs open chronicle summaries on SessionStart for context recovery |
 | `setup-project.sh` | Manages `.gitignore` sentinel block and AGENTS.md cleanup |
+| `yf-id.sh` | Sourceable shell library for hash-based ID generation (base36, collision-safe) |
+| `worktree-ops.sh` | Epic worktree lifecycle operations (create, validate, rebase, land) |
+| `swarm-worktree.sh` | Swarm agent worktree isolation helpers (setup, merge, cleanup, conflict detection) |
 
 ### Hooks (7)
 

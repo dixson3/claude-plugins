@@ -65,21 +65,26 @@ If the file does not exist, report: "No spec file found. Run `/yf:engineer_analy
 
 ### Step 2: Parse Existing Entries
 
-Read the spec file and extract the highest existing ID for the relevant type:
-- PRD: Find highest `REQ-NNN`
-- EDD: Find highest `DD-NNN` or `NFR-NNN` (depending on which section)
-- IG: Find highest `UC-NNN`
-- TODO: Find highest `TODO-NNN`
+Read the spec file and extract existing IDs for the relevant type to check for collisions:
+- PRD: Existing `REQ-xxxxx` IDs
+- EDD: Existing `DD-xxxxx` or `NFR-xxxxx` IDs (depending on which section)
+- IG: Existing `UC-xxxxx` IDs
+- TODO: Existing `TODO-xxxxx` IDs
 
 ### Step 3: Execute Action
 
 #### Add (default)
 
-1. Generate next sequential ID
+1. Generate a hash-based ID:
+   ```bash
+   . "${CLAUDE_PLUGIN_ROOT}/scripts/yf-id.sh" && yf_generate_id "REQ"
+   ```
+   Use the appropriate prefix (`REQ`, `DD`, `NFR`, `UC`, `TODO`) for the spec type.
+   If the generated ID already exists in the file, regenerate until unique.
 2. Gather context from the current conversation
 3. Create the new entry following the spec format
 4. Insert at the appropriate location in the file
-5. Report: "Added REQ-007: [description]"
+5. Report: "Added REQ-k4m9q: [description]"
 
 #### Update
 

@@ -85,18 +85,19 @@ Status: COMPLETED
 
 ### For Decisions (`type:decision`)
 
-First, determine the next DEC-NNN ID:
+First, generate a hash-based DEC ID:
 
 ```bash
-# Check existing decisions index
+# Generate collision-safe DEC ID
+. "${CLAUDE_PLUGIN_ROOT}/scripts/yf-id.sh"
+DEC_ID=$(yf_generate_id "DEC")
+
+# Collision check against existing decisions
 if [ -f docs/decisions/_index.md ]; then
-  # Extract highest DEC number from index
-  LAST_NUM=$(grep -oE 'DEC-[0-9]+' docs/decisions/_index.md | sed 's/DEC-//' | sort -n | tail -1)
-  NEXT_NUM=$((LAST_NUM + 1))
-else
-  NEXT_NUM=1
+  while grep -qF "$DEC_ID" docs/decisions/_index.md 2>/dev/null; do
+    DEC_ID=$(yf_generate_id "DEC")
+  done
 fi
-DEC_ID=$(printf "DEC-%03d" $NEXT_NUM)
 ```
 
 ```bash

@@ -94,7 +94,7 @@ if [[ ! -f "$GATE_FILE" ]]; then
             LATEST_PLAN=$(ls -t "$PLANS_DIR"/plan-*.md 2>/dev/null | head -1)
             [[ -n "$LATEST_PLAN" ]] || { echo "skip"; exit 0; }
             grep -q 'Status: Completed' "$LATEST_PLAN" 2>/dev/null && { echo "skip"; exit 0; }
-            PLAN_IDX=$(basename "$LATEST_PLAN" | sed -n 's/^plan-\([0-9]*\).*/\1/p')
+            PLAN_IDX=$(basename "$LATEST_PLAN" | sed -n 's/^plan-\([a-z0-9]*\).*/\1/p')
             [[ -n "$PLAN_IDX" ]] || { echo "skip"; exit 0; }
             EPIC_COUNT=$(bd list -l "plan:$PLAN_IDX" --type=epic --limit=1 --json 2>/dev/null \
               | jq 'length' 2>/dev/null) || EPIC_COUNT="0"
@@ -131,7 +131,7 @@ if [[ ! -f "$GATE_FILE" ]]; then
       LATEST_PLAN=$(ls -t "$PLANS_DIR"/plan-*.md 2>/dev/null | head -1)
       [[ -n "$LATEST_PLAN" ]] || exit 0
       grep -q 'Status: Completed' "$LATEST_PLAN" 2>/dev/null && exit 0
-      PLAN_IDX=$(basename "$LATEST_PLAN" | sed -n 's/^plan-\([0-9]*\).*/\1/p')
+      PLAN_IDX=$(basename "$LATEST_PLAN" | sed -n 's/^plan-\([a-z0-9]*\).*/\1/p')
       [[ -n "$PLAN_IDX" ]] || exit 0
       # Only check if beads exist (plan is past intake)
       EPIC_COUNT=$(bd list -l "plan:$PLAN_IDX" --type=epic --limit=1 --json 2>/dev/null \

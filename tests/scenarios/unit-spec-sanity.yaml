@@ -96,7 +96,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: ID contiguity PASS
+  # Case 5: ID uniqueness PASS (no duplicates)
   - name: "contiguity_pass"
     run: |
       # Restore full coverage
@@ -105,7 +105,7 @@ steps:
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" contiguity 2>&1)
       echo "$OUTPUT"
-      echo "$OUTPUT" | grep -q '\[PASS\] ID contiguity' && echo "OK: contiguous" || { echo "FAIL"; exit 1; }
+      echo "$OUTPUT" | grep -q '\[PASS\] ID uniqueness' && echo "OK: no duplicates" || { echo "FAIL"; exit 1; }
     assertions:
       - type: exit_code
         value: "0"
@@ -114,16 +114,16 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: ID contiguity FAIL — gap in REQ sequence
+  # Case 6: ID uniqueness FAIL — duplicate REQ ID
   - name: "contiguity_fail"
     run: |
-      # PRD with gap: REQ-001, REQ-003 (no REQ-002)
-      printf '# PRD\n| ID | Req |\n| REQ-001 | First |\n| REQ-003 | Third |\n\n## Functional Specifications\n- FS-011: Two formula templates shipped: alpha-one, beta-two (see FS-034)\n' > "$WORK_DIR/docs/specifications/PRD.md"
+      # PRD with duplicate: REQ-001 appears twice
+      printf '# PRD\n| ID | Req |\n| REQ-001 | First |\n| REQ-001 | Duplicate |\n| REQ-003 | Third |\n\n## Functional Specifications\n- FS-011: Two formula templates shipped: alpha-one, beta-two (see FS-034)\n' > "$WORK_DIR/docs/specifications/PRD.md"
 
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/spec-sanity-check.sh" contiguity 2>&1)
       echo "$OUTPUT"
-      echo "$OUTPUT" | grep -q '\[FAIL\] ID contiguity' && echo "$OUTPUT" | grep -q 'Gap in REQ' && echo "OK: gap detected" || { echo "FAIL"; exit 1; }
+      echo "$OUTPUT" | grep -q '\[FAIL\] ID uniqueness' && echo "$OUTPUT" | grep -q 'Duplicate REQ' && echo "OK: duplicate detected" || { echo "FAIL"; exit 1; }
     assertions:
       - type: exit_code
         value: "0"

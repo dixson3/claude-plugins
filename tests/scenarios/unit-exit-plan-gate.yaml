@@ -37,35 +37,52 @@ steps:
       - type: file_not_exists
         path: ".yoshiko-flow/plan-gate"
 
-  # Case 4: Plan file, no existing docs → creates plan-01.md + gate
+  # Case 4: Plan file, no existing docs → creates plan-xxxxx.md + gate (hash-based ID)
   - name: "creates_plan_01"
     run: |
       rm -rf docs/plans
       rm -f .yoshiko-flow/plan-gate
       echo '# My Plan' > .claude/plans/test-plan.md
       HOME="$WORK_DIR" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
+      # Verify a plan file was created with hash-based name
+      PLAN_COUNT=$(ls docs/plans/plan-*.md 2>/dev/null | wc -l | tr -d ' ')
+      if [ "$PLAN_COUNT" -eq 1 ]; then
+        PLAN_FILE=$(ls docs/plans/plan-*.md)
+        if grep -q "My Plan" "$PLAN_FILE"; then
+          echo "OK: plan created with content"
+        else
+          echo "FAIL: plan content missing"
+          exit 1
+        fi
+      else
+        echo "FAIL: expected 1 plan file, got $PLAN_COUNT"
+        exit 1
+      fi
     assertions:
       - type: exit_code
         value: "0"
       - type: file_exists
-        path: "docs/plans/plan-01.md"
-      - type: file_exists
         path: ".yoshiko-flow/plan-gate"
-      - type: file_contains
-        path: "docs/plans/plan-01.md"
-        value: "My Plan"
+      - type: output_contains
+        value: "OK: plan created"
 
-  # Case 5: Existing plan-03.md → creates plan-04.md
+  # Case 5: Existing plan files → creates new hash-based plan (no collision)
   - name: "increments_index"
     run: |
       rm -f .yoshiko-flow/plan-gate
-      mkdir -p docs/plans
-      touch docs/plans/plan-03.md
       echo '# Next Plan' > .claude/plans/another.md
+      BEFORE=$(ls docs/plans/plan-*.md 2>/dev/null | wc -l | tr -d ' ')
       HOME="$WORK_DIR" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
+      AFTER=$(ls docs/plans/plan-*.md 2>/dev/null | wc -l | tr -d ' ')
+      if [ "$AFTER" -gt "$BEFORE" ]; then
+        echo "OK: new plan created"
+      else
+        echo "FAIL: no new plan file"
+        exit 1
+      fi
     assertions:
-      - type: file_exists
-        path: "docs/plans/plan-04.md"
+      - type: output_contains
+        value: "OK"
       - type: file_contains
         path: ".yoshiko-flow/plan-gate"
         value: "plan_idx"
@@ -88,10 +105,11 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: Plan content is preserved
+  # Case 7: Plan content is preserved (compare latest plan with source)
   - name: "content_preserved"
     run: |
-      diff .claude/plans/another.md docs/plans/plan-04.md
+      LATEST_PLAN=$(ls -t docs/plans/plan-*.md | head -1)
+      diff .claude/plans/another.md "$LATEST_PLAN"
     assertions:
       - type: exit_code
         value: "0"

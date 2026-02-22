@@ -179,97 +179,81 @@ check_counts() {
   fi
 }
 
-# Check 2: ID contiguity — no gaps in ID sequences
+# Check 2: ID uniqueness — no duplicate IDs (replaces contiguity check for hash-based IDs)
 check_contiguity() {
   local prd_file="$SPEC_DIR/PRD.md"
   local edd_file="$SPEC_DIR/EDD/CORE.md"
   local all_ok=true
   local detail_parts=""
 
-  # REQ contiguity from PRD
+  # REQ uniqueness from PRD
   if [ -f "$prd_file" ]; then
-    local prev=0
-    local gap_found=false
-    while IFS= read -r num; do
-      [ -z "$num" ] && continue
-      if [ "$prev" -gt 0 ] && [ "$num" -ne $((prev + 1)) ]; then
-        gap_found=true
-        detail_parts="${detail_parts}Gap in REQ after REQ-$(printf '%03d' "$prev"). "
+    local ids
+    ids=$(grep -oE 'REQ-[a-z0-9]+' "$prd_file" 2>/dev/null | sort)
+    if [ -n "$ids" ]; then
+      local dupes
+      dupes=$(echo "$ids" | uniq -d)
+      if [ -n "$dupes" ]; then
+        all_ok=false
+        detail_parts="${detail_parts}Duplicate REQ IDs: $(echo "$dupes" | tr '\n' ' '). "
       fi
-      prev=$num
-    done <<EOF
-$(extract_id_numbers "$prd_file" '^\| REQ-[0-9]+' )
-EOF
-    if $gap_found; then all_ok=false; fi
+    fi
   fi
 
-  # DD contiguity from EDD
+  # DD uniqueness from EDD
   if [ -f "$edd_file" ]; then
-    local prev=0
-    local gap_found=false
-    while IFS= read -r num; do
-      [ -z "$num" ] && continue
-      if [ "$prev" -gt 0 ] && [ "$num" -ne $((prev + 1)) ]; then
-        gap_found=true
-        detail_parts="${detail_parts}Gap in DD after DD-$(printf '%03d' "$prev"). "
+    local ids
+    ids=$(grep -oE 'DD-[a-z0-9]+' "$edd_file" 2>/dev/null | grep -v 'NFR-' | sort)
+    if [ -n "$ids" ]; then
+      local dupes
+      dupes=$(echo "$ids" | uniq -d)
+      if [ -n "$dupes" ]; then
+        all_ok=false
+        detail_parts="${detail_parts}Duplicate DD IDs: $(echo "$dupes" | tr '\n' ' '). "
       fi
-      prev=$num
-    done <<EOF
-$(extract_id_numbers "$edd_file" '^### DD-[0-9]+')
-EOF
-    if $gap_found; then all_ok=false; fi
+    fi
   fi
 
-  # NFR contiguity from EDD
+  # NFR uniqueness from EDD
   if [ -f "$edd_file" ]; then
-    local prev=0
-    local gap_found=false
-    while IFS= read -r num; do
-      [ -z "$num" ] && continue
-      if [ "$prev" -gt 0 ] && [ "$num" -ne $((prev + 1)) ]; then
-        gap_found=true
-        detail_parts="${detail_parts}Gap in NFR after NFR-$(printf '%03d' "$prev"). "
+    local ids
+    ids=$(grep -oE 'NFR-[a-z0-9]+' "$edd_file" 2>/dev/null | sort)
+    if [ -n "$ids" ]; then
+      local dupes
+      dupes=$(echo "$ids" | uniq -d)
+      if [ -n "$dupes" ]; then
+        all_ok=false
+        detail_parts="${detail_parts}Duplicate NFR IDs: $(echo "$dupes" | tr '\n' ' '). "
       fi
-      prev=$num
-    done <<EOF
-$(extract_id_numbers "$edd_file" '^### NFR-[0-9]+')
-EOF
-    if $gap_found; then all_ok=false; fi
+    fi
   fi
 
-  # UC contiguity — global across all IG files (UC IDs are assigned globally)
+  # UC uniqueness — global across all IG files
   if [ -d "$SPEC_DIR/IG" ]; then
-    local all_uc_nums=""
+    local all_uc_ids=""
     for ig_file in "$SPEC_DIR"/IG/*.md; do
       [ -f "$ig_file" ] || continue
-      local nums
-      nums=$(extract_id_numbers "$ig_file" '^### UC-[0-9]+')
-      if [ -n "$nums" ]; then
-        all_uc_nums="${all_uc_nums}${all_uc_nums:+
-}${nums}"
+      local ids
+      ids=$(grep -oE 'UC-[a-z0-9]+' "$ig_file" 2>/dev/null)
+      if [ -n "$ids" ]; then
+        all_uc_ids="${all_uc_ids}${all_uc_ids:+
+}${ids}"
       fi
     done
-    if [ -n "$all_uc_nums" ]; then
-      local prev=0
-      local gap_found=false
-      while IFS= read -r num; do
-        [ -z "$num" ] && continue
-        if [ "$prev" -gt 0 ] && [ "$num" -ne $((prev + 1)) ]; then
-          gap_found=true
-          detail_parts="${detail_parts}Gap in UC after UC-$(printf '%03d' "$prev"). "
-        fi
-        prev=$num
-      done <<EOF
-$(echo "$all_uc_nums" | sort -n)
-EOF
-      if $gap_found; then all_ok=false; fi
+    if [ -n "$all_uc_ids" ]; then
+      local dupes
+      dupes=$(echo "$all_uc_ids" | sort | uniq -d)
+      if [ -n "$dupes" ]; then
+        all_ok=false
+        detail_parts="${detail_parts}Duplicate UC IDs: $(echo "$dupes" | tr '\n' ' '). "
+      fi
     fi
   fi
 
   if $all_ok; then
-    pass "ID contiguity: all sequences contiguous"
+    pass "ID uniqueness: no duplicates found"
   else
-    fail "ID contiguity: ${detail_parts}"
+    fail "ID uniqueness: ${detail_parts}"
   fi
 }
 
