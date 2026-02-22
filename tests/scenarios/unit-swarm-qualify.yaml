@@ -63,13 +63,30 @@ steps:
       - type: output_contains
         value: "Qualification"
 
-  # Case 8: plugin.json version is current
-  - name: "version_bumped"
+  # Case 8: version consistency across all files
+  - name: "version_consistency"
     run: |
-      jq -r '.version' "$PLUGIN_DIR/plugins/yf/.claude-plugin/plugin.json"
+      SOURCE=$(jq -r '.version' "$PLUGIN_DIR/plugins/yf/.claude-plugin/plugin.json")
+      MARKET_META=$(jq -r '.metadata.version' "$PLUGIN_DIR/.claude-plugin/marketplace.json")
+      MARKET_PLUG=$(jq -r '.plugins[0].version' "$PLUGIN_DIR/.claude-plugin/marketplace.json")
+      README_VER=$(sed -n 's/.*| \([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\) |$/\1/p' "$PLUGIN_DIR/README.md" | head -1)
+      CLAUDE_VER=$(sed -n 's/.*(\(v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)).*/\1/p' "$PLUGIN_DIR/CLAUDE.md" | head -1)
+      CLAUDE_VER="${CLAUDE_VER#v}"
+      MISMATCH=""
+      [ "$MARKET_META" != "$SOURCE" ] && MISMATCH="$MISMATCH marketplace.json:metadata($MARKET_META)"
+      [ "$MARKET_PLUG" != "$SOURCE" ] && MISMATCH="$MISMATCH marketplace.json:plugin($MARKET_PLUG)"
+      [ "$README_VER" != "$SOURCE" ] && MISMATCH="$MISMATCH README.md($README_VER)"
+      [ "$CLAUDE_VER" != "$SOURCE" ] && MISMATCH="$MISMATCH CLAUDE.md($CLAUDE_VER)"
+      if [ -n "$MISMATCH" ]; then
+        echo "MISMATCH: source=$SOURCE$MISMATCH"
+        exit 1
+      fi
+      echo "OK: all version references match $SOURCE"
     assertions:
+      - type: exit_code
+        value: "0"
       - type: output_contains
-        value: "2.30.0"
+        value: "OK"
 
   # Case 9: research-spike formula has planning_safe
   - name: "research_spike_planning_safe"

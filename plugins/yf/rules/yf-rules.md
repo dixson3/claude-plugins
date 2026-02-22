@@ -30,6 +30,7 @@ Before writing implementation code, self-check:
 
 If (1) AND (2) AND NOT (3): invoke `/yf:plan_intake`.
 Does not apply if auto-chain has already fired.
+If `.yoshiko-flow/plan-gate` exists, the plan is gated. Never dismiss the gate to bypass the lifecycle — if auto-chain failed, diagnose and re-run `/yf:plan_intake`.
 
 ### 1.3 Formula-Labeled Beads Route Through Swarm
 

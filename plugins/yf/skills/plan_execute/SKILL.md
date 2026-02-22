@@ -59,7 +59,7 @@ Repeat until no more tasks:
 
 #### 3a. Invoke Task Pump
 
-Call `/yf:task_pump` with the plan index. The pump:
+Call `/yf:plan_pump` with the plan index. The pump:
 
 1. Calls `plan-exec.sh next <root-epic-id>` to get ready beads
 2. Filters out already-dispatched beads via `dispatch-state.sh pump is-dispatched`
@@ -100,11 +100,11 @@ Context from bd show:
 
 Instructions:
 1. Claim the task: bd update <task-id> --status=in_progress
-2. Review scope — if non-trivial, invoke /yf:breakdown_task first
+2. Review scope — if non-trivial, invoke /yf:plan_breakdown first
 3. Do the work described in the task
 4. Close when done: bd close <task-id>
 5. If you create sub-tasks, use bd create with --parent=<task-id>
-   and invoke /yf:select_agent on each"
+   and invoke /yf:plan_select_agent on each"
 )
 ```
 

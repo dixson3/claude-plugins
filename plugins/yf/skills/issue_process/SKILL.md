@@ -71,7 +71,7 @@ Verify `PLUGIN_REPO` differs from `PROJECT_SLUG`. If they match, error:
 Use the `yf_issue_triage` agent to evaluate all open beads against existing remote issues:
 
 ```
-/yf:issue_triage
+Task(subagent_type="yf:yf_issue_triage", ...)
 ```
 
 Pass the agent:

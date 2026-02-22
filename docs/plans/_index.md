@@ -54,3 +54,4 @@
 | 0052 | plan-5e3qn | Plan: Consolidate Rules & Optimize Agent/Skill/Rule Text | 2026-02-21 | Completed |
 | 0053 | plan-8izyz | Workflow Dispatch Model — Comprehensive Reference | 2026-02-22 | Completed |
 | 0054 | plan-o7y41 | Plan: Hybrid `idx-hash` ID Generation | 2026-02-22 | Active |
+| 0053 | plan-0053-szgh2 | Resolve Three Open Issue Beads: Gate Bypass, Version Staleness, Targeted Testing | 2026-02-22 | Active |

@@ -113,7 +113,7 @@ if [[ ! -f "$GATE_FILE" ]]; then
           BLOCKED_IDX="${BEADS_RESULT#block:}"
           jq -n --arg idx "$BLOCKED_IDX" '{
             "decision": "block",
-            "reason": ("BLOCKED: Plan " + $idx + " exists but has no beads. Run /yf:plan_intake to set up the lifecycle, or /yf:plan_dismiss_gate to abandon it.")
+            "reason": ("BLOCKED: Plan " + $idx + " exists but has no beads. Run /yf:plan_intake to set up the lifecycle, or /yf:plan_dismiss_gate to deliberately abandon this plan.")
           }'
           exit 2
         fi
@@ -177,7 +177,7 @@ PLAN_IDX=$(cat "$GATE_FILE" 2>/dev/null || echo "unknown")
 # ── Deny: gate active, non-exempt file ────────────────────────────────
 jq -n --arg idx "$PLAN_IDX" '{
   "decision": "block",
-  "reason": ("BLOCKED: Plan " + $idx + " is saved but not yet executing. To proceed: 1. Run /yf:plan_to_beads to create beads. 2. Say '\''execute the plan'\'' to start. Or run /yf:dismiss_gate to abandon.")
+  "reason": ("BLOCKED: Plan " + $idx + " is gated — the auto-chain lifecycle is in progress. Wait for it to complete, or re-run /yf:plan_intake if auto-chain failed.")
 }'
 
 exit 2

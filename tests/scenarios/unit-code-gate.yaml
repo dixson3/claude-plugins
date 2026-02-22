@@ -155,6 +155,8 @@ steps:
     assertions:
       - type: output_contains
         value: "BLOCKED"
+      - type: output_not_contains
+        value: "dismiss_gate"
 
 teardown:
   - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/.chronicle-nudge"

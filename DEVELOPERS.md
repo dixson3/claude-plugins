@@ -154,6 +154,12 @@ claude --plugin-dir ./plugins/yf
 # Run unit tests (fast, shell-only)
 bash tests/run-tests.sh --unit-only
 
+# Run only scenarios relevant to changed files
+bash tests/run-tests.sh --unit-only --changed
+
+# Run specific scenarios
+bash tests/run-tests.sh --unit-only --scenarios tests/scenarios/unit-code-gate.yaml
+
 # Full suite (includes integration tests with Claude sessions)
 bash tests/run-tests.sh
 ```
@@ -177,6 +183,30 @@ steps:
 ```
 
 All new work MUST include automated test cases.
+
+## Version Management
+
+The canonical version lives in `plugins/yf/.claude-plugin/plugin.json`. To bump all downstream references:
+
+```bash
+bash scripts/bump-version.sh <new-version>
+```
+
+This updates: `plugin.json`, `marketplace.json`, `README.md`, `CLAUDE.md`, and `plugins/yf/README.md`. After running, update the CHANGELOG manually.
+
+The test suite validates version consistency automatically via `unit-swarm-qualify.yaml` Case 8.
+
+## Cross-Reference Consistency
+
+Skills, agents, hooks, and rules cross-reference each other by name. When artifacts are renamed, stale references can silently break dispatch and documentation.
+
+```bash
+bash scripts/xref-check.sh
+```
+
+Run this after renaming any skill or agent. The test suite catches drift automatically via `unit-naming-convention.yaml` Case 9.
+
+**Scope**: Active artifacts only (`skills/`, `agents/`, `rules/`, `hooks/`, `scripts/`, `formulas/`). Historical docs (`docs/plans/`, `docs/diary/`, `CHANGELOG.md`) and test scenarios are excluded.
 
 ## README Maintenance
 

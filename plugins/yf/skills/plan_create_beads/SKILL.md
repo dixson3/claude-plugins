@@ -100,7 +100,7 @@ For each actionable item, create a task following the Step 4 pattern with `--typ
 
 For each created task:
 ```
-/yf:select_agent <task-id>
+/yf:plan_select_agent <task-id>
 ```
 
 This assigns `agent:<name>` labels where appropriate.

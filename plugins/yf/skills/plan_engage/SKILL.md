@@ -36,8 +36,8 @@ Draft ───► Ready ───► Executing ◄──► Paused ───►
 | State | Trigger | What Happens |
 |---|---|---|
 | **Draft** | "engage the plan" | Plan saved to `docs/plans/`. No beads created. |
-| **Ready** | "the plan is ready" / "activate the plan" | Beads created via `/yf:plan_to_beads`. Gate open on root epic. Tasks deferred. |
-| **Executing** | "execute the plan" / "start the plan" / "run the plan" | Gate resolved. Tasks undeferred. Dispatch loop begins via `/yf:execute_plan`. |
+| **Ready** | "the plan is ready" / "activate the plan" | Beads created via `/yf:plan_create_beads`. Gate open on root epic. Tasks deferred. |
+| **Executing** | "execute the plan" / "start the plan" / "run the plan" | Gate resolved. Tasks undeferred. Dispatch loop begins via `/yf:plan_execute`. |
 | **Paused** | "pause the plan" / "stop the plan" | New gate created. Pending tasks deferred. In-flight tasks finish. |
 | **Completed** | Automatic (or "mark plan complete") | All plan tasks closed. Gate closed. Plan status updated. |
 
@@ -77,7 +77,7 @@ When the user says "engage the plan" during plan mode:
    GATE_EOF
    ```
    This blocks Edit/Write operations on implementation files until the plan reaches Executing state.
-   To dismiss: `/yf:dismiss_gate`
+   To dismiss: `/yf:plan_dismiss_gate`
 
 4. **Factor into parts** (if complex): Create `plan-<idx>-part<N>-<name>.md` files with:
    - Status, Parent reference, Dependencies
@@ -88,9 +88,9 @@ When the user says "engage the plan" during plan mode:
 6. **Present summary**: Show what was saved, offer next steps
    Plan gate active — code edits blocked until lifecycle completes.
    Next: "the plan is ready" -> "execute the plan"
-   Or: /yf:dismiss_gate to abandon
+   Or: /yf:plan_dismiss_gate to abandon
 
-**Important**: `/yf:engage_plan` does NOT imply `ExitPlanMode`. They are independent actions.
+**Important**: `/yf:plan_engage` does NOT imply `ExitPlanMode`. They are independent actions.
 
 ### Transition: -> Ready
 
@@ -98,7 +98,7 @@ When the user says "the plan is ready" or "activate the plan":
 
 1. **Locate plan**: Find the most recent Draft plan in `docs/plans/`
 2. **Update plan status**: Change status from "Draft" to "Ready"
-3. **Create beads**: Invoke `/yf:plan_to_beads` with the plan file
+3. **Create beads**: Invoke `/yf:plan_create_beads` with the plan file
    - This creates the epic/task hierarchy, gates, labels, and defers all tasks
 4. **Report**: Show created beads summary and root epic ID
 
@@ -110,7 +110,7 @@ When the user says "execute the plan", "start the plan", or "run the plan":
 2. **Update plan status**: Change from "Ready" or "Paused" to "In Progress"
 3. **Start execution**: Run `plan-exec.sh start <root-epic-id>`
    - Resolves the gate, undefers tasks
-4. **Begin dispatch**: Invoke `/yf:execute_plan` to orchestrate work
+4. **Begin dispatch**: Invoke `/yf:plan_execute` to orchestrate work
 
 ### Transition: -> Paused
 

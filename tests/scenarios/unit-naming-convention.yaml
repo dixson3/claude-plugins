@@ -170,6 +170,7 @@ steps:
 
   # Case 8: Expected new agent files exist
   - name: "new_agent_files_exist"
+
     run: |
       MISSING=""
       for agent in yf_chronicle_recall yf_chronicle_diary yf_archive_process yf_issue_triage; do
@@ -182,6 +183,16 @@ steps:
         exit 1
       fi
       echo "OK: all expected agent files exist"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: Cross-references between files resolve to canonical names
+  - name: "cross_references_resolve"
+    run: |
+      bash "$PLUGIN_DIR/scripts/xref-check.sh"
     assertions:
       - type: exit_code
         value: "0"

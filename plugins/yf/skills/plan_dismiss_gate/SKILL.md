@@ -26,6 +26,8 @@ Escape hatch for abandoning a plan without implementing it. Removes the plan gat
 
 ## Workflow
 
+> **Guard:** Do NOT use this skill to work around a code-gate block during auto-chain. If auto-chain is in progress, wait for it to complete or diagnose the failure. This skill is for deliberately abandoning a plan you do not intend to implement.
+
 1. **Check for active gate**: Look for `.yoshiko-flow/plan-gate`
    - If the file does not exist, report "No plan gate is active" and stop
 

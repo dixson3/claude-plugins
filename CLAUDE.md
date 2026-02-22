@@ -48,6 +48,12 @@ claude --plugin-dir ./plugins/yf
 
 # Run unit tests
 bash tests/run-tests.sh --unit-only
+
+# Run only scenarios relevant to changed files
+bash tests/run-tests.sh --unit-only --changed
+
+# Run specific scenarios
+bash tests/run-tests.sh --unit-only --scenarios tests/scenarios/unit-code-gate.yaml
 ```
 
 ## Naming Convention

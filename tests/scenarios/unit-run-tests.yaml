@@ -1,0 +1,53 @@
+name: "Unit: run-tests.sh flags"
+
+steps:
+  # Case 1: --scenarios flag accepts file paths
+  - name: "scenarios_flag_accepted"
+    run: |
+      # Verify the script parses --scenarios without error by checking help/usage behavior
+      # We use a non-existent scenario to avoid running the full suite recursively
+      head -35 "$PLUGIN_DIR/tests/run-tests.sh" | grep -q "\-\-scenarios" && echo "OK: --scenarios flag present in script"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: --changed flag present in script
+  - name: "changed_flag_accepted"
+    run: |
+      head -35 "$PLUGIN_DIR/tests/run-tests.sh" | grep -q "\-\-changed" && echo "OK: --changed flag present in script"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: --changed auto-discovery logic exists
+  - name: "changed_has_git_diff_logic"
+    run: |
+      grep -q "git diff --name-only" "$PLUGIN_DIR/tests/run-tests.sh" && echo "OK: git diff discovery logic present"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: --scenarios flag with specific file runs only that scenario
+  - name: "scenarios_runs_single_file"
+    run: |
+      # Run with a minimal, non-recursive scenario
+      OUTPUT=$(bash "$PLUGIN_DIR/tests/run-tests.sh" --unit-only --scenarios "$PLUGIN_DIR/tests/scenarios/unit-naming-convention.yaml" 2>&1)
+      RC=$?
+      echo "$OUTPUT" | tail -5
+      if echo "$OUTPUT" | grep -q "naming convention"; then
+        echo "OK: specified scenario was run"
+      else
+        echo "FAIL: specified scenario was not run"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

@@ -90,7 +90,7 @@ bd dep add <step-2> <step-1>  # step-2 depends on step-1
 
 For each new child:
 ```
-/yf:select_agent <child-id>
+/yf:plan_select_agent <child-id>
 ```
 
 ### Step 5.5: Chronicle Non-Trivial Decomposition
