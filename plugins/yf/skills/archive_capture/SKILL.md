@@ -85,19 +85,12 @@ Status: COMPLETED
 
 ### For Decisions (`type:decision`)
 
-First, generate a hash-based DEC ID:
+First, generate a hybrid idx-hash DEC ID:
 
 ```bash
-# Generate collision-safe DEC ID
+# Generate hybrid DEC ID with scope for sequential indexing
 . "${CLAUDE_PLUGIN_ROOT}/scripts/yf-id.sh"
-DEC_ID=$(yf_generate_id "DEC")
-
-# Collision check against existing decisions
-if [ -f docs/decisions/_index.md ]; then
-  while grep -qF "$DEC_ID" docs/decisions/_index.md 2>/dev/null; do
-    DEC_ID=$(yf_generate_id "DEC")
-  done
-fi
+DEC_ID=$(yf_generate_id "DEC" "docs/decisions/_index.md")
 ```
 
 ```bash

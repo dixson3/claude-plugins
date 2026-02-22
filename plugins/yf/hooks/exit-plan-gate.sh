@@ -37,31 +37,37 @@ if [[ -z "$PLAN_FILE" ]]; then
     exit 0
 fi
 
-# Generate hash-based plan ID (collision-safe across parallel worktrees)
+# Generate hybrid idx-hash plan ID (collision-safe across parallel worktrees)
 . "$SCRIPT_DIR/scripts/yf-id.sh"
 
 mkdir -p "$PLANS_DIR"
 
-# Generate ID with collision check
-MAX_RETRIES=5
-RETRY=0
-while true; do
-    PLAN_ID=$(yf_generate_id "plan" | sed 's/^plan-//')
-    DEST="$PLANS_DIR/plan-${PLAN_ID}.md"
-    if [[ ! -f "$DEST" ]]; then
-        break
-    fi
-    RETRY=$((RETRY + 1))
-    if (( RETRY >= MAX_RETRIES )); then
-        # Extremely unlikely — fall back to timestamp
-        PLAN_ID="t$(date +%s)"
-        DEST="$PLANS_DIR/plan-${PLAN_ID}.md"
-        break
-    fi
-done
+# Generate hybrid ID with scope (includes sequential index)
+FULL_ID=$(yf_generate_id "plan" "$PLANS_DIR")
+PLAN_ID="${FULL_ID#plan-}"   # Strip prefix → "NNNN-xxxxx"
+DEST="$PLANS_DIR/plan-${PLAN_ID}.md"
 
 # Copy the plan
 cp "$PLAN_FILE" "$DEST"
+
+# Extract title from plan file (first # heading)
+PLAN_TITLE=$(grep -m1 '^# ' "$DEST" 2>/dev/null | sed 's/^# //' || echo "Untitled")
+
+# Append entry to _index.md (create if missing)
+INDEX_FILE="$PLANS_DIR/_index.md"
+if [[ ! -f "$INDEX_FILE" ]]; then
+    cat > "$INDEX_FILE" <<'HEADER'
+# Plan Index
+
+| Idx | ID | Title | Date | Status |
+|-----|-----|-------|------|--------|
+HEADER
+fi
+
+IDX="${PLAN_ID%%-*}"   # Extract NNNN from NNNN-xxxxx
+PLAN_DATE=$(date +%Y-%m-%d)
+printf '| %s | plan-%s | %s | %s | Active |\n' \
+    "$IDX" "$PLAN_ID" "$PLAN_TITLE" "$PLAN_DATE" >> "$INDEX_FILE"
 
 # Create the gate file
 mkdir -p "$PROJECT_DIR/.yoshiko-flow"

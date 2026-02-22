@@ -37,17 +37,25 @@ steps:
       - type: file_not_exists
         path: ".yoshiko-flow/plan-gate"
 
-  # Case 4: Plan file, no existing docs → creates plan-xxxxx.md + gate (hash-based ID)
+  # Case 4: Plan file, no existing docs → creates plan-NNNN-xxxxx.md + gate + _index.md
   - name: "creates_plan_01"
     run: |
       rm -rf docs/plans
       rm -f .yoshiko-flow/plan-gate
       echo '# My Plan' > .claude/plans/test-plan.md
       HOME="$WORK_DIR" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/exit-plan-gate.sh"
-      # Verify a plan file was created with hash-based name
+      # Verify a plan file was created with hybrid idx-hash name
       PLAN_COUNT=$(ls docs/plans/plan-*.md 2>/dev/null | wc -l | tr -d ' ')
       if [ "$PLAN_COUNT" -eq 1 ]; then
         PLAN_FILE=$(ls docs/plans/plan-*.md)
+        PLAN_BASE=$(basename "$PLAN_FILE")
+        # Verify hybrid format: plan-NNNN-xxxxx.md
+        if echo "$PLAN_BASE" | grep -qE '^plan-[0-9]{4}-[a-z0-9]{5}\.md$'; then
+          echo "OK: hybrid name $PLAN_BASE"
+        else
+          echo "FAIL: expected plan-NNNN-xxxxx.md, got $PLAN_BASE"
+          exit 1
+        fi
         if grep -q "My Plan" "$PLAN_FILE"; then
           echo "OK: plan created with content"
         else
@@ -58,11 +66,25 @@ steps:
         echo "FAIL: expected 1 plan file, got $PLAN_COUNT"
         exit 1
       fi
+      # Verify _index.md was created
+      if [ -f docs/plans/_index.md ]; then
+        if grep -q "My Plan" docs/plans/_index.md; then
+          echo "OK: _index.md entry created"
+        else
+          echo "FAIL: _index.md missing plan entry"
+          exit 1
+        fi
+      else
+        echo "FAIL: _index.md not created"
+        exit 1
+      fi
     assertions:
       - type: exit_code
         value: "0"
       - type: file_exists
         path: ".yoshiko-flow/plan-gate"
+      - type: file_exists
+        path: "docs/plans/_index.md"
       - type: output_contains
         value: "OK: plan created"
 

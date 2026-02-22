@@ -1,0 +1,142 @@
+name: "Unit: yf-id.sh — hybrid idx-hash ID generation"
+
+setup:
+  - "mkdir -p .yoshiko-flow"
+  - "echo '{\"enabled\":true}' > .yoshiko-flow/config.json"
+
+steps:
+  # Case 1: Without scope produces legacy PREFIX-xxxxx
+  - name: "legacy_format_no_scope"
+    run: |
+      OUTPUT=$(bash -c '. "$PLUGIN_DIR/plugins/yf/scripts/yf-id.sh" && yf_generate_id "REQ"')
+      if echo "$OUTPUT" | grep -qE '^REQ-[a-z0-9]{5}$'; then
+        echo "OK: legacy format $OUTPUT"
+      else
+        echo "FAIL: expected REQ-xxxxx, got $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK: legacy format"
+
+  # Case 2: With file scope produces PREFIX-NNNN-xxxxx
+  - name: "hybrid_format_file_scope"
+    run: |
+      mkdir -p "$WORK_DIR/specs"
+      printf 'REQ-001 First\nREQ-002 Second\nREQ-003 Third\n' > "$WORK_DIR/specs/PRD.md"
+      OUTPUT=$(bash -c '. "$PLUGIN_DIR/plugins/yf/scripts/yf-id.sh" && yf_generate_id "REQ" "'"$WORK_DIR/specs/PRD.md"'"')
+      if echo "$OUTPUT" | grep -qE '^REQ-0004-[a-z0-9]{5}$'; then
+        echo "OK: hybrid format $OUTPUT"
+      else
+        echo "FAIL: expected REQ-0004-xxxxx, got $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK: hybrid format"
+
+  # Case 3: With directory scope produces plan-NNNN-xxxxx
+  - name: "hybrid_format_dir_scope"
+    run: |
+      mkdir -p "$WORK_DIR/plans"
+      touch "$WORK_DIR/plans/plan-01.md"
+      touch "$WORK_DIR/plans/plan-02.md"
+      touch "$WORK_DIR/plans/plan-5e3qn.md"
+      OUTPUT=$(bash -c '. "$PLUGIN_DIR/plugins/yf/scripts/yf-id.sh" && yf_generate_id "plan" "'"$WORK_DIR/plans"'"')
+      if echo "$OUTPUT" | grep -qE '^plan-0004-[a-z0-9]{5}$'; then
+        echo "OK: plan hybrid $OUTPUT"
+      else
+        echo "FAIL: expected plan-0004-xxxxx, got $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK: plan hybrid"
+
+  # Case 4: Empty/nonexistent scope starts at 0001
+  - name: "empty_scope_starts_at_one"
+    run: |
+      OUTPUT=$(bash -c '. "$PLUGIN_DIR/plugins/yf/scripts/yf-id.sh" && yf_generate_id "TODO" "'"$WORK_DIR/nonexistent.md"'"')
+      if echo "$OUTPUT" | grep -qE '^TODO-0001-[a-z0-9]{5}$'; then
+        echo "OK: starts at 0001 $OUTPUT"
+      else
+        echo "FAIL: expected TODO-0001-xxxxx, got $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK: starts at 0001"
+
+  # Case 5: Directory scope excludes part files for plans
+  - name: "excludes_part_files"
+    run: |
+      mkdir -p "$WORK_DIR/plans2"
+      touch "$WORK_DIR/plans2/plan-01.md"
+      touch "$WORK_DIR/plans2/plan-02.md"
+      touch "$WORK_DIR/plans2/plan-02-part1-api.md"
+      touch "$WORK_DIR/plans2/plan-02-part2-ui.md"
+      OUTPUT=$(bash -c '. "$PLUGIN_DIR/plugins/yf/scripts/yf-id.sh" && yf_generate_id "plan" "'"$WORK_DIR/plans2"'"')
+      if echo "$OUTPUT" | grep -qE '^plan-0003-[a-z0-9]{5}$'; then
+        echo "OK: part files excluded $OUTPUT"
+      else
+        echo "FAIL: expected plan-0003-xxxxx, got $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK: part files excluded"
+
+  # Case 6: Directory scope for UC IDs counts across files
+  - name: "directory_scope_uc_ids"
+    run: |
+      mkdir -p "$WORK_DIR/ig"
+      printf 'UC-001 First\nUC-002 Second\n' > "$WORK_DIR/ig/plan-lifecycle.md"
+      printf 'UC-003 Third\n' > "$WORK_DIR/ig/engineer.md"
+      OUTPUT=$(bash -c '. "$PLUGIN_DIR/plugins/yf/scripts/yf-id.sh" && yf_generate_id "UC" "'"$WORK_DIR/ig/"'"')
+      if echo "$OUTPUT" | grep -qE '^UC-0004-[a-z0-9]{5}$'; then
+        echo "OK: directory counted $OUTPUT"
+      else
+        echo "FAIL: expected UC-0004-xxxxx, got $OUTPUT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK: directory counted"
+
+  # Case 7: Multiple calls produce unique hashes
+  - name: "unique_hashes"
+    run: |
+      IDS=$(bash -c '
+        . "$PLUGIN_DIR/plugins/yf/scripts/yf-id.sh"
+        yf_generate_id "REQ"
+        yf_generate_id "REQ"
+        yf_generate_id "REQ"
+      ')
+      UNIQUE=$(echo "$IDS" | sort -u | wc -l | tr -d ' ')
+      if [ "$UNIQUE" -eq 3 ]; then
+        echo "OK: 3 unique IDs"
+      else
+        echo "FAIL: only $UNIQUE unique out of 3"
+        echo "$IDS"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK: 3 unique"
+
+teardown:
+  - "rm -rf specs plans plans2 ig"

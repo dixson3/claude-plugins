@@ -1,18 +1,23 @@
 #!/bin/bash
-# yf-id.sh — Shared shell library for hash-based ID generation
+# yf-id.sh — Shared shell library for hybrid idx-hash ID generation
 #
 # Provides yf_generate_id() for collision-safe IDs across parallel worktrees.
 # Uses SHA-256 hash of timestamp + PID + $RANDOM, converted to base36,
 # truncated to 5 characters. macOS compatible (uses shasum -a 256).
+#
+# With optional scope argument, produces hybrid IDs: PREFIX-NNNN-xxxxx
+# where NNNN is a zero-padded sequential index derived from existing IDs.
+# Without scope, produces legacy PREFIX-xxxxx for backward compatibility.
 #
 # Charset: lowercase base36 (a-z0-9) — case-insensitive safe for macOS HFS+.
 # Collision space: 36^5 = 60M values.
 #
 # Usage:
 #   . "$SCRIPT_DIR/yf-id.sh"
-#   ID=$(yf_generate_id "plan")     # → "plan-a3x7m"
-#   ID=$(yf_generate_id "TODO")     # → "TODO-b7rpz"
-#   ID=$(yf_generate_id "REQ")      # → "REQ-k4m9q"
+#   ID=$(yf_generate_id "plan")                    # → "plan-a3x7m"       (legacy)
+#   ID=$(yf_generate_id "plan" "$PLANS_DIR")       # → "plan-0054-a3x7m"  (hybrid)
+#   ID=$(yf_generate_id "REQ" "$SPEC_DIR/PRD.md")  # → "REQ-0005-k4m9q"   (hybrid)
+#   ID=$(yf_generate_id "UC" "$SPEC_DIR/IG/")      # → "UC-0012-b7rpz"    (hybrid)
 #
 # Compatible with bash 3.2+ (macOS default).
 
@@ -88,12 +93,46 @@ _yf_base36() {
 # Internal counter for uniqueness within a single shell session
 _YF_ID_SEQ=0
 
-# yf_generate_id — generate a hash-based ID with prefix
+# _yf_next_idx — count existing IDs to determine next sequential index
+# Args: $1 = prefix (e.g., "plan", "REQ"), $2 = scope (file or directory path)
+# Output: zero-padded 4-digit index (e.g., "0001", "0054")
+_yf_next_idx() {
+  local prefix="$1"
+  local scope="$2"
+  local count=0
+
+  if [[ -d "$scope" ]]; then
+    if [[ "$prefix" == "plan" ]]; then
+      # Directory scope for plans: count plan-*.md files (exclude part files)
+      count=$(ls "$scope"/plan-*.md 2>/dev/null | grep -cvE -- '-part[0-9]' 2>/dev/null) || count=0
+    else
+      # Directory scope (e.g., IG UCs): count PREFIX- occurrences across all .md files
+      count=0
+      for f in "$scope"/*.md; do
+        [[ -f "$f" ]] || continue
+        local c
+        c=$(grep -cE "${prefix}-" "$f" 2>/dev/null) || c=0
+        count=$((count + c))
+      done
+    fi
+  elif [[ -f "$scope" ]]; then
+    # File scope: count occurrences of PREFIX- pattern in the file
+    count=$(grep -cE "${prefix}-" "$scope" 2>/dev/null) || count=0
+  fi
+  # count is 0 if scope doesn't exist yet
+
+  # Next index = count + 1
+  printf '%04d' $((count + 1))
+}
+
+# yf_generate_id — generate an ID with prefix, optionally hybrid with scope
 # Args: $1 = prefix (e.g., "plan", "TODO", "REQ", "DD", "NFR", "UC", "DEC")
-# Output: PREFIX-xxxxx (e.g., "plan-a3x7m", "TODO-b7rpz")
+#        $2 = scope (optional — file or directory path for hybrid idx-hash IDs)
+# Output: PREFIX-xxxxx (legacy) or PREFIX-NNNN-xxxxx (hybrid when scope given)
 yf_generate_id() {
   local prefix="$1"
-  local hash id
+  local scope="${2:-}"
+  local hash id idx
 
   # Increment sequence counter for uniqueness within same shell
   _YF_ID_SEQ=$((_YF_ID_SEQ + 1))
@@ -104,5 +143,10 @@ yf_generate_id() {
   # Convert to 5-char base36
   id=$(_yf_base36 "$hash" 5)
 
-  echo "${prefix}-${id}"
+  if [[ -n "$scope" ]]; then
+    idx=$(_yf_next_idx "$prefix" "$scope")
+    echo "${prefix}-${idx}-${id}"
+  else
+    echo "${prefix}-${id}"
+  fi
 }

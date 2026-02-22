@@ -55,7 +55,7 @@ if [[ ! -f "$INTAKE_MARKER" ]] && [[ -d "$PLANS_DIR" ]]; then
   LATEST_PLAN=$(ls -t "$PLANS_DIR"/plan-*.md 2>/dev/null | head -1)
   if [[ -n "$LATEST_PLAN" ]]; then
     if ! grep -q 'Status: Completed' "$LATEST_PLAN" 2>/dev/null; then
-      PLAN_IDX=$(basename "$LATEST_PLAN" | sed -n 's/^plan-\([a-z0-9]*\).*/\1/p')
+      PLAN_IDX=$(basename "$LATEST_PLAN" .md | sed 's/^plan-//')
       if [[ -n "$PLAN_IDX" ]]; then
         EPIC_COUNT=$(bd list -l "plan:$PLAN_IDX" --type=epic --limit=1 --json 2>/dev/null \
           | jq 'length' 2>/dev/null) || EPIC_COUNT="0"

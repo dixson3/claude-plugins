@@ -64,16 +64,16 @@ Return JSON with content for each requested spec type:
 ## Synthesis Guidelines
 
 ### PRD
-Extract requirements from plan completion criteria and functional specifications. Generate hash-based REQ IDs via `bash -c '. plugins/yf/scripts/yf-id.sh && yf_generate_id "REQ"'`. Set priority from plan context. Link code references. Focus on WHAT and WHY, not HOW.
+Extract requirements from plan completion criteria and functional specifications. Generate hybrid idx-hash REQ IDs via `bash -c '. plugins/yf/scripts/yf-id.sh && yf_generate_id "REQ" "$SPEC_DIR/PRD.md"'` (pass the PRD file as scope). Set priority from plan context. Link code references. Focus on WHAT and WHY, not HOW.
 
 ### EDD
-Extract design decisions from `docs/decisions/`. Identify NFRs from plan constraints. Generate hash-based DD/NFR IDs via `yf_generate_id`. Use ADR format (Context, Decision, Rationale, Consequences). Focus on HOW, not WHAT.
+Extract design decisions from `docs/decisions/`. Identify NFRs from plan constraints. Generate hybrid DD/NFR IDs via `yf_generate_id "DD" "$SPEC_DIR/EDD/CORE.md"` (pass the EDD file as scope). Use ADR format (Context, Decision, Rationale, Consequences). Focus on HOW, not WHAT.
 
 ### IG
-Create per-feature guides from major plan features. Extract use cases from task descriptions. Generate hash-based UC IDs via `yf_generate_id "UC"`. Include implementation patterns from code structure.
+Create per-feature guides from major plan features. Extract use cases from task descriptions. Generate hybrid UC IDs via `yf_generate_id "UC" "$SPEC_DIR/IG/"` (pass the IG directory as scope). Include implementation patterns from code structure.
 
 ### TODO
-Gather deferred items from plan "Future Work" sections and diary follow-ups. Generate hash-based TODO IDs via `yf_generate_id "TODO"`. Set source to originating document.
+Gather deferred items from plan "Future Work" sections and diary follow-ups. Generate hybrid TODO IDs via `yf_generate_id "TODO" "$SPEC_DIR/TODO.md"` (pass the TODO file as scope). Set source to originating document.
 
 ## Guidelines
 

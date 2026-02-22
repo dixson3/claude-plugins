@@ -59,25 +59,29 @@ If the file does not exist, report: "No spec file found. Run `/yf:engineer_analy
 ### Step 2: Parse Existing Entries
 
 Read the spec file and extract existing IDs for the relevant type to check for collisions:
-- PRD: Existing `REQ-xxxxx` IDs
-- EDD: Existing `DD-xxxxx` or `NFR-xxxxx` IDs (depending on which section)
-- IG: Existing `UC-xxxxx` IDs
-- TODO: Existing `TODO-xxxxx` IDs
+- PRD: Existing `REQ-NNNN-xxxxx` IDs
+- EDD: Existing `DD-NNNN-xxxxx` or `NFR-NNNN-xxxxx` IDs (depending on which section)
+- IG: Existing `UC-NNNN-xxxxx` IDs
+- TODO: Existing `TODO-NNNN-xxxxx` IDs
 
 ### Step 3: Execute Action
 
 #### Add (default)
 
-1. Generate a hash-based ID:
+1. Generate a hybrid idx-hash ID by passing the scope file:
    ```bash
-   . "${CLAUDE_PLUGIN_ROOT}/scripts/yf-id.sh" && yf_generate_id "REQ"
+   . "${CLAUDE_PLUGIN_ROOT}/scripts/yf-id.sh"
+   # PRD:  yf_generate_id "REQ" "$SPEC_DIR/PRD.md"
+   # EDD:  yf_generate_id "DD" "$SPEC_DIR/EDD/CORE.md"    (or subsystem file)
+   # EDD:  yf_generate_id "NFR" "$SPEC_DIR/EDD/CORE.md"
+   # IG:   yf_generate_id "UC" "$SPEC_DIR/IG/"             (directory scope)
+   # TODO: yf_generate_id "TODO" "$SPEC_DIR/TODO.md"
    ```
-   Use the appropriate prefix (`REQ`, `DD`, `NFR`, `UC`, `TODO`) for the spec type.
-   If the generated ID already exists in the file, regenerate until unique.
+   The scope argument ensures sequential indexing. Hash suffix ensures uniqueness.
 2. Gather context from the current conversation
 3. Create the new entry following the spec format
 4. Insert at the appropriate location in the file
-5. Report: "Added REQ-k4m9q: [description]"
+5. Report: "Added REQ-0005-k4m9q: [description]"
 
 #### Update
 

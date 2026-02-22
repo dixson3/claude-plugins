@@ -5,6 +5,25 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.30.0] - 2026-02-22
+
+### Added
+
+- **Hybrid idx-hash ID generation** (`yf-id.sh`): All generated IDs now support an optional `scope` argument that produces `PREFIX-NNNN-xxxxx` format (e.g., `REQ-0005-k4m9q`, `plan-0054-a3x7m`). The 4-digit sequential index provides human-readable ordering while the 5-char hash preserves collision safety across parallel worktrees. Without scope, legacy `PREFIX-xxxxx` format is preserved for backward compatibility.
+- **Plan index registry** (`docs/plans/_index.md`): New index file tracking all plans with sequential index, ID, title, date, and status. Bootstrapped from all 54 existing plans. `exit-plan-gate.sh` auto-appends new entries on plan creation.
+- **New test file**: `unit-yf-id.yaml` — 7 test cases for core hybrid ID generation (legacy format, file scope, directory scope, empty scope, part file exclusion, cross-file counting, uniqueness).
+
+### Changed
+
+- **Plan ID generation**: `exit-plan-gate.sh` passes `$PLANS_DIR` as scope to `yf_generate_id`, producing `plan-NNNN-xxxxx.md` filenames (was `plan-xxxxx.md`). Creates `_index.md` entry on each new plan.
+- **TODO ID generation**: `tracker-api.sh` `_next_todo_id()` simplified to a single `yf_generate_id "TODO" "$TODO_FILE"` call. Manual collision-check loop removed.
+- **DEC ID generation**: `archive_capture/SKILL.md` simplified to `yf_generate_id "DEC" "docs/decisions/_index.md"`. Manual collision-check loop removed.
+- **Spec ID generation**: `engineer_update/SKILL.md` and `yf_engineer_synthesizer.md` pass scope paths to `yf_generate_id` for hybrid IDs.
+- **Spec sanity check**: `spec-sanity-check.sh` uniqueness regex widened from `PREFIX-[a-z0-9]+` to `PREFIX-[a-z0-9-]+` to match hybrid `PREFIX-NNNN-xxxxx` format. Old-format IDs still match.
+- **Plan-idx extraction**: Sed patterns in `code-gate.sh`, `bd-safety-net.sh`, and `session-recall.sh` changed from `sed -n 's/^plan-\([a-z0-9]*\).*/\1/p'` to `basename ... .md | sed 's/^plan-//'` — handles hyphens in hybrid IDs.
+- **Plugin version**: 2.29.0 → 2.30.0.
+- **Test updates**: `unit-exit-plan-gate.yaml` Case 4 verifies hybrid naming and `_index.md` creation. `unit-tracker-api.yaml` Cases 3-4 updated regex for hybrid TODO IDs.
+
 ## [2.29.0] - 2026-02-22
 
 ### Added

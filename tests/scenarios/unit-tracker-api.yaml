@@ -47,8 +47,8 @@ steps:
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" create --title "Test issue" --body "Test body")
       ID=$(echo "$OUTPUT" | jq -r '.id')
-      # Hash-based IDs: TODO-xxxxx (5-char base36)
-      if echo "$ID" | grep -qE '^TODO-[a-z0-9]{5}$'; then
+      # Hybrid IDs: TODO-NNNN-xxxxx (4-digit idx + 5-char base36)
+      if echo "$ID" | grep -qE '^TODO-[0-9]{4}-[a-z0-9]{5}$'; then
         echo "OK: created $ID"
       else
         echo "FAIL: id=$ID output=$OUTPUT"
@@ -85,7 +85,7 @@ steps:
       FIRST_ID=$(cat "$WORK_DIR/.test-todo-id")
       OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/tracker-api.sh" create --title "Second issue" --body "Body 2")
       ID=$(echo "$OUTPUT" | jq -r '.id')
-      if echo "$ID" | grep -qE '^TODO-[a-z0-9]{5}$' && [ "$ID" != "$FIRST_ID" ]; then
+      if echo "$ID" | grep -qE '^TODO-[0-9]{4}-[a-z0-9]{5}$' && [ "$ID" != "$FIRST_ID" ]; then
         echo "OK: unique hash ID $ID"
       else
         echo "FAIL: id=$ID (first=$FIRST_ID)"

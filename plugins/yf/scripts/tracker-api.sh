@@ -51,23 +51,10 @@ done
 
 # --- File backend helpers ---
 
-# _next_todo_id — returns a hash-based TODO-xxxxx id
+# _next_todo_id — returns a hybrid TODO-NNNN-xxxxx id
 _next_todo_id() {
   . "$SCRIPT_DIR/yf-id.sh"
-  local max_retries=5 retry=0 id
-  while true; do
-    id=$(yf_generate_id "TODO")
-    # Collision check: ensure ID doesn't already exist in TODO.md
-    if [ ! -f "$TODO_FILE" ] || ! grep -qF "$id" "$TODO_FILE" 2>/dev/null; then
-      echo "$id"
-      return
-    fi
-    retry=$((retry + 1))
-    if [ "$retry" -ge "$max_retries" ]; then
-      echo "$id"  # extremely unlikely collision — proceed anyway
-      return
-    fi
-  done
+  yf_generate_id "TODO" "$TODO_FILE"
 }
 
 # _file_create — create a file-based issue

@@ -189,7 +189,7 @@ check_contiguity() {
   # REQ uniqueness from PRD
   if [ -f "$prd_file" ]; then
     local ids
-    ids=$(grep -oE 'REQ-[a-z0-9]+' "$prd_file" 2>/dev/null | sort)
+    ids=$(grep -oE 'REQ-[a-z0-9-]+' "$prd_file" 2>/dev/null | sort)
     if [ -n "$ids" ]; then
       local dupes
       dupes=$(echo "$ids" | uniq -d)
@@ -203,7 +203,7 @@ check_contiguity() {
   # DD uniqueness from EDD
   if [ -f "$edd_file" ]; then
     local ids
-    ids=$(grep -oE 'DD-[a-z0-9]+' "$edd_file" 2>/dev/null | grep -v 'NFR-' | sort)
+    ids=$(grep -oE 'DD-[a-z0-9-]+' "$edd_file" 2>/dev/null | grep -v 'NFR-' | sort)
     if [ -n "$ids" ]; then
       local dupes
       dupes=$(echo "$ids" | uniq -d)
@@ -217,7 +217,7 @@ check_contiguity() {
   # NFR uniqueness from EDD
   if [ -f "$edd_file" ]; then
     local ids
-    ids=$(grep -oE 'NFR-[a-z0-9]+' "$edd_file" 2>/dev/null | sort)
+    ids=$(grep -oE 'NFR-[a-z0-9-]+' "$edd_file" 2>/dev/null | sort)
     if [ -n "$ids" ]; then
       local dupes
       dupes=$(echo "$ids" | uniq -d)
@@ -234,7 +234,7 @@ check_contiguity() {
     for ig_file in "$SPEC_DIR"/IG/*.md; do
       [ -f "$ig_file" ] || continue
       local ids
-      ids=$(grep -oE 'UC-[a-z0-9]+' "$ig_file" 2>/dev/null)
+      ids=$(grep -oE 'UC-[a-z0-9-]+' "$ig_file" 2>/dev/null)
       if [ -n "$ids" ]; then
         all_uc_ids="${all_uc_ids}${all_uc_ids:+
 }${ids}"

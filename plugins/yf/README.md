@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v2.28.0
+# Yoshiko Flow (yf) Plugin — v2.30.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -89,7 +89,8 @@ Three layers prevent out-of-state operations:
 
 ### Artifacts
 
-- **Plan files**: `docs/plans/plan-NN.md`
+- **Plan files**: `docs/plans/plan-NNNN-xxxxx.md` (hybrid idx-hash naming)
+- **Plan index**: `docs/plans/_index.md` (creation-order registry)
 - **Plan gate**: `.yoshiko-flow/plan-gate` (temporary, blocks edits until Executing)
 - **Beads hierarchy**: Epics, tasks, and dependencies in `.beads/`
 
@@ -421,7 +422,7 @@ Parallel agents writing to the same working tree can clobber each other's change
 
 ### How It Works
 
-**Hash-Based IDs** — All generated IDs (plan, TODO, REQ, DD, NFR, UC, DEC) use SHA-256 hashed, base36-encoded, 5-character identifiers instead of sequential numbers. This makes ID generation safe across parallel worktrees. Existing sequential IDs remain valid — both formats coexist.
+**Hybrid Idx-Hash IDs** — All generated IDs support a hybrid format: `PREFIX-NNNN-xxxxx` where `NNNN` is a zero-padded sequential index and `xxxxx` is a 5-char base36 hash. The index provides human-readable ordering while the hash ensures collision safety across parallel worktrees. When a scope (file or directory) is provided to `yf_generate_id`, the function counts existing IDs to determine the next index. Without scope, legacy `PREFIX-xxxxx` format is preserved. Existing sequential IDs remain valid — all three formats coexist.
 
 **Epic Worktrees** — `/yf:worktree_create` creates a git worktree with its own branch and a `.beads/redirect` to share the main repo's beads database. `/yf:worktree_land` validates, rebases, and fast-forward merges the worktree back, then cleans up.
 
