@@ -55,24 +55,4 @@ bd list --label=ys:issue --status=open --json 2>/dev/null
 
 ### Step 4: Present Combined View
 
-```
-Project Issues — <tracker> (<project>)
-========================================
-
-Remote Issues (open):
-  #45  Add input validation for API endpoints
-  #33  Fix race condition in worker pool
-  #28  Update documentation for v2
-
-Staged (not yet submitted):
-  abc  Issue: Refactor error handling [ys:issue:debt]
-  def  Issue: Add retry logic [ys:issue:enhancement]
-
-Summary: 3 remote open, 2 staged
-```
-
-If no remote issues and no staged beads:
-
-```
-No open issues found (remote or staged).
-```
+Report includes: tracker name and project, remote issues (number + title), staged beads (ID + title + labels), and summary counts. If none found, reports no open issues.

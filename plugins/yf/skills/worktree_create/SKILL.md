@@ -30,11 +30,6 @@ Then stop. Do not execute the remaining steps.
 
 Create an isolated git worktree for epic-scoped development. The worktree gets its own branch and working directory while sharing the main repo's beads database.
 
-## When to Invoke
-
-- `/yf:worktree_create epic_name:feature-x` — Create worktree branching from current branch
-- `/yf:worktree_create epic_name:feature-x base:main` — Create worktree branching from main
-
 ## Behavior
 
 ### Step 1: Determine Base Branch

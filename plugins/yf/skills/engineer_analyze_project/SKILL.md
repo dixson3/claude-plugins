@@ -30,12 +30,6 @@ Then stop. Do not execute the remaining steps.
 
 Synthesize specification artifacts from existing project context — plans, diary entries, research, decisions, and codebase structure.
 
-## When to Invoke
-
-- `/yf:engineer_analyze_project` — Generate all missing specification documents
-- `/yf:engineer_analyze_project scope:prd` — Generate only the PRD
-- `/yf:engineer_analyze_project force` — Regenerate all specs, showing diffs for existing files
-
 ## Behavior
 
 ### Step 1: Determine Artifact Directory
@@ -47,26 +41,7 @@ SPEC_DIR="${ARTIFACT_DIR}/specifications"
 
 ### Step 2: Check Existing Specs
 
-Check which specification files already exist:
-
-```bash
-PRD_EXISTS=false; [ -f "$SPEC_DIR/PRD.md" ] && PRD_EXISTS=true
-EDD_EXISTS=false; [ -f "$SPEC_DIR/EDD/CORE.md" ] && EDD_EXISTS=true
-TODO_EXISTS=false; [ -f "$SPEC_DIR/TODO.md" ] && TODO_EXISTS=true
-# IG docs: check for any .md files in IG/
-IG_EXISTS=false; ls "$SPEC_DIR/IG/"*.md >/dev/null 2>&1 && IG_EXISTS=true
-```
-
-If all requested specs exist and `force` is not set, report what exists and exit:
-```
-All specification documents already exist:
-  - PRD: docs/specifications/PRD.md
-  - EDD: docs/specifications/EDD/CORE.md
-  - TODO: docs/specifications/TODO.md
-  - IG: docs/specifications/IG/ (N files)
-
-Run with `force` to regenerate (will show diffs).
-```
+Check which specs exist (`PRD.md`, `EDD/CORE.md`, `TODO.md`, `IG/*.md`). If all requested specs exist and `force` is not set, report what exists and exit.
 
 ### Step 3: Gather Project Context
 
@@ -121,96 +96,12 @@ Run /yf:engineer_update to add or modify individual entries.
 
 ## Templates
 
-### PRD Template (`specifications/PRD.md`)
+Each template follows a standard section structure. The model synthesizes content from project context.
 
-```markdown
-# Product Requirements Document (PRD)
-
-## 1. Purpose & Goals
-
-[Synthesized from plans, README, and project documentation]
-
-## 2. Technical Constraints
-
-- Runtime/Language: [detected from project]
-- Infrastructure: [detected from project]
-- Dependencies: [key dependencies]
-
-## 3. Requirement Traceability Matrix
-
-| ID | Requirement Description | Priority | Status | Code Reference |
-|:---|:---|:---|:---|:---|
-| REQ-001 | [requirement] | High | Active | `path/to/file` |
-
-## 4. Functional Specifications
-
-### [Feature Name]
-- **Logic:** [business logic from plans/diary]
-- **Validation:** [input/output constraints]
-- **Related:** [DD-xxx, NFR-xxx references]
-```
-
-### EDD Template (`specifications/EDD/CORE.md`)
-
-```markdown
-# Engineering Design Document
-
-## Overview
-
-[Architectural overview synthesized from plans, decisions, and code structure]
-
-## Non-Functional Requirements
-
-| ID | Requirement | Criteria | Status |
-|:---|:---|:---|:---|
-| NFR-001 | [requirement] | [measurable criteria] | Active |
-
-## Design Decisions
-
-### DD-001: [Decision Title]
-- **Context:** [from archived decisions or plan rationale]
-- **Decision:** [what was decided]
-- **Rationale:** [why this approach]
-- **Consequences:** [trade-offs]
-- **Related:** [REQ-xxx, NFR-xxx]
-```
-
-### IG Template (`specifications/IG/<feature>.md`)
-
-```markdown
-# Implementation Guide: [Feature Name]
-
-## Overview
-
-[Feature purpose and scope]
-
-## Use Cases
-
-### UC-001: [Use Case Name]
-- **Actor:** [who triggers this]
-- **Preconditions:** [what must be true]
-- **Flow:**
-  1. [step]
-  2. [step]
-- **Postconditions:** [what is true after]
-- **Related:** [REQ-xxx, DD-xxx]
-
-## Implementation Notes
-
-[Key patterns, conventions, edge cases]
-```
-
-### TODO Template (`specifications/TODO.md`)
-
-```markdown
-# TODO Register
-
-Lightweight deferred items — ideas, improvements, and follow-ups that don't warrant full beads tracking.
-
-| ID | Description | Priority | Source | Status |
-|:---|:---|:---|:---|:---|
-| TODO-001 | [item] | Low | [plan/diary/session] | Open |
-```
+- **PRD** (`specifications/PRD.md`): Purpose & Goals, Technical Constraints, Requirement Traceability Matrix (REQ-NNN table), Functional Specifications
+- **EDD** (`specifications/EDD/CORE.md`): Overview, Non-Functional Requirements (NFR-NNN table), Design Decisions (DD-NNN with Context/Decision/Rationale/Consequences)
+- **IG** (`specifications/IG/<feature>.md`): Overview, Use Cases (UC-NNN with Actor/Preconditions/Flow/Postconditions), Implementation Notes
+- **TODO** (`specifications/TODO.md`): Register table (ID, Description, Priority, Source, Status)
 
 ## Idempotency
 

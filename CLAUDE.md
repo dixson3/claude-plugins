@@ -65,6 +65,16 @@ When implementing a new major capability for the yf plugin:
 
 See [DEVELOPERS.md](DEVELOPERS.md) for the marketplace developer guide and [plugins/yf/DEVELOPERS.md](plugins/yf/DEVELOPERS.md) for yf-specific internals.
 
+## Prompt Text Quality
+
+Before committing new or modified rules, skills, or agents, review the text for concision and effectiveness:
+
+1. **No non-impactful exposition** — remove Personality sections, motivational framing, and prose that doesn't change agent behavior
+2. **Compress shared blocks** — Chronicle Signal, Chronicle Protocol, Tools declarations should be minimal; use the compressed forms established in existing agents as reference
+3. **Templates as section lists** — show markdown template section names, not full placeholder content. The model knows markdown.
+4. **Minimal examples** — JSON/output examples should show structure only (one entry per type), not exhaustive variants
+5. **No redundant negations** — if positive criteria define the scope, don't add "NOT worthy" lists restating the inverse
+
 ## Current Plugins
 
-- **yf** (v2.27.0) — Yoshiko Flow — plan lifecycle, swarm execution with worktree isolation, context persistence, diary generation, specification artifacts, standards-driven code generation, hash-based IDs, epic worktree lifecycle, specification integrity gates, activation gating, session close enforcement, doctor-driven beads repair, plugin issue reporting, and project issue tracking
+- **yf** (v2.28.0) — Yoshiko Flow — plan lifecycle, swarm execution with worktree isolation, context persistence, diary generation, specification artifacts, standards-driven code generation, hash-based IDs, epic worktree lifecycle, specification integrity gates, activation gating, session close enforcement, doctor-driven beads repair, plugin issue reporting, and project issue tracking

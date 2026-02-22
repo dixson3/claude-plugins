@@ -1,6 +1,6 @@
 {
   "name": "yf",
-  "version": "2.27.0",
+  "version": "2.28.0",
   "description": "Yoshiko Flow — plan lifecycle, swarm execution with implicit formula triggering and worktree isolation, context persistence, diary generation, research/decision archiving, specification artifacts, standards-driven code generation, hash-based IDs, epic worktree lifecycle, automatic bead pruning, zero-question setup, doctor-driven beads repair, plugin issue reporting, and project issue tracking",
   "author": {
     "name": "James Dixson",

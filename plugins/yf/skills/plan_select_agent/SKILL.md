@@ -30,12 +30,6 @@ Then stop. Do not execute the remaining steps.
 
 Standalone skill for agent-to-task matching. Scans all available agents across the marketplace and assigns the best match to a task.
 
-## When to Invoke
-
-- Called by `/yf:plan_to_beads` for each created task
-- Called by `/yf:breakdown_task` for each new child task
-- Can be invoked directly: `/yf:select_agent <task_id>`
-
 ## Behavior
 
 ### Step 1: Discover Agents

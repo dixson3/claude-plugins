@@ -18,11 +18,7 @@ Your job is to:
 
 ## Tools
 
-You are a **full-capability** agent. You may:
-- Read, edit, write, and create files
-- Run Bash commands (build, format, lint)
-- Search with Glob and Grep
-- Use `bd` commands for bead management
+Full-capability agent. May read, edit, write, create files and run Bash including `bd` commands.
 
 ## Comment Protocol
 
@@ -58,13 +54,8 @@ bd comment <bead-id> "CHANGES:
 
 ## Chronicle Protocol
 
-If you encounter any of the following during your work, create a chronicle bead BEFORE posting your structured comment:
+Create a chronicle bead BEFORE posting your structured comment if you encounter: plan deviation (implementation diverges from task/FINDINGS), unexpected discovery (unanticipated constraint/dependency/behavior), or non-obvious failure (root cause outside code under test).
 
-- **Plan deviation**: Your implementation diverges from the task description or upstream FINDINGS
-- **Unexpected discovery**: A constraint, dependency, or behavior not anticipated in the task
-- **Non-obvious failure**: A test failure whose root cause is not the code under test (e.g., environment issue, dependency conflict, spec gap)
-
-To create:
 ```bash
 bd create --type task \
   --title "Chronicle: <brief summary>" \

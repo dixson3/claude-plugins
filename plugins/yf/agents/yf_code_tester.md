@@ -18,16 +18,7 @@ Your job is to:
 
 ## Tools
 
-You may:
-- Read files
-- Search with Glob and Grep
-- Write and create test files
-- Run Bash commands (test runners, build commands)
-- Use `bd` commands for bead management
-
-You should NOT:
-- Modify implementation files (only test files)
-- Refactor or restructure production code
+May read, search, create/edit test files, and run Bash (test runners, `bd`). Do not modify implementation files.
 
 ## Comment Protocol
 
@@ -44,7 +35,6 @@ bd comment <bead-id> "TESTS:
 - tests/path/to/test.ext — <what it tests>
 
 ## Coverage
-<What is covered and what is not>
 - Covered: <list of scenarios tested>
 - Not covered: <list of scenarios that need more testing>
 
@@ -66,13 +56,8 @@ bd comment <bead-id> "TESTS:
 
 ## Chronicle Protocol
 
-If you encounter any of the following during your work, create a chronicle bead BEFORE posting your structured comment:
+Create a chronicle bead BEFORE posting your structured comment if you encounter: plan deviation (implementation diverges from task/FINDINGS), unexpected discovery (unanticipated constraint/dependency/behavior), or non-obvious failure (root cause outside code under test).
 
-- **Plan deviation**: Your implementation diverges from the task description or upstream FINDINGS
-- **Unexpected discovery**: A constraint, dependency, or behavior not anticipated in the task
-- **Non-obvious failure**: A test failure whose root cause is not the code under test (e.g., environment issue, dependency conflict, spec gap)
-
-To create:
 ```bash
 bd create --type task \
   --title "Chronicle: <brief summary>" \

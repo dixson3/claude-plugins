@@ -27,11 +27,6 @@ Then stop. Do not execute the remaining steps.
 
 Evaluates a task bead's title, description, and type to determine the best swarm formula, then applies a `formula:<name>` label. Designed to be called during `plan_create_beads` Step 8b after agent selection.
 
-## When to Invoke
-
-- Called by `/yf:plan_create_beads` Step 8b for each task
-- Can be invoked directly: `/yf:swarm_select_formula <task-id>`
-
 ## Behavior
 
 ### Step 1: Read Task

@@ -27,11 +27,6 @@ Then stop. Do not execute the remaining steps.
 
 Reads beads that are ready for work, classifies each into a **formula track** (dispatched via `/yf:swarm_run` for multi-agent workflows) or an **agent track** (dispatched via bare Task tool calls), and launches them in parallel. This is the mechanism that converts the persistent beads DAG into live agent execution.
 
-## When to Invoke
-
-- Called by `/yf:execute_plan` in the pump loop
-- Can be invoked directly: `/yf:task_pump [plan_idx]`
-
 ## Architecture
 
 ```
@@ -138,18 +133,7 @@ plugins/yf/scripts/dispatch-state.sh pump mark-dispatched <bead-id>
 
 ### Step 7: Report
 
-Output summary:
-```
-Task Pump: plan-07
-==================
-Ready beads: 4
-Already dispatched: 1
-Dispatching: 3
-  [formula] feature-build → 1 task (via swarm_run)
-  [agent] yf_chronicle_diary → 1 task
-  [agent] general-purpose → 1 task
-Parallel dispatch calls launched: 3
-```
+Report includes: plan reference, ready bead count, already-dispatched count, dispatching count broken down by track (formula vs agent) with task counts, and total parallel dispatch calls launched.
 
 ## Completion Tracking
 

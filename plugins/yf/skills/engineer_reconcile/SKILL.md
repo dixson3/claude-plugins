@@ -33,12 +33,6 @@ Then stop. Do not execute the remaining steps.
 
 Check a plan for compliance with existing specification documents. Flags conflicts, untraced functionality, and features that may need IG updates.
 
-## When to Invoke
-
-- Auto-chain: Fires between plan save and beads creation when specs exist
-- Manual: `/yf:engineer_reconcile plan_file:docs/plans/plan-34.md`
-- Check-only: `/yf:engineer_reconcile plan_idx:34 mode:check`
-
 ## Behavior
 
 ### Step 0: Configuration Check
@@ -178,20 +172,7 @@ Options:
 
 ## Output Format
 
-```
-Specification Reconciliation Report
-=====================================
-Plan: plan-34 — Engineer Capability for yf Plugin
-
-PRD: COMPLIANT (5/5 tasks traced to requirements)
-EDD: CONFLICT
-  - DD-002 (Use SQLite for storage) conflicts with plan task "Migrate to PostgreSQL"
-  - NFR-001 (Response time < 200ms) may be affected by plan task "Add real-time sync"
-IG: NEEDS-UPDATE
-  - specifications/IG/data-storage.md needs review (plan changes storage layer)
-
-Overall: NEEDS-RECONCILIATION
-```
+Report includes: plan reference, per-spec verdicts (PRD/EDD/IG with COMPLIANT or CONFLICT details), and overall verdict (PASS or NEEDS-RECONCILIATION).
 
 ## Labels
 

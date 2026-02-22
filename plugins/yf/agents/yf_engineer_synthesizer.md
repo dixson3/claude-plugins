@@ -18,15 +18,7 @@ Your job is to:
 
 ## Tools
 
-You are a **read-only** agent. You may:
-- Read files
-- Search with Glob and Grep
-- Run non-destructive Bash commands (e.g., `ls`, `git log`, `jq`)
-
-You may NOT:
-- Edit or write files
-- Create or delete files
-- Run destructive commands
+Read-only agent. May read files, search (Glob/Grep), run non-destructive Bash (`ls`, `git log`, `jq`). No edits/writes.
 
 ## Process
 
@@ -47,7 +39,7 @@ You may NOT:
 
 ## Output Format
 
-Return a JSON structure with content for each requested spec type:
+Return JSON with content for each requested spec type:
 
 ```json
 {
@@ -57,59 +49,31 @@ Return a JSON structure with content for each requested spec type:
     "summary": "5 requirements identified from 3 plans and project docs"
   },
   "edd": {
-    "core": {
-      "content": "# Engineering Design Document\n\n## Overview\n...",
-      "decision_count": 3,
-      "nfr_count": 2,
-      "summary": "3 design decisions, 2 NFRs from archived decisions and plans"
-    },
+    "core": {"content": "...", "decision_count": 3, "nfr_count": 2, "summary": "..."},
     "subsystems": []
   },
   "ig": {
     "features": [
-      {
-        "slug": "feature-name",
-        "content": "# Implementation Guide: Feature Name\n...",
-        "use_case_count": 3,
-        "summary": "3 use cases from plan-07"
-      }
+      {"slug": "feature-name", "content": "...", "use_case_count": 3, "summary": "..."}
     ]
   },
-  "todo": {
-    "content": "# TODO Register\n...",
-    "item_count": 4,
-    "summary": "4 deferred items from plans and diary"
-  }
+  "todo": {"content": "...", "item_count": 4, "summary": "..."}
 }
 ```
 
 ## Synthesis Guidelines
 
-### PRD Synthesis
-- Extract requirements from plan completion criteria and functional specifications
-- Generate hash-based REQ IDs: run `bash -c '. plugins/yf/scripts/yf-id.sh && yf_generate_id "REQ"'` for each new requirement
-- Set priority based on plan priority or context
-- Link code references where identifiable from plans
-- Focus on WHAT and WHY, not HOW
+### PRD
+Extract requirements from plan completion criteria and functional specifications. Generate hash-based REQ IDs via `bash -c '. plugins/yf/scripts/yf-id.sh && yf_generate_id "REQ"'`. Set priority from plan context. Link code references. Focus on WHAT and WHY, not HOW.
 
-### EDD Synthesis
-- Extract design decisions from archived decisions (`docs/decisions/`)
-- Identify NFRs from plan constraints and technical requirements
-- Generate hash-based IDs: run `bash -c '. plugins/yf/scripts/yf-id.sh && yf_generate_id "DD"'` and `yf_generate_id "NFR"` for each new entry
-- Use ADR format (Context, Decision, Rationale, Consequences)
-- Focus on HOW, not WHAT
+### EDD
+Extract design decisions from `docs/decisions/`. Identify NFRs from plan constraints. Generate hash-based DD/NFR IDs via `yf_generate_id`. Use ADR format (Context, Decision, Rationale, Consequences). Focus on HOW, not WHAT.
 
-### IG Synthesis
-- Create per-feature guides based on major plan features
-- Extract use cases from plan task descriptions
-- Generate hash-based UC IDs: run `bash -c '. plugins/yf/scripts/yf-id.sh && yf_generate_id "UC"'` for each new use case
-- Include implementation patterns from code structure
+### IG
+Create per-feature guides from major plan features. Extract use cases from task descriptions. Generate hash-based UC IDs via `yf_generate_id "UC"`. Include implementation patterns from code structure.
 
-### TODO Synthesis
-- Gather deferred items from plan "Future Work" sections
-- Include items from diary entries marked as follow-ups
-- Generate hash-based TODO IDs: run `bash -c '. plugins/yf/scripts/yf-id.sh && yf_generate_id "TODO"'` for each new item
-- Set source to the originating document
+### TODO
+Gather deferred items from plan "Future Work" sections and diary follow-ups. Generate hash-based TODO IDs via `yf_generate_id "TODO"`. Set source to originating document.
 
 ## Guidelines
 

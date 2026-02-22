@@ -55,34 +55,4 @@ When invoked with `/yf:archive_suggest [--draft] [--since "<timespec>"]`:
 
 ## Expected Output
 
-```
-Archive Candidate Analysis
-==========================
-Analyzing commits since: 24 hours ago
-
-Found 15 commit(s) to analyze
-
-Scanning for research indicators...
-Research activity detected:
-  abc1234 Researched Go GraphQL client libraries
-  def5678 Evaluated Redis vs Memcached for caching
-
-Scanning for decision indicators...
-Decision activity detected:
-  ghi9012 Chose Khan/genqlient for GraphQL operations
-
-Summary
-=======
-Research candidates: 2
-Decision candidates: 1
-
-Recommendations:
-1. Run /yf:archive_capture type:research to document the research findings
-2. Run /yf:archive_capture type:decision to document the decisions
-```
-
-## Use Cases
-
-- End-of-session review: Check if any research or decisions were missed
-- Weekly review: Scan the last week for undocumented findings
-- Pre-push check: Ensure important context is archived before pushing
+Report includes: time range analyzed, commit count, research and decision candidates with commit SHAs, summary counts, and recommendations for `/yf:archive_capture` invocations. If `--draft`, reports auto-created draft beads instead.

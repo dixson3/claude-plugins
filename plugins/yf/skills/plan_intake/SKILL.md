@@ -70,24 +70,7 @@ ls docs/plans/plan-*.md
 
 - **If the `plan` argument is a file path**: Use that file directly. Determine the plan index from the filename.
 - **If the `plan` argument is a number**: Look for `docs/plans/plan-<number>.md`.
-- **If no argument and plan content was provided inline**: Determine the next index and save to `docs/plans/plan-<next-idx>.md` using the standard format:
-
-  ```markdown
-  # Plan <idx>: <Title>
-
-  **Status:** Draft
-  **Date:** YYYY-MM-DD
-
-  ## Overview
-  <plan content>
-
-  ## Implementation Sequence
-  <ordered steps>
-
-  ## Completion Criteria
-  - [ ] Criterion 1
-  ```
-
+- **If no argument and plan content was provided inline**: Determine the next index and save to `docs/plans/plan-<next-idx>.md` using the standard format (Title, Status, Date, Overview, Implementation Sequence, Completion Criteria sections).
 - **If plan file already exists**: Use the existing file.
 
 ### Step 1.5: Specification Integrity Gate
@@ -129,11 +112,8 @@ identify test scenarios in test-coverage.md that would become invalid.
 Plan their removal or update as part of the implementation.
 
 **1.5e. Chronicle spec and functionality changes:**
-For any specification additions, modifications, or deprecations identified
-in steps 1.5a-d, create chronicle entries:
-- `bash plugins/yf/scripts/plan-chronicle.sh intake "spec-change" "<summary>"`
-For any deprecated or newly added functionality:
-- `bash plugins/yf/scripts/plan-chronicle.sh intake "capability-change" "<summary>"`
+For spec changes from 1.5a-d: `bash plugins/yf/scripts/plan-chronicle.sh intake "spec-change" "<summary>"`.
+For capability changes: `bash plugins/yf/scripts/plan-chronicle.sh intake "capability-change" "<summary>"`.
 
 **1.5f. Structural consistency:**
 Run `bash plugins/yf/scripts/spec-sanity-check.sh all` to verify spec
@@ -147,22 +127,7 @@ Then run spec reconciliation:
 This closes the gap where manual intake previously had no spec checks at all.
 
 **1.5g. Chronicle reconciliation verdict:**
-If reconciliation ran in Step 1.5f and produced a result (skip if no specs exist),
-create a chronicle bead capturing the intake reconciliation context:
-
-```bash
-LABELS="ys:chronicle,ys:chronicle:auto,ys:topic:planning,plan:<idx>"
-
-bd create --type task \
-  --title "Chronicle: plan_intake — reconciliation for plan-<idx>" \
-  -l "$LABELS" \
-  --description "Intake reconciliation verdict: <PASS or NEEDS-RECONCILIATION>
-Structural consistency: <sanity check result>
-Spec changes approved: <list of changes from Steps 1.5a-d, or 'none'>
-Contradictions found: <summary or 'none'>
-New capabilities requiring spec coverage: <summary or 'none'>" \
-  --silent
-```
+If reconciliation ran in 1.5f, create a chronicle bead with labels `ys:chronicle,ys:chronicle:auto,ys:topic:planning,plan:<idx>` capturing the verdict (PASS/NEEDS-RECONCILIATION), structural consistency result, and any spec changes from 1.5a-d.
 
 ### Step 2: Ensure Beads Exist
 

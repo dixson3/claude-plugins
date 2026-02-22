@@ -63,34 +63,4 @@ Cross-reference wisp steps with dispatch state:
 
 ### Step 5: Format Output
 
-```
-Swarm Status
-============
-
-Active Wisps: <count>
-
-Wisp: <mol-id> (formula: <name>)
-  Steps:
-    [x] research    — closed
-    [>] implement   — dispatched (agent: general-purpose)
-    [ ] review      — pending (waiting on: implement)
-
-Dispatch State:
-  Pending dispatches: <count>
-  - <step-id> dispatched at <timestamp>
-```
-
-## Usage
-
-```
-/yf:swarm_status
-```
-
-## When No Activity
-
-If no wisps and no dispatch state:
-```
-Swarm Status
-============
-No active swarms.
-```
+Report includes: active wisp count, per-wisp details (mol-id, formula, step status with closed/dispatched/pending), and dispatch state (pending count with timestamps). If no activity, reports "No active swarms."

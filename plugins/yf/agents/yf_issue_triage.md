@@ -33,25 +33,21 @@ Compare beads against each other. If multiple beads describe the same concern:
 
 ### Step 3: Augmentation
 
-Compare beads against existing remote issues. If a bead describes something that matches an existing remote issue:
+Compare beads against existing remote issues. If a bead matches an existing remote issue:
 - Recommend `comment` on that issue with the bead content as additional context
-- Do not create a duplicate issue
 
 ### Step 4: Relation
 
 If a new issue is related to (but distinct from) an existing remote issue:
-- Note the relationship in the `related_issues` field
-- Include cross-reference in the issue body
+- Note the relationship in `related_issues` and include cross-reference in the issue body
 
 ### Step 5: Disambiguation
 
-Flag any beads that appear to be about the yf plugin rather than the project:
-- Mark as `redirect` with reason
-- These should be reported via `/yf:plugin_issue` instead
+Flag any beads about the yf plugin rather than the project — mark as `redirect` for `/yf:plugin_issue`.
 
 ### Step 6: Output
 
-Return the triage plan as structured JSON:
+Return the triage plan as structured JSON. Action types: `create` (new issue with title/body/labels/related_issues/source_beads), `comment` (augment existing issue), `skip` (duplicate — note reason), `redirect` (plugin issue — note reason).
 
 ```json
 {
@@ -63,22 +59,6 @@ Return the triage plan as structured JSON:
       "labels": "enhancement",
       "related_issues": [42],
       "source_beads": ["abc", "def"]
-    },
-    {
-      "type": "comment",
-      "issue": 33,
-      "body": "Additional context: during implementation of...",
-      "source_beads": ["ghi"]
-    },
-    {
-      "type": "skip",
-      "reason": "Duplicate of action #1",
-      "source_beads": ["jkl"]
-    },
-    {
-      "type": "redirect",
-      "reason": "This is a plugin issue, not a project issue",
-      "source_beads": ["mno"]
     }
   ]
 }

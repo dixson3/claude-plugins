@@ -61,8 +61,4 @@ Lists all available swarm formulas shipped with the yf plugin.
 
 ## Output Format
 
-For each formula show:
-- Name
-- Description
-- Step count
-- Step pipeline with agent types
+For each formula: name, description, step count, and step pipeline with agent types.

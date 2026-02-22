@@ -25,27 +25,15 @@ bd list --label=ys:chronicle --status=open --format=json
 
 ### Step 2: Read Each Chronicle
 
-For each bead, extract:
-- ID
-- Title
-- Labels (especially topic)
-- Body content
-- Creation date
+For each bead, extract: ID, Title, Labels (especially topic), Body content, Creation date.
 
 ### Step 3: Organize
 
-Group chronicles by:
-1. **Recency**: Most recent first
-2. **Topic**: Feature, bugfix, refactor, docs, etc.
-3. **Relatedness**: Group related work together
+Group chronicles by: recency (most recent first), topic (feature, bugfix, refactor, docs), and relatedness.
 
 ### Step 4: Synthesize
 
-Create a summary that:
-- Provides context for the most recent work
-- Highlights key decisions and their rationale
-- Lists blockers or pending questions
-- Identifies next steps
+Create a summary providing context for recent work, highlighting key decisions and rationale, listing blockers/pending questions, and identifying next steps.
 
 ## Output Format
 
@@ -53,7 +41,6 @@ Create a summary that:
 ## Context Summary
 
 ### Recent Work (Last Session)
-[Most recent chronicle context]
 - What was being done
 - Current state
 - Immediate next steps
@@ -66,32 +53,14 @@ Create a summary that:
 
 ### Key Decisions
 - Decision 1: rationale
-- Decision 2: rationale
 
 ### Blockers / Questions
 - Blocker 1
-- Question 1
 
 ---
 N chronicles recalled. Use /yf:chronicle_capture to save new context.
 ```
 
-## Personality
-
-- Concise and organized
-- Focus on actionable context
-- Don't include unnecessary details
-- Help the user quickly regain context
-
 ## Error Handling
 
-If beads-cli is not available:
-```
-Error: beads-cli not found. Run /yf:plugin_setup to configure Yoshiko Flow.
-```
-
-If no open chronicles:
-```
-No open chronicle beads found.
-Use /yf:chronicle_capture to start capturing context.
-```
+If beads-cli not available: report error with "Run /yf:plugin_setup." If no open chronicles: report "No open chronicle beads found. Use /yf:chronicle_capture to start capturing context."

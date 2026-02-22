@@ -91,35 +91,7 @@ Consolidated narrative of what was accomplished.
 
 ## Expected Output
 
-```
-Generating diary entries...
-
-Processing 3 open chronicle beads...
-
-Grouping by theme:
-- Authentication work: abc123, def456
-- Memory investigation: ghi789
-
-Generating diary entries:
-
-[1] docs/diary/26-02-04.14-30.authentication.md
-    - Title: User Authentication Implementation
-    - Chronicles: abc123, def456
-    - Created successfully
-
-[2] docs/diary/26-02-04.14-30.debugging.md
-    - Title: Memory Leak Investigation
-    - Chronicles: ghi789
-    - Created successfully
-
-Closing processed beads...
-- abc123: closed
-- def456: closed
-- ghi789: closed
-
-Diary generation complete!
-2 diary entries created from 3 chronicles.
-```
+Report includes: chronicle bead count, theme groupings, generated diary file paths (with titles and source chronicles), close status for each bead, and total counts.
 
 ## Pre-Push Integration
 
@@ -130,21 +102,4 @@ The diary skill is designed to run before git push:
 3. Diary entries are staged with the push
 4. Chronicles are closed
 
-## No Open Chronicles
-
-If no open chronicles exist:
-
-```
-Generating diary entries...
-
-No open chronicle beads found.
-Nothing to add to diary.
-```
-
-## Diary Directory
-
-Diary entries are written to `docs/diary/`. This directory is created automatically by preflight, or manually:
-
-```bash
-mkdir -p docs/diary
-```
+If no open chronicles exist, reports nothing to process. Diary entries are written to `docs/diary/` (created by preflight).

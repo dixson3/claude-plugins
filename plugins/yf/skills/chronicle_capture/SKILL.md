@@ -94,39 +94,6 @@ Brief description of what was happening.
 - Related issues/PRs
 - Relevant file paths
 
-## Usage Examples
-
-```bash
-# Capture with auto-detected topic
-/yf:chronicle_capture
-
-# Capture with specific topic
-/yf:chronicle_capture topic:feature
-
-# Capture before context switch
-/yf:chronicle_capture topic:planning
-```
-
 ## Expected Output
 
-```
-Capturing context...
-
-Summary: Implementing user authentication flow
-Topic: feature
-Labels: ys:chronicle, ys:topic:feature
-
-Created chronicle bead: abc123
-
-Context captured successfully. Use /yf:chronicle_recall to restore later.
-```
-
-## When to Capture
-
-Capture context when:
-- Switching to a different task
-- Before taking a break
-- After completing a significant milestone
-- When encountering a blocker
-- Before a session ends
-- When the watch-for-chronicle-worthiness role suggests it
+Report includes: summary, topic, labels applied, bead ID created. Ends with pointer to `/yf:chronicle_recall`.

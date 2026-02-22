@@ -39,13 +39,6 @@ Then stop. Do not execute the remaining steps.
 
 Add, update, or deprecate individual entries in specification documents.
 
-## When to Invoke
-
-- `/yf:engineer_update type:prd` — Add a new requirement to the PRD
-- `/yf:engineer_update type:edd action:update id:DD-003` — Update a design decision
-- `/yf:engineer_update type:ig feature:authentication action:add` — Add a use case to the authentication IG
-- `/yf:engineer_update type:todo action:deprecate id:TODO-002` — Deprecate a TODO item
-
 ## Behavior
 
 ### Step 1: Locate Spec File
@@ -131,22 +124,7 @@ Cross-reference suggestions are advisory — the operator decides whether to act
 
 ## Expected Output
 
-```
-Engineer: Update
-=================
-Action: add
-Type: prd
-File: docs/specifications/PRD.md
-
-Added REQ-007: User must be able to export data in CSV format
-  Priority: Medium
-  Status: Active
-  Code Reference: (none yet)
-
-Cross-reference note: This new requirement may need a DD-xxx entry
-in the EDD if it requires architectural decisions. Consider running
-/yf:engineer_update type:edd to add a related design decision.
-```
+Report includes: action performed, spec type, target file, entry ID with description, and cross-reference advisory note if applicable.
 
 ## Error Handling
 

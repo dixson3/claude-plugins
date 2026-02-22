@@ -30,11 +30,6 @@ Then stop. Do not execute the remaining steps.
 
 The core dispatch loop that drives agents through molecule steps. Reads the molecule state, identifies ready steps, parses agent annotations, and dispatches parallel Task tool calls.
 
-## When to Invoke
-
-- Called by `/yf:swarm_run` after wisp instantiation
-- Can be invoked directly for manual dispatch control
-
 ## Behavior
 
 ### Step 1: Read Molecule State
@@ -94,8 +89,6 @@ For each ready step, determine whether to use worktree isolation:
 | `yf:yf_swarm_tester` | `isolation: "worktree"` |
 | `yf:yf_code_tester` | `isolation: "worktree"` |
 | (no annotation / default) | `isolation: "worktree"` (safe default) |
-
-Read-only agents cannot modify files, so they have no conflict risk and run directly in the main tree for efficiency.
 
 ### Step 4: Dispatch Ready Steps
 
@@ -221,68 +214,13 @@ If no failure is detected, proceed normally.
 
 After a step completes, check two chronicle triggers:
 
-**Trigger 1 — Formula flag**: If the step JSON has `"chronicle": true`:
+**Trigger 1 — Formula flag**: If the step JSON has `"chronicle": true`, create a chronicle bead with labels `ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto` (plus any `plan:*` label from parent bead) and description containing the step's comment content.
 
-```bash
-# Check step definition for chronicle flag
-CHRONICLE=$(jq -r '.chronicle // false' <<< "$STEP_JSON")
-if [ "$CHRONICLE" = "true" ]; then
-  PLAN_LABEL=$(bd label list <parent_bead> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
-  LABELS="ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto"
-  [ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
-
-  bd create --title "Chronicle (Auto): Swarm step <step-id> — <step title>" \
-    -l "$LABELS" \
-    --description "<step comment content (FINDINGS/CHANGES/REVIEW/TESTS)>" \
-    --silent
-fi
-```
-
-**Trigger 2 — CHRONICLE-SIGNAL**: If the step's comment on the parent bead contains a `CHRONICLE-SIGNAL:` line (used by read-only agents that cannot create beads directly):
-
-```bash
-COMMENT=$(bd show <parent_bead> --comments | grep -A 1 "CHRONICLE-SIGNAL:")
-if [ -n "$COMMENT" ]; then
-  SIGNAL_TEXT=$(echo "$COMMENT" | grep "CHRONICLE-SIGNAL:" | sed 's/CHRONICLE-SIGNAL: *//')
-  PLAN_LABEL=$(bd label list <parent_bead> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
-  LABELS="ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto"
-  [ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
-
-  bd create --title "Chronicle (Signal): $SIGNAL_TEXT" \
-    -l "$LABELS" \
-    --description "Signaled by step <step-id> (<step title>)
-Agent type: <read-only>
-Signal: $SIGNAL_TEXT
-Full comment: <step comment content>" \
-    --silent
-fi
-```
-
-This is **opt-in per step** (formula flag) or **opt-in per agent** (CHRONICLE-SIGNAL). Both give agents a path to trigger chronicles — write-capable agents can also create beads directly via their Chronicle Protocol.
+**Trigger 2 — CHRONICLE-SIGNAL**: If the step's comment contains a `CHRONICLE-SIGNAL:` line (used by read-only agents), extract the signal text and create a chronicle bead with the same label pattern, noting the signaling agent and step.
 
 ### Step 6d: Archive Findings (Opt-In)
 
-After a step completes, if the step JSON has `"archive_findings": true` and the step posted a `FINDINGS:` comment containing external sources (URLs, doc references):
-
-```bash
-ARCHIVE=$(jq -r '.archive_findings // false' <<< "$STEP_JSON")
-if [ "$ARCHIVE" = "true" ]; then
-  # Check if FINDINGS contains external sources
-  COMMENT=$(bd show <parent_bead> --comments | grep -A 50 "FINDINGS:" | head -50)
-  if echo "$COMMENT" | grep -qiE 'http|docs/|external|reference|api|library'; then
-    PLAN_LABEL=$(bd label list <parent_bead> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
-    LABELS="ys:archive,ys:archive:research,ys:swarm"
-    [ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
-
-    bd create --title "Archive: Research from swarm step <step-id>" \
-      -l "$LABELS" \
-      --description "<FINDINGS content with external sources>" \
-      --silent
-  fi
-fi
-```
-
-This is **opt-in per step** — extends archival beyond research-spike to any formula step that produces findings with external sources.
+If the step JSON has `"archive_findings": true` and the step's `FINDINGS:` comment contains external sources (URLs, doc references), create an archive bead with labels `ys:archive,ys:archive:research,ys:swarm` (plus any `plan:*` label) and the FINDINGS content as description.
 
 ### Step 7: Re-dispatch Loop
 

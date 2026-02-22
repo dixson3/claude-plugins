@@ -59,6 +59,15 @@ Plugin issues and project issues are distinct destinations. Never cross-route.
 - `issue_process`: Before submission, verify the plugin repo slug differs from the project tracker slug.
 - When ambiguous, ask the user.
 
+### 1.6 Worktree Lifecycle
+
+Use yf worktree skills for epic worktrees — never raw `git worktree` commands.
+- **Create**: `/yf:worktree_create epic_name:<name>` (not `git worktree add`)
+- **Land**: `/yf:worktree_land` (not `git merge` + `git worktree remove`)
+
+Skills handle beads redirect, validation, rebasing, and cleanup atomically. Raw git commands leave beads inconsistent.
+Does NOT apply to Claude Code's implicit `isolation: "worktree"` on Task tool calls.
+
 ---
 
 ## 2. PLAN LIFECYCLE
@@ -127,7 +136,6 @@ Budget: 1 retry per step (configurable via `max_retries`).
 
 When ending a work session, invoke `/yf:session_land`.
 The pre-push hook (`pre-push-land.sh`) enforces clean-tree and closed-beads prerequisites.
-This is the authoritative session close protocol.
 
 ---
 
@@ -151,7 +159,6 @@ Check for existing archive beads first. At most once per planning session.
 
 Suggest `/yf:chronicle_capture` for context switches, significant blockers, and session boundaries.
 At most once every 15 minutes.
-NOT chronicle-worthy: routine completions, config tweaks, formatting, typos.
 
 ### 5.4 Archive Worthiness
 
@@ -165,14 +172,8 @@ Suggest `/yf:engineer_update type:<type>`. At most once every 15-20 minutes.
 
 ### 5.6 Issue Worthiness
 
-During planning, design, implementation, and testing, watch for:
-- **Deferred improvements**: Plan identifies a possible enhancement but scopes it out for later
-- **Incidental bugs**: Testing or implementation reveals a non-critical bug that should be tracked
-- **Enhancement opportunities**: Code review surfaces patterns that could be improved
-- **Technical debt**: Workarounds, TODOs in code, or shortcuts that should be addressed
+During planning, design, implementation, and testing, watch for deferred improvements, incidental bugs, enhancement opportunities, and technical debt.
 
 Suggest `/yf:issue_capture` with appropriate type and priority context.
 At most once every 15 minutes.
-Project issues ONLY — never suggest `/yf:plugin_issue` proactively. Plugin issues are exclusively manually initiated.
-
-NOT issue-worthy: routine completions, formatting, config tweaks, typos, issues already captured as beads, work that is part of the current plan's scope.
+Project issues ONLY — never suggest `/yf:plugin_issue` proactively.

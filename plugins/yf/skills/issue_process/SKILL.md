@@ -135,15 +135,4 @@ bd close <bead-id> -r "Submitted as <tracker-type> issue"
 
 ### Step 9: Report
 
-```
-Issue Processing Complete
-=========================
-Created: 2 issues
-  - #45: Add input validation for API endpoints
-  - TODO-003: Refactor error handling
-Commented: 1 issue
-  - #33: Additional context
-Skipped: 1 (duplicate)
-Redirected: 1 (plugin issue)
-Beads closed: 4
-```
+Report includes: counts and details for each action type (created, commented, skipped, redirected), and total beads closed.

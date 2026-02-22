@@ -36,11 +36,6 @@ Then stop. Do not execute the remaining steps.
 
 Spawns a reactive bugfix formula when a swarm step reports a failure (REVIEW:BLOCK or TESTS with failures). After the bugfix completes, the failed step is retried.
 
-## When to Invoke
-
-- Called by `/yf:swarm_dispatch` Step 6b when processing a step return with a failure verdict
-- Should NOT be invoked manually (use `/yf:swarm_run formula:bugfix` for manual bugfix runs)
-
 ## Behavior
 
 ### Step 1: Validate Eligibility
@@ -139,14 +134,7 @@ If the retry fails again:
 
 ## Output
 
-```
-Reactive Bugfix: <parent_bead>
-  Verdict: <BLOCK|FAIL>
-  Failure: <summary>
-  Bugfix swarm: <mol-id>
-  Bugfix result: <PASS|BLOCK>
-  Retry: <step_id> marked for retry
-```
+Report includes: parent bead, verdict type, failure summary, bugfix swarm mol-id, bugfix result, and retry status for the failed step.
 
 ## Important
 

@@ -30,11 +30,6 @@ Then stop. Do not execute the remaining steps.
 
 Runs a `code-review` formula as a mandatory qualification step before a plan is marked complete. Blocks completion on REVIEW:BLOCK.
 
-## When to Invoke
-
-- Called by `/yf:plan_execute` before Step 4 completion sequence
-- Can be invoked directly: `/yf:swarm_qualify plan_idx:29`
-
 ## Behavior
 
 ### Step 1: Resolve Plan
@@ -136,14 +131,7 @@ Issues found: <summary of issues or 'none'>" \
 
 ## Output
 
-```
-Qualification Gate: plan-<idx>
-  Config: <blocking|advisory|disabled>
-  Gate bead: <gate-id>
-  Review scope: <start-sha>..<HEAD>
-  Verdict: REVIEW:<PASS|BLOCK>
-  Result: <PASS — completion proceeds | BLOCK — manual intervention required>
-```
+Report includes: plan index, config mode, gate bead ID, review scope (SHA range), verdict (REVIEW:PASS or REVIEW:BLOCK), and result (completion proceeds or manual intervention required).
 
 ## Important
 

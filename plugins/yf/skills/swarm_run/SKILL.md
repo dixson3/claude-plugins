@@ -39,13 +39,6 @@ Then stop. Do not execute the remaining steps.
 
 Full swarm lifecycle entry point. Instantiates a formula as a wisp, dispatches all steps through agents, and squashes the wisp on completion.
 
-## When to Invoke
-
-- Directly by the user: `/yf:swarm_run formula:feature-build feature:"add dark mode"`
-- By the plan pump when a task has a `formula:<name>` label
-- By `/yf:swarm_dispatch` when a step has a `compose` field (nested invocation)
-- Programmatically from other skills
-
 ## Behavior
 
 ### Step 1: Resolve Formula
@@ -115,31 +108,7 @@ This creates a digest and cleans up ephemeral step beads.
 
 #### 4c. Auto-Chronicle (E1)
 
-Capture a structured execution narrative as a chronicle bead:
-
-```bash
-PLAN_LABEL=$(bd label list <parent_bead> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
-LABELS="ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto"
-[ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
-
-bd create --title "Chronicle: Swarm <formula> — <feature>" \
-  -l "$LABELS" \
-  --description "Swarm Execution: <formula>
-Feature: <feature>
-Steps: <completed>/<total>
-Retries: <retry count or 0>
-BLOCK verdicts: <list of steps that BLOCKed, or none>
-Final outcome: <PASS or BLOCK>
-
-Step Results:
-- <step-id>: <verdict/summary> (<agent type>)
-- <step-id>: <verdict/summary> (<agent type>)
-
-Key Findings: <condensed FINDINGS from research steps>
-Key Changes: <condensed CHANGES from implementation steps>"
-```
-
-This structured narrative replaces the bare squash summary to give the diary agent richer context for generating diary entries.
+Create a chronicle bead with labels `ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto` (plus any `plan:*` label from parent bead). Description includes: formula, feature, step count, retries, BLOCK verdicts, final outcome, per-step results, key findings, and key changes.
 
 #### 4d. Close Parent Bead (if applicable)
 
@@ -164,49 +133,14 @@ bash plugins/yf/scripts/dispatch-state.sh swarm clear --scope <mol-id>
 
 ### Step 6: Report
 
-```
-Swarm Execution Complete
-========================
-Formula: <name>
-Feature: <feature>
-Wisp: <mol-id> (squashed)
+Report: formula, feature, wisp ID, steps completed, chronicle bead ID, per-step summaries, overall PASS/BLOCK.
 
-Steps: <completed>/<total>
-Chronicle: <chronicle-bead-id>
+## Depth Tracking
 
-Results:
-  <step summaries>
-
-Overall: PASS/BLOCK
-```
-
-## Usage Examples
-
-```bash
-# Run a feature build swarm
-/yf:swarm_run formula:feature-build feature:"add user authentication"
-
-# Run a research spike
-/yf:swarm_run formula:research-spike feature:"evaluate GraphQL libraries"
-
-# Run under a plan task (auto-closes parent on success)
-/yf:swarm_run formula:feature-build feature:"implement dark mode" parent_bead:marketplace-abc
-```
-
-## Depth Tracking (Nesting)
-
-The `depth` parameter tracks nesting level for composed formulas:
-
-- **Default**: 0 (top-level invocation)
-- **Max**: 2. If depth >= 2, the swarm runs but `compose` fields in steps are ignored (steps dispatch as bare Tasks instead)
-- Each nested invocation passes `depth+1` to the child swarm
-
-This prevents infinite recursion when formulas compose other formulas. See the `swarm-nesting` rule for details.
+Default depth: 0. Max: 2 — at depth 2, `compose` fields are ignored (steps dispatch as bare Tasks). Each nested invocation passes `depth+1`.
 
 ## Error Handling
 
-- If formula not found: report error and exit
-- If wisp instantiation fails: report error and exit
-- If dispatch fails mid-way: report partial results, do NOT squash (preserve state for debugging)
-- If squash fails: report error but still create chronicle
-- If parent_bead close fails: report warning (bead may already be closed)
+- Formula/wisp failure: report and exit
+- Dispatch failure: report partial results, do NOT squash (preserve state)
+- Squash failure: still create chronicle

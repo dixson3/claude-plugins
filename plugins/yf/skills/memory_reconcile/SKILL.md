@@ -87,35 +87,9 @@ Classification is agent-interpreted — read both documents and reason semantica
 
 ### Step 4: Present Structured Report
 
-Output the reconciliation report:
+Output the reconciliation report with sections: Contradictions (spec wins, correct in MEMORY.md), Gaps (promote to specs), Ephemeral/Duplicates (remove from MEMORY.md), Valid (keep), and summary counts.
 
-```
-Memory Reconciliation Report
-=============================
-
-## Contradictions (spec wins)
-- "<memory item>" contradicts <spec-id>: <explanation>
-  Action: Correct in MEMORY.md
-
-## Gaps (promote to specs)
-- "<memory item>" not covered by any spec
-  Action: Add to <target-spec> as <entry-type>
-
-## Ephemeral/Duplicates (remove)
-- "<memory item>" duplicates <source>
-  Action: Remove from MEMORY.md
-
-## Valid (keep)
-- "<memory item>" — user preference, not spec material
-
-Summary: X contradictions, Y gaps, Z ephemeral, W valid
-```
-
-If all items are valid or the report is empty, report:
-
-> Memory is consistent. No changes needed.
-
-Then stop (in both modes).
+If all items are valid or the report is empty, report "Memory is consistent. No changes needed." and stop (in both modes).
 
 ### Step 5: Operator Approval (gate mode only)
 
@@ -151,12 +125,4 @@ No active memory items. All conventions and lessons are captured in specificatio
 
 ### Step 8: Output Summary
 
-```
-Memory Reconciliation Complete
-===============================
-Contradictions resolved: X
-Gaps promoted to specs: Y
-Ephemeral items removed: Z
-Items kept: W
-Files modified: MEMORY.md[, PRD.md, ...]
-```
+Report includes: counts for contradictions resolved, gaps promoted, ephemeral items removed, items kept, and list of files modified.

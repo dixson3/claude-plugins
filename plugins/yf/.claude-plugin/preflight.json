@@ -2,8 +2,7 @@
   "mode": "symlink",
   "artifacts": {
     "rules": [
-      { "source": "rules/yf-rules.md", "target": ".claude/rules/yf/yf-rules.md" },
-      { "source": "rules/yf-worktree-lifecycle.md", "target": ".claude/rules/yf/yf-worktree-lifecycle.md" }
+      { "source": "rules/yf-rules.md", "target": ".claude/rules/yf/yf-rules.md" }
     ],
     "directories": ["docs/plans", "docs/diary", "docs/research", "docs/decisions", "docs/specifications", "docs/specifications/EDD", "docs/specifications/IG", "docs/todos", ".yoshiko-flow"],
     "setup": [

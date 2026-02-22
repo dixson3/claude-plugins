@@ -5,6 +5,21 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.28.0] - 2026-02-22
+
+### Added
+
+- **Prompt Text Quality rule** in CLAUDE.md: Five review criteria for concision and effectiveness of rules, skills, and agents.
+- **`yf_regression_check` agent**: Lightweight agent that runs the unit test suite and returns a structured pass/fail summary.
+
+### Changed
+
+- **Rules consolidation**: Merged `yf-worktree-lifecycle.md` into `yf-rules.md` as section 1.6 (Worktree Lifecycle). Removed separate rule file and preflight entry. Single consolidated rule file.
+- **Advisory monitoring tightened**: Removed redundant negation lines ("NOT chronicle-worthy", "NOT issue-worthy") from rules 5.3 and 5.6. Removed exposition from rule 4.2.
+- **Agent text optimization** (12 files, ~428 lines saved): Removed all Personality sections, compressed Error Handling to 2-3 lines, compressed Tools sections to standardized patterns, compressed Chronicle Signal (8→3 lines) and Chronicle Protocol (15→7 lines), compressed markdown templates to section-name lists, compressed JSON examples to minimal structure.
+- **Skill text optimization** (31 files, ~630 lines saved): Removed redundant "When to Invoke" sections where frontmatter description covers it, compressed verbose output templates and report blocks, compressed spec templates to section-name lists.
+- **Plugin version**: 2.27.0 → 2.28.0.
+
 ## [2.27.0] - 2026-02-21
 
 ### Added

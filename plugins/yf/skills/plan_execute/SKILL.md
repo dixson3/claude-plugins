@@ -30,21 +30,6 @@ Then stop. Do not execute the remaining steps.
 
 Orchestrates plan execution using the task pump. The pump reads ready beads from the plan DAG, classifies each into a **formula track** (dispatched via `/yf:swarm_run`) or an **agent track** (dispatched via bare Task tool calls), and launches them in parallel. The execution loop continues until all work is complete.
 
-## Architecture
-
-```
-Beads DAG (persistent) → task pump → Task tool (parallel agent dispatch) → loop
-```
-
-**Beads** is the source of truth for what work exists, what's blocked, and what's ready.
-**Task tool** with `subagent_type` is the execution engine — it launches the right agent for each bead.
-**The pump** bridges these: reads beads, dispatches agents, tracks state.
-
-## When to Invoke
-
-- Called by `/yf:engage_plan` during the Ready -> Executing transition
-- Can be invoked directly: `/yf:execute_plan`
-
 ## Prerequisites
 
 - Plan must be in Executing state (gate resolved, tasks undeferred)
@@ -123,12 +108,7 @@ Instructions:
 )
 ```
 
-**Direct execution** (tasks without agent or formula label — `general-purpose`):
-Claim and work on the task directly:
-```bash
-bd update <task-id> --status=in_progress
-```
-Then follow the same workflow: assess scope, break down if needed, implement, close.
+**Direct execution** (tasks without agent or formula label): Claim with `bd update <task-id> --status=in_progress` and work directly.
 
 Mark each dispatched bead:
 ```bash
@@ -212,39 +192,10 @@ ALL_ARCH=$(bd list -l ys:archive,"$PLAN_LABEL" --limit=0 --json 2>/dev/null | jq
 OPEN_ARCH=$(bd list -l ys:archive,"$PLAN_LABEL" --status=open --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
 ```
 
-7. **Report structured completion** (see `yf-plan-completion-report` rule):
-
-```
-Plan Execution Complete
-=======================
-Plan: plan-07 — <Title>
-Tasks: 12/12 completed
-
-Chronicles: 5 captured, 4 processed into diary, 1 still open
-Diary entries:
-  - docs/diary/26-02-13.14-30.authentication.md
-  - docs/diary/26-02-13.16-00.api-layer.md
-
-Archives: 2 captured, 2 processed
-  - docs/research/oauth-providers/SUMMARY.md
-  - docs/decisions/DEC-003-session-storage/SUMMARY.md
-
-⚠ 1 chronicle bead still open — run /yf:chronicle_diary to process
-```
-
-Omit sections with zero items (e.g., if no archives were captured, omit the Archives section entirely). Always include the Tasks line.
-
-## Parallel Dispatch Rules
-
-- Tasks at the same dependency level with no inter-dependencies -> dispatch in parallel
-- Tasks with `bd dep` relationships -> respect ordering (blocked tasks won't appear in `bd ready`)
-- Multiple subagents can run concurrently for different agent types
-- The beads dependency system naturally enforces correct ordering
-- The pump groups by agent for efficient batch dispatch
+7. **Report structured completion**: Include tasks completed count, chronicles captured/processed, diary entries generated, archives captured/processed. Omit sections with zero items. Always include the Tasks line.
 
 ## Error Handling
 
-- If a subagent fails, its bead stays in_progress — the pump loop continues with other ready beads
-- Failed tasks should be reported for manual intervention
-- If `plan-exec.sh next` returns a guard error, report the state and stop the loop
-- Pump state prevents double-dispatch: if a bead was dispatched but the subagent hasn't returned, it won't be re-dispatched
+- Subagent failure: bead stays in_progress, pump continues with other ready beads
+- Guard error from `plan-exec.sh next`: report state and stop
+- Dispatch state prevents double-dispatch of in-flight beads

@@ -78,47 +78,7 @@ bd close <bead-id> --reason "<reason>"
 
 ## Expected Output
 
-```
-Processing archive beads...
-
-Found 2 open archive beads:
-- abc123: Archive: Research on Go GraphQL clients (research)
-- def456: Archive: DEC-003 GraphQL client selection (decision)
-
-Generating documentation...
-
-[1] docs/research/go-graphql-clients/SUMMARY.md
-    - Type: research
-    - Title: Go GraphQL clients
-    - Created successfully
-
-[2] docs/decisions/DEC-003-graphql-client-selection/SUMMARY.md
-    - Type: decision
-    - Title: GraphQL client selection
-    - Created successfully
-
-Updated indexes:
-- docs/research/_index.md
-- docs/decisions/_index.md
-
-Closing processed beads...
-- abc123: closed
-- def456: closed
-
-Archive processing complete!
-2 entries created from 2 archive beads.
-```
-
-## No Open Archives
-
-If no open archives exist:
-
-```
-Processing archive beads...
-
-No open archive beads found.
-Nothing to process.
-```
+Report includes: list of open archive beads, generated file paths (SUMMARY.md per bead), updated indexes, close status for each bead, and total count. If no open archives, reports nothing to process.
 
 ## Archive Directory
 

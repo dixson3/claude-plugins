@@ -30,12 +30,6 @@ Then stop. Do not execute the remaining steps.
 
 Analyze completed plan work and suggest updates to specification documents. Advisory only — does not auto-update.
 
-## When to Invoke
-
-- After plan completion (via `engineer-suggest-on-completion` rule)
-- Manual: `/yf:engineer_suggest_updates plan_idx:34`
-- Scoped: `/yf:engineer_suggest_updates scope:prd`
-
 ## Behavior
 
 ### Step 1: Identify Plan
@@ -91,35 +85,7 @@ For each spec type in scope:
 
 ### Step 5: Output Suggestions
 
-```
-Engineer: Specification Update Suggestions
-============================================
-Plan: plan-34 — Engineer Capability for yf Plugin
-
-PRD Suggestions (3):
-  ADD  REQ-008: Specification synthesis from project context
-       Source: Plan task "Create engineer_analyze_project skill"
-  ADD  REQ-009: Plan reconciliation against specs
-       Source: Plan task "Create engineer_reconcile skill"
-  UPDATE REQ-003: Status → Implemented
-       Source: Plan task closed with CHANGES comment
-
-EDD Suggestions (1):
-  ADD  DD-005: Synthesizer agent pattern (read-only agent returns JSON, skill writes files)
-       Source: Plan design decision #5
-
-IG Suggestions (1):
-  ADD  specifications/IG/engineer.md: Engineer capability use cases
-       Source: Plan tasks 1.1-1.3 describe user-facing workflows
-
-TODO Suggestions (2):
-  ADD  TODO-012: Automated test validation against IG use cases
-       Source: Plan "Future Work" section
-  ADD  TODO-013: Spec diffing for force-regeneration
-       Source: Plan "Future Work" section
-
-To apply suggestions, use /yf:engineer_update with the appropriate type and action.
-```
+Report includes: plan reference, per-spec-type suggestions (PRD/EDD/IG/TODO) with action (ADD/UPDATE), entry ID, description, and source reference. Ends with pointer to `/yf:engineer_update` for applying suggestions.
 
 ## Important
 

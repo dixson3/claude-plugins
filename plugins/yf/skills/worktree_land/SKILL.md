@@ -30,11 +30,6 @@ Then stop. Do not execute the remaining steps.
 
 Validate, rebase, and merge an epic worktree back into the base branch. Uses a validate-rebase-revalidate-land sequence to ensure clean integration.
 
-## When to Invoke
-
-- `/yf:worktree_land` — Auto-detect worktree and base branch
-- `/yf:worktree_land worktree:/path/to/wt base:main` — Explicit paths
-
 ## Behavior
 
 ### Step 1: Detect Worktree and Base Branch

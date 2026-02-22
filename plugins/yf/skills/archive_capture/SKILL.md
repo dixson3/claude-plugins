@@ -163,18 +163,7 @@ If a plan is executing, extract its `plan:<idx>` label and auto-tag the archive 
 
 ## Expected Output
 
-```
-Archiving research finding...
-
-Topic: Go GraphQL client libraries
-Type: research
-Area: tooling
-Labels: ys:archive, ys:archive:research, ys:area:tooling
-
-Created archive bead: abc123
-
-Research archived. Run /yf:archive_process to generate documentation.
-```
+Report includes: topic, type, area, labels applied, bead ID created. Ends with pointer to `/yf:archive_process`.
 
 ## Content Guidelines
 

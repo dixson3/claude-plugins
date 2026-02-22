@@ -27,11 +27,6 @@ Then stop. Do not execute the remaining steps.
 
 Decomposes a non-trivial task into child beads. Called when the breakdown-the-work rule fires before starting work on a task.
 
-## When to Invoke
-
-- Triggered by the `breakdown-the-work` rule when claiming a task
-- Can be invoked directly: `/yf:breakdown_task <task_id>`
-
 ## Behavior
 
 ### Step 1: Read Task Context
@@ -138,16 +133,4 @@ Child beads inherit plan labels from the parent:
 
 ## Report
 
-```
-Breakdown: <task_id> — "<task title>"
-  Assessment: Non-trivial (multiple files, sequential phases)
-  Created: 4 child tasks
-  Dependencies: 3 sequential deps wired
-  Agent assignments: 1 task assigned to yf_chronicle_diary
-
-  Children:
-    1. <child-1> — "<title>" [ready]
-    2. <child-2> — "<title>" [blocked by child-1]
-    3. <child-3> — "<title>" [blocked by child-2]
-    4. <child-4> — "<title>" [ready, agent:yf_chronicle_diary]
-```
+Report includes: task ID, assessment (atomic vs non-trivial), child count, dependency count, agent assignments, and child list with status (ready/blocked).

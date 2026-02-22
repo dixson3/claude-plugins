@@ -52,45 +52,7 @@ When bead has `ys:archive:research` label:
 
 1. **Extract topic** from title (e.g., "Archive: Research on Go GraphQL clients")
 2. **Create slug**: kebab-case of topic (e.g., `go-graphql-clients`)
-3. **Generate SUMMARY.md** using the research template:
-
-```markdown
-# Research: {Topic}
-
-**Status**: {From bead: Status}
-**Started**: YYYY-MM-DD
-**Updated**: YYYY-MM-DD
-
-## Purpose
-
-{From bead: Purpose section}
-
-## Sources
-
-| Source | URL | Key Findings |
-|--------|-----|--------------|
-{From bead: Sources Consulted section, reformatted as table}
-
-## Summary
-
-{From bead: Summary of Findings section}
-
-## Recommendations
-
-{From bead: Recommendations section}
-
-## Application
-
-{From bead: Application section}
-
-## Related
-
-{From bead: Related section}
-
----
-*Archive bead: {bead-id}*
-```
-
+3. **Generate SUMMARY.md** with sections: Research title, Status, Started/Updated dates, Purpose, Sources (table: Source/URL/Key Findings), Summary, Recommendations, Application, Related, archive bead ID footer
 4. **Generate index entry** for `_index.md`:
 ```markdown
 | [{Topic}](topic-slug/SUMMARY.md) | {Status} | YYYY-MM-DD | {One-line summary} |
@@ -101,43 +63,7 @@ When bead has `ys:archive:research` label:
 When bead has `ys:archive:decision` label:
 
 1. **Extract decision ID** from title (e.g., "Archive: DEC-003 GraphQL client selection")
-2. **Generate SUMMARY.md** using the decision template:
-
-```markdown
-# Decision: {Title}
-
-**ID**: DEC-NNN-slug
-**Date**: YYYY-MM-DD
-**Status**: {From bead: Status - Proposed | Accepted | Superseded}
-
-## Context
-
-{From bead: Context section}
-
-## Research Basis
-
-{From bead: Research Basis section, or "None"}
-
-## Decision
-
-{From bead: The Decision section}
-
-## Alternatives Considered
-
-{From bead: Alternatives section with pros/cons/reasoning}
-
-## Consequences
-
-{From bead: Consequences section}
-
-## Implementation Notes
-
-{From bead: Implementation Notes section}
-
----
-*Archive bead: {bead-id}*
-```
-
+2. **Generate SUMMARY.md** with sections: Decision title, ID (DEC-NNN-slug), Date, Status (Proposed/Accepted/Superseded), Context, Research Basis, Decision, Alternatives Considered (with pros/cons), Consequences, Implementation Notes, archive bead ID footer
 3. **Generate index entry** for `_index.md`:
 ```markdown
 | [DEC-NNN](DEC-NNN-slug/SUMMARY.md) | YYYY-MM-DD | {Title} | {Status} |
@@ -150,28 +76,10 @@ Return JSON structure:
 ```json
 {
   "entries": [
-    {
-      "path": "docs/research/topic-slug/SUMMARY.md",
-      "content": "# Research: ...",
-      "type": "research",
-      "title": "Topic Name"
-    },
-    {
-      "path": "docs/decisions/DEC-001-slug/SUMMARY.md",
-      "content": "# Decision: ...",
-      "type": "decision",
-      "title": "Decision Title"
-    }
+    {"path": "docs/research/topic-slug/SUMMARY.md", "content": "...", "type": "research", "title": "Topic Name"}
   ],
   "indexes": [
-    {
-      "path": "docs/research/_index.md",
-      "content": "# Research Index\n\n| Topic | Status | Updated | Summary |\n..."
-    },
-    {
-      "path": "docs/decisions/_index.md",
-      "content": "# Decisions Index\n\n| ID | Date | Title | Status |\n..."
-    }
+    {"path": "docs/research/_index.md", "content": "# Research Index\n\n| Topic | Status | Updated | Summary |\n..."}
   ],
   "beads_to_close": ["id1", "id2"],
   "beads_to_close_with_reason": [
@@ -182,29 +90,9 @@ Return JSON structure:
 
 ## Index Management
 
-### Research Index (`docs/research/_index.md`)
+Research index (`docs/research/_index.md`): If file exists, merge new entries (update existing topic slugs, add new rows). Table columns: Topic, Status, Updated, Summary.
 
-If the file exists, read it and merge new entries. If a topic slug already exists, update the row. Otherwise, add a new row.
-
-```markdown
-# Research Index
-
-| Topic | Status | Updated | Summary |
-|-------|--------|---------|---------|
-| [GraphQL clients](graphql-clients/SUMMARY.md) | COMPLETED | 2026-01-28 | Evaluated Go GraphQL libraries |
-```
-
-### Decisions Index (`docs/decisions/_index.md`)
-
-If the file exists, read it and insert new entries at the top (newest first).
-
-```markdown
-# Decisions Index
-
-| ID | Date | Title | Status |
-|----|------|-------|--------|
-| [DEC-003](DEC-003-graphql-client-selection/SUMMARY.md) | 2026-01-28 | GraphQL client selection | Accepted |
-```
+Decisions index (`docs/decisions/_index.md`): If file exists, insert new entries at top (newest first). Table columns: ID, Date, Title, Status.
 
 ## Research Topic Validation
 
@@ -222,24 +110,4 @@ Before creating a decision entry:
 
 ## Error Handling
 
-If bead has insufficient detail:
-1. Create entry with available content
-2. Add note: "Archive bead had limited context — some sections may be incomplete"
-3. Still close the bead
-
-If no open archives:
-```json
-{
-  "entries": [],
-  "indexes": [],
-  "beads_to_close": [],
-  "message": "No open archive beads to process."
-}
-```
-
-## Personality
-
-- Professional and thorough
-- Focus on preserving source URLs and decision rationale
-- Write for future reference (you or others reviewing months later)
-- Err on the side of including relevant details
+If bead has insufficient detail: create entry with available content, add "Archive bead had limited context" note, still close the bead. If no open archives: return empty entries/indexes with "No open archive beads to process."

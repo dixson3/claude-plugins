@@ -30,11 +30,6 @@ Then stop. Do not execute the remaining steps.
 
 Reads a plan document and creates a structured beads hierarchy with proper dependencies, labels, gates, and deferred state.
 
-## When to Invoke
-
-- Called by `/yf:engage_plan` during the Draft -> Ready transition
-- Can be invoked directly: `/yf:plan_to_beads [plan_file]`
-
 ## Behavior
 
 ### Step 1: Locate Plan
@@ -83,40 +78,11 @@ bd create --title="<Plan Title>" \
 
 ### Step 5: Create Part Epics
 
-For each part file (`plan-<idx>-part<N>-<name>.md`):
-
-```bash
-bd create --title="Part <N>: <Part Title>" \
-  --type=epic \
-  --parent=<root-epic-id> \
-  --description="<Part overview>" \
-  --design="<Part design decisions>" \
-  --acceptance="<Part completion criteria>" \
-  --notes="Source: docs/plans/plan-<idx>-part<N>-<name>.md" \
-  -l ys:plan,plan:<idx>,plan-part:<idx>-<N> \
-  --silent
-```
+For each part file (`plan-<idx>-part<N>-<name>.md`), create an epic following the Step 4 pattern with `--parent=<root-epic-id>` and labels `ys:plan,plan:<idx>,plan-part:<idx>-<N>`.
 
 ### Step 6: Create Tasks
 
-For each actionable item within a part:
-
-```bash
-bd create --title="<Task description>" \
-  --type=task \
-  --parent=<part-epic-id> \
-  --description="<What to do>" \
-  --notes="<File refs, research, context>" \
-  --priority=2 \
-  -l ys:plan,plan:<idx>,plan-part:<idx>-<N> \
-  --silent
-```
-
-**Context embedding:**
-- `--description`: What to do, extracted from plan section
-- `--design`: Architectural decisions, patterns to follow
-- `--acceptance`: How to verify completion
-- `--notes`: Source plan path, file references, related research
+For each actionable item, create a task following the Step 4 pattern with `--type=task`, `--parent=<part-epic-id>`, `--priority=2`. Use `--description` for what to do, `--design` for patterns, `--acceptance` for verification, `--notes` for source refs.
 
 ### Step 7: Wire Dependencies
 
@@ -141,15 +107,7 @@ This assigns `agent:<name>` labels where appropriate.
 
 ### Step 8b: Formula Selection
 
-After agent selection, evaluate each task for swarm formula assignment:
-
-```
-/yf:swarm_select_formula <task-id>
-```
-
-This applies `formula:<name>` labels based on task semantics (title keywords, type). Atomic/trivial tasks are skipped — they use bare agent dispatch. Tasks with explicit `formula:*` labels from the plan text are also skipped (author override).
-
-The existing `swarm-formula-dispatch` rule handles dispatching labeled tasks through the swarm system during plan pump execution. No changes to the pump are needed.
+For each task, invoke `/yf:swarm_select_formula <task-id>` to apply `formula:<name>` labels based on task semantics. Atomic/trivial tasks and tasks with explicit `formula:*` labels from the plan text are skipped.
 
 ### Step 9: Create Execution Gate
 

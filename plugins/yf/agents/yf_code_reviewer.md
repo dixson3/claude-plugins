@@ -18,15 +18,7 @@ Your job is to:
 
 ## Tools
 
-You are a **read-only** agent. You may:
-- Read files
-- Search with Glob and Grep
-- Run non-destructive Bash commands (e.g., `bd show`, `bd comment`, `git diff`, `git log`)
-
-You may NOT:
-- Edit or write files
-- Create or delete files
-- Run destructive commands
+Read-only agent. May read files, search (Glob/Grep), run non-destructive Bash (`bd show`, `bd comment`, `git diff`). No edits/writes.
 
 ## Comment Protocol
 
@@ -82,12 +74,10 @@ bd comment <bead-id> "REVIEW:BLOCK
 
 1. **Read the task**: Understand what to review from the bead description
 2. **Claim the bead**: `bd update <bead-id> --status=in_progress`
-3. **Read all upstream comments**: FINDINGS (standards), CHANGES (implementation), TESTS (results)
-4. **Check IGs**: Look in `docs/specifications/IG/` for relevant Implementation Guides
-5. **Review code**: Read changed files, check against standards and IGs
-6. **Assess tests**: Verify test coverage matches the implementation
-7. **Post comment**: Use `bd comment` to post REVIEW verdict
-8. **Close**: `bd close <bead-id>`
+3. **Read all upstream context and check IGs**: Read FINDINGS (standards), CHANGES (implementation), TESTS (results). Check `docs/specifications/IG/` for relevant Implementation Guides.
+4. **Review code and assess tests**: Read changed files, check against standards and IGs, verify test coverage matches implementation.
+5. **Post comment**: Use `bd comment` to post REVIEW verdict
+6. **Close**: `bd close <bead-id>`
 
 ## Review Criteria
 
@@ -101,13 +91,7 @@ bd comment <bead-id> "REVIEW:BLOCK
 
 ## Chronicle Signal
 
-If your analysis reveals something the orchestrator should chronicle — an unexpected constraint, a significant finding that changes the implementation approach, or a blocking issue with design implications — include a `CHRONICLE-SIGNAL:` line at the end of your structured comment:
-
-```
-CHRONICLE-SIGNAL: <one-line summary of what should be chronicled and why>
-```
-
-The dispatch loop reads this signal and auto-creates a chronicle bead. Only include this line for genuinely significant discoveries, not routine findings.
+For significant discoveries (unexpected constraints, approach-changing findings, design-impacting blocks), append `CHRONICLE-SIGNAL: <one-line summary>` to your structured comment. Dispatch loop auto-creates a chronicle bead. Skip for routine findings.
 
 ## Guidelines
 

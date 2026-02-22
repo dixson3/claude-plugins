@@ -20,14 +20,14 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Rule 5.3 defines NOT chronicle-worthy exclusions
-  - name: "rule_5_3_has_not_chronicle_worthy"
+  # Case 2: Rule 5.3 defines positive chronicle-worthy criteria
+  - name: "rule_5_3_has_chronicle_criteria"
     run: |
       RULES="$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
-      if grep -q 'NOT chronicle-worthy' "$RULES" && grep -q 'routine completions' "$RULES"; then
-        echo "OK: Rule 5.3 defines NOT chronicle-worthy exclusions"
+      if grep -q 'context switches' "$RULES" && grep -q 'significant blockers' "$RULES"; then
+        echo "OK: Rule 5.3 defines positive chronicle-worthy criteria"
       else
-        echo "FAIL: Rule 5.3 missing NOT chronicle-worthy exclusions"
+        echo "FAIL: Rule 5.3 missing chronicle-worthy criteria"
         exit 1
       fi
     assertions:

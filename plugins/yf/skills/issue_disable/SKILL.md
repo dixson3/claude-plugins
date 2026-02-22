@@ -60,6 +60,4 @@ bd close <bead-id> -r "Closed without submission (issue_disable)"
 
 ### Step 4: Report
 
-```
-Closed 2 issue bead(s) without submission.
-```
+Report the count of closed beads.

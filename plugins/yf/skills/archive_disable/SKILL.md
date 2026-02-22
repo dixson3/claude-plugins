@@ -48,51 +48,6 @@ bd close <bead-id> --reason "WONT-ARCHIVE: archivist disabled"
 
 ## Expected Output
 
-```
-Disabling archivist - closing open archives...
+Report includes: list of open archive beads found, close status for each. If no open archives, reports nothing to disable.
 
-Found 2 open archive beads:
-- abc123: Archive: Research on Go GraphQL clients
-- def456: Archive: DEC-003 GraphQL client selection
-
-Closing beads...
-- abc123: closed (WONT-ARCHIVE: archivist disabled)
-- def456: closed (WONT-ARCHIVE: archivist disabled)
-
-2 archive beads closed without documentation generation.
-```
-
-## Use Cases
-
-Use `/yf:archive_disable` when:
-- You want to abandon captured research/decisions
-- The archives are no longer relevant
-- You're resetting the project state
-- You want to start fresh without documentation
-
-## No Open Archives
-
-If no open archives exist:
-
-```
-Disabling archivist...
-
-No open archive beads found.
-Nothing to disable.
-```
-
-## Re-enabling
-
-After disable, the archivist remains installed. You can:
-- Continue archiving with `/yf:archive_capture`
-- Process new archives with `/yf:archive_process`
-- Recall won't show disabled archives (they're closed)
-
-## Difference from Archive Process
-
-| Action | `/yf:archive_process` | `/yf:archive_disable` |
-|--------|----------------------|----------------------|
-| Closes beads | Yes | Yes |
-| Generates files | Yes | No |
-| Close reason | Normal close | "WONT-ARCHIVE: archivist disabled" |
-| Use case | Preserve research/decisions | Abandon content |
+After disable, the archivist remains installed — you can continue archiving with `/yf:archive_capture` and process new archives with `/yf:archive_process`. Differs from `/yf:archive_process` in that it closes beads without generating documentation files.

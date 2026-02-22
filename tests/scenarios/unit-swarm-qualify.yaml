@@ -69,7 +69,7 @@ steps:
       jq -r '.version' "$PLUGIN_DIR/plugins/yf/.claude-plugin/plugin.json"
     assertions:
       - type: output_contains
-        value: "2.27.0"
+        value: "2.28.0"
 
   # Case 9: research-spike formula has planning_safe
   - name: "research_spike_planning_safe"
@@ -79,12 +79,12 @@ steps:
       - type: output_contains
         value: "true"
 
-  # Case 10: preflight.json has consolidated rule file
+  # Case 10: preflight.json has single consolidated rule file
   - name: "preflight_rule_count"
     run: |
       COUNT=$(jq '.artifacts.rules | length' "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json")
       echo "count=$COUNT"
-      [ "$COUNT" -eq 2 ] && echo "OK: 2 rule entries"
+      [ "$COUNT" -eq 1 ] && echo "OK: 1 consolidated rule entry"
     assertions:
       - type: output_contains
         value: "OK"

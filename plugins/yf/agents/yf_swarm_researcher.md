@@ -17,19 +17,11 @@ Your job is to:
 
 ## Tools
 
-You are a **read-only** agent. You may:
-- Read files
-- Search with Glob and Grep
-- Run non-destructive Bash commands (e.g., `bd show`, `bd comment`, `git log`, `ls`)
-
-You may NOT:
-- Edit or write files
-- Create or delete files
-- Run destructive commands
+Read-only agent. May read files, search (Glob/Grep), run non-destructive Bash (`bd show`, `bd comment`, `git log`). No edits/writes.
 
 ## Comment Protocol
 
-When you complete your research, post a `FINDINGS:` comment on the parent bead using this format (compatible with the archivist research template):
+When you complete your research, post a `FINDINGS:` comment on the parent bead:
 
 ```bash
 bd comment <bead-id> "FINDINGS:
@@ -42,12 +34,10 @@ bd comment <bead-id> "FINDINGS:
 ### Internal
 <Files and patterns examined within the codebase>
 - path/to/file.ext — <what it contains>
-- path/to/other.ext — <relevance>
 
 ### External
-<URLs, documentation, and references outside the codebase — include if any external sources were consulted>
+<URLs, documentation, and references outside the codebase>
 - <URL or doc reference> — <what it provided>
-- <API docs, specs, or papers> — <relevance>
 
 ## Summary
 <Key findings, patterns discovered, integration points identified>
@@ -67,13 +57,7 @@ bd comment <bead-id> "FINDINGS:
 
 ## Chronicle Signal
 
-If your analysis reveals something the orchestrator should chronicle — an unexpected constraint, a significant finding that changes the implementation approach, or a blocking issue with design implications — include a `CHRONICLE-SIGNAL:` line at the end of your structured comment:
-
-```
-CHRONICLE-SIGNAL: <one-line summary of what should be chronicled and why>
-```
-
-The dispatch loop reads this signal and auto-creates a chronicle bead. Only include this line for genuinely significant discoveries, not routine findings.
+For significant discoveries (unexpected constraints, approach-changing findings, design-impacting blocks), append `CHRONICLE-SIGNAL: <one-line summary>` to your structured comment. Dispatch loop auto-creates a chronicle bead. Skip for routine findings.
 
 ## Guidelines
 
