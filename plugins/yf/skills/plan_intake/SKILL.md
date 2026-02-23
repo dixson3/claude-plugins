@@ -4,7 +4,7 @@ description: Run plan intake checklist — save plan, create beads, start execut
 user_invocable: true
 arguments:
   - name: plan
-    description: "Path to plan file or plan index (e.g., docs/plans/plan-15.md or 15)"
+    description: "Path to plan file or plan index (e.g., docs/plans/plan-0015-a3x7m.md or 0015-a3x7m)"
     required: false
 ---
 
@@ -68,8 +68,8 @@ Check if a plan file exists in `docs/plans/` for this plan:
 ls docs/plans/plan-*.md
 ```
 
-- **If the `plan` argument is a file path**: Use that file directly. Determine the plan index from the filename.
-- **If the `plan` argument is a number**: Look for `docs/plans/plan-<number>.md`.
+- **If the `plan` argument is a file path**: Use that file directly. Determine the plan index from the filename — strip the `plan-` prefix and `.md` suffix (e.g., `plan-0054-gs93u.md` -> `0054-gs93u`).
+- **If the `plan` argument is an index**: Look for `docs/plans/plan-<index>.md`.
 - **If no argument and plan content was provided inline**: Determine the next index and save to `docs/plans/plan-<next-idx>.md` using the standard format (Title, Status, Date, Overview, Implementation Sequence, Completion Criteria sections).
 - **If plan file already exists**: Use the existing file.
 

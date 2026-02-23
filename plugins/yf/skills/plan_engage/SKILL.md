@@ -49,7 +49,7 @@ Draft ───► Ready ───► Executing ◄──► Paused ───►
 
 When the user says "engage the plan" during plan mode:
 
-1. **Determine plan index**: Check existing plans in `docs/plans/`, find highest index, use next (zero-padded: 01, 02, 03...)
+1. **Determine plan index**: Check existing plans in `docs/plans/`, find highest index, use next. Format is hybrid idx-hash (e.g., `0056-x7k3m`) — zero-padded 4-digit index plus 5-char hash suffix.
 2. **Save master plan**: Create `docs/plans/plan-<idx>.md`
 
 ```markdown
@@ -140,8 +140,8 @@ Same as -> Executing transition. `plan-exec.sh start` handles both Ready and Pau
 ### Naming
 | Type | Format | Example |
 |------|--------|---------|
-| Master | `plan-<idx>.md` | `plan-03.md` |
-| Part | `plan-<idx>-part<N>-<name>.md` | `plan-03-part1-api.md` |
+| Master | `plan-<idx>.md` | `plan-0003-a3x7m.md` |
+| Part | `plan-<idx>-part<N>-<name>.md` | `plan-0003-a3x7m-part1-api.md` |
 
 ### Status Values
 - `Draft` - Plan saved, no beads

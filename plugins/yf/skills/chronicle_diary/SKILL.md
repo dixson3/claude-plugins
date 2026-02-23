@@ -3,7 +3,7 @@ name: yf:chronicle_diary
 description: Generate diary entries from open chronicles and close them
 arguments:
   - name: plan_idx
-    description: "Optional plan index to filter chronicles (e.g., 07). Only processes chronicles tagged with plan:<idx>."
+    description: "Optional plan index to filter chronicles (e.g., 0007-b4m2k). Only processes chronicles tagged with plan:<idx>."
     required: false
 ---
 

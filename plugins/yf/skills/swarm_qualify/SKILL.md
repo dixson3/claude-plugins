@@ -3,7 +3,7 @@ name: yf:swarm_qualify
 description: Run code-review qualification gate before plan completion
 arguments:
   - name: plan_idx
-    description: "Plan index (e.g., 29)"
+    description: "Plan index (e.g., 0029-j7n3p)"
     required: false
   - name: root_epic
     description: "Root epic ID (alternative to plan_idx)"

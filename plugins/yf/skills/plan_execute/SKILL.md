@@ -6,7 +6,7 @@ arguments:
     description: "Path to plan file"
     required: false
   - name: plan_idx
-    description: "Plan index (e.g., 03)"
+    description: "Plan index (e.g., 0003-a3x7m)"
     required: false
 ---
 

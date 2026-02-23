@@ -39,7 +39,7 @@ If `plan_file` not specified, find the most recent plan:
 ls -t docs/plans/plan-*.md | head -1
 ```
 
-Extract the plan index from the filename (e.g., `plan-03.md` -> `03`).
+Extract the plan index from the filename — strip the `plan-` prefix and `.md` suffix (e.g., `plan-0054-gs93u.md` -> `0054-gs93u`).
 
 ### Step 2: Check Idempotency
 
@@ -175,7 +175,7 @@ Report:
 ```
 Plan-to-Beads Summary
 =====================
-Plan: plan-03 — <Title>
+Plan: plan-<idx> — <Title>
 Root Epic: marketplace-abc
 Parts: 3 epics created
 Tasks: 12 tasks created

@@ -6,7 +6,7 @@ arguments:
     description: "Path to the plan file to reconcile"
     required: false
   - name: plan_idx
-    description: "Plan index (e.g., 34)"
+    description: "Plan index (e.g., 0034-m8q2r)"
     required: false
   - name: mode
     description: "Mode: gate (interactive, blocks on conflict) or check (report only). Default: gate"

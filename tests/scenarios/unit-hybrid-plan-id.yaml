@@ -1,0 +1,58 @@
+name: "Unit: hybrid plan ID format in SKILL.md files"
+
+steps:
+  # Case 1: No bare numeric plan ID examples in argument descriptions
+  - name: "no_bare_numeric_plan_id_examples"
+    run: |
+      # Match patterns like (e.g., 03) or (e.g., 15) — bare numeric plan index examples
+      # Exclude lines that are clearly not plan index arguments (e.g., priority numbers)
+      MATCHES=$(grep -rn 'e\.g\., [0-9]\{1,2\})' "$PLUGIN_DIR"/plugins/yf/skills/*/SKILL.md \
+        | grep -i 'plan\|index\|idx' || true)
+      if [ -n "$MATCHES" ]; then
+        echo "FAIL: bare numeric plan ID examples found in SKILL.md argument descriptions:"
+        echo "$MATCHES"
+        exit 1
+      fi
+      echo "OK: no bare numeric plan ID examples in argument descriptions"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: No legacy plan-03.md filename examples
+  - name: "no_legacy_plan_filename_examples"
+    run: |
+      # Match plan-03.md or plan-15.md style legacy filename examples
+      MATCHES=$(grep -rn 'plan-[0-9]\{1,2\}\.' "$PLUGIN_DIR"/plugins/yf/skills/*/SKILL.md || true)
+      if [ -n "$MATCHES" ]; then
+        echo "FAIL: legacy plan filename examples found:"
+        echo "$MATCHES"
+        exit 1
+      fi
+      echo "OK: no legacy plan filename examples"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: Extraction instructions show hybrid format
+  - name: "extraction_instructions_show_hybrid_format"
+    run: |
+      # plan_create_beads should mention stripping plan- prefix with hybrid example
+      if ! grep -q 'plan-[0-9]\{4\}-[a-z0-9]\{5\}' "$PLUGIN_DIR"/plugins/yf/skills/plan_create_beads/SKILL.md; then
+        echo "FAIL: plan_create_beads/SKILL.md missing hybrid ID extraction example"
+        exit 1
+      fi
+      # plan_intake should mention hybrid format in argument description
+      if ! grep -q '[0-9]\{4\}-[a-z0-9]\{5\}' "$PLUGIN_DIR"/plugins/yf/skills/plan_intake/SKILL.md; then
+        echo "FAIL: plan_intake/SKILL.md missing hybrid ID format"
+        exit 1
+      fi
+      echo "OK: extraction instructions show hybrid format"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"

@@ -3,7 +3,7 @@ name: yf:archive_process
 description: Process archive beads into permanent documentation (research summaries and decision records)
 arguments:
   - name: plan_idx
-    description: "Optional plan index to filter archives (e.g., 19). Only processes archives tagged with plan:<idx>."
+    description: "Optional plan index to filter archives (e.g., 0019-k4m9q). Only processes archives tagged with plan:<idx>."
     required: false
 ---
 

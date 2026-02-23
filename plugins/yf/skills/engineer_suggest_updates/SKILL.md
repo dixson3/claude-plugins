@@ -3,7 +3,7 @@ name: yf:engineer_suggest_updates
 description: Suggest specification updates based on completed plan work
 arguments:
   - name: plan_idx
-    description: "Plan index to analyze (e.g., 34)"
+    description: "Plan index to analyze (e.g., 0034-m8q2r)"
     required: false
   - name: scope
     description: "Which specs to check: all, prd, edd, ig, or todo (default: all)"

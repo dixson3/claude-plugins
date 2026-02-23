@@ -3,7 +3,7 @@ name: yf:plan_pump
 description: Pull ready beads into parallel agent dispatch via Task tool
 arguments:
   - name: plan_idx
-    description: "Plan index (e.g., 07). Defaults to most recent active plan."
+    description: "Plan index (e.g., 0007-b4m2k). Defaults to most recent active plan."
     required: false
 ---
 
