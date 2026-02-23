@@ -46,6 +46,32 @@ else
 fi
 ```
 
+Then seed operator into local config (auto-detected, no prompting):
+
+```bash
+YF_LOCAL_CONFIG="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/config.local.json"
+if [ ! -f "$YF_LOCAL_CONFIG" ]; then
+  # Auto-detect operator name: git config user.name → plugin.json author → omit
+  OPERATOR_NAME=$(git config user.name 2>/dev/null || true)
+  if [ -z "$OPERATOR_NAME" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json" ]; then
+    OPERATOR_NAME=$(jq -r '.author.name // empty' "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json" 2>/dev/null || true)
+  fi
+  if [ -n "$OPERATOR_NAME" ]; then
+    jq -n --arg op "$OPERATOR_NAME" '{"config":{"operator":$op}}' > "$YF_LOCAL_CONFIG"
+  fi
+elif ! jq -e '.config.operator' "$YF_LOCAL_CONFIG" >/dev/null 2>&1; then
+  # Local config exists but no operator — inject it
+  OPERATOR_NAME=$(git config user.name 2>/dev/null || true)
+  if [ -z "$OPERATOR_NAME" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json" ]; then
+    OPERATOR_NAME=$(jq -r '.author.name // empty' "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json" 2>/dev/null || true)
+  fi
+  if [ -n "$OPERATOR_NAME" ]; then
+    jq --arg op "$OPERATOR_NAME" '.config.operator = $op' "$YF_LOCAL_CONFIG" > "$YF_LOCAL_CONFIG.tmp" \
+      && mv "$YF_LOCAL_CONFIG.tmp" "$YF_LOCAL_CONFIG"
+  fi
+fi
+```
+
 Then run preflight:
 
 ```bash

@@ -265,6 +265,92 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 14: yf_merged_config returns base config when no local file
+  - name: "merged_config_base_only"
+    run: |
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.local.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      MERGED=$(yf_merged_config)
+      ART_DIR=$(echo "$MERGED" | jq -r '.config.artifact_dir')
+      OPERATOR=$(echo "$MERGED" | jq -r '.config.operator // "null"')
+      if [ "$ART_DIR" = "docs" ] && [ "$OPERATOR" = "null" ]; then
+        echo "OK: base config only, no operator"
+      else
+        echo "FAIL: artifact_dir=$ART_DIR operator=$OPERATOR"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 15: yf_merged_config deep-merges local over base
+  - name: "merged_config_local_overlay"
+    run: |
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"config":{"operator":"Test User"}}' > "$WORK_DIR/.yoshiko-flow/config.local.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      MERGED=$(yf_merged_config)
+      ART_DIR=$(echo "$MERGED" | jq -r '.config.artifact_dir')
+      OPERATOR=$(echo "$MERGED" | jq -r '.config.operator')
+      if [ "$ART_DIR" = "docs" ] && [ "$OPERATOR" = "Test User" ]; then
+        echo "OK: local overlay merged (operator from local, artifact_dir from base)"
+      else
+        echo "FAIL: artifact_dir=$ART_DIR operator=$OPERATOR"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 16: yf_operator_name returns config value when set in local config
+  - name: "operator_name_from_config"
+    run: |
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      echo '{"config":{"operator":"Jane Operator"}}' > "$WORK_DIR/.yoshiko-flow/config.local.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      NAME=$(yf_operator_name)
+      if [ "$NAME" = "Jane Operator" ]; then
+        echo "OK: operator from local config"
+      else
+        echo "FAIL: expected 'Jane Operator', got '$NAME'"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 17: yf_operator_name falls back to non-empty value when config field missing
+  - name: "operator_name_fallback"
+    run: |
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      rm -f "$WORK_DIR/.yoshiko-flow/config.local.json"
+      export CLAUDE_PROJECT_DIR="$WORK_DIR"
+      unset CLAUDE_PLUGIN_ROOT
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
+      NAME=$(yf_operator_name)
+      if [ -n "$NAME" ]; then
+        echo "OK: operator fallback returned '$NAME'"
+      else
+        echo "FAIL: operator name is empty"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
   - "rm -f .yoshiko-flow/config.json"
+  - "rm -f .yoshiko-flow/config.local.json"
   - "rm -rf fakehome"

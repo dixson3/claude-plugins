@@ -45,7 +45,9 @@ Group related chronicles into entries. Single large chronicles may stand alone. 
 
 **Filename**: `docs/diary/YY-MM-DD.HH-MM.<topic>.md`
 
-Sections: Title, Date, Topics, Chronicle IDs, Summary (consolidated past-tense narrative), Decisions (key decisions with rationale — omit if none), Next Steps (actionable checkboxes — omit if none), footer with chronicle count.
+Sections: Title, Date, Operator (resolved name), Topics, Chronicle IDs, Summary (narrative journal entry — see Writing Guidelines), Decisions (key decisions with rationale — omit if none), Next Steps (actionable checkboxes — omit if none), footer with chronicle count.
+
+**Operator resolution**: Read `.yoshiko-flow/config.local.json` → `.config.operator`. If missing, read `.yoshiko-flow/config.json` → `.config.operator`. If missing, use `git config user.name`. If missing, use "Unknown".
 
 ### Step 5: Output Results
 
@@ -60,7 +62,22 @@ Sections: Title, Date, Topics, Chronicle IDs, Summary (consolidated past-tense n
 
 ## Writing Guidelines
 
-Write summaries in past tense, consolidated and concise with relevant file paths. Include decisions only when actual decisions were made, with rationale. Convert next steps to specific actionable checkboxes. Omit Decisions/Next Steps sections if empty.
+**Tell a story, not a changelog.** Write in first-person plural ("we"), past tense. The Summary is a narrative journal entry (150-400 words) that:
+
+- Opens with context or motivation — what prompted the work
+- Connects to prior work — reference earlier plan numbers, diary entries, or versions when building on past efforts
+- Describes the arc — not just what changed, but how the session unfolded, what was tried, and what emerged
+- Weaves technical details into narrative — file paths and code references belong inside sentences, not in bullet lists
+- Names the operator when describing direction or decisions (e.g., "James directed the focus toward...")
+- Closes with forward momentum — what this work enables or sets up
+
+**Example contrast:**
+
+*Factual (avoid):* "Updated `yf-config.sh` to add local config overlay. Added `yf_operator_name()` function. Created `config.local.json`."
+
+*Narrative (preferred):* "We'd been tracking *what* changed and *when* for fifty plans, but never *who* was steering. James directed the addition of operator attribution throughout the lifecycle, starting with a local config overlay in `yf-config.sh` that deep-merges `config.local.json` over the committed config — keeping per-person identity gitignored and clone-local."
+
+Include decisions only when actual decisions were made, with rationale. Convert next steps to specific actionable checkboxes. Omit Decisions/Next Steps sections if empty.
 
 ## Handling Draft Chronicle Beads
 

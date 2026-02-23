@@ -52,7 +52,7 @@ When bead has `ys:archive:research` label:
 
 1. **Extract topic** from title (e.g., "Archive: Research on Go GraphQL clients")
 2. **Create slug**: kebab-case of topic (e.g., `go-graphql-clients`)
-3. **Generate SUMMARY.md** with sections: Research title, Status, Started/Updated dates, Purpose, Sources (table: Source/URL/Key Findings), Summary, Recommendations, Application, Related, archive bead ID footer
+3. **Generate SUMMARY.md** with sections: Research title, Status, Operator, Started/Updated dates, Purpose, Sources (table: Source/URL/Key Findings), Summary, Recommendations, Application, Related, archive bead ID footer
 4. **Generate index entry** for `_index.md`:
 ```markdown
 | [{Topic}](topic-slug/SUMMARY.md) | {Status} | YYYY-MM-DD | {One-line summary} |
@@ -63,7 +63,7 @@ When bead has `ys:archive:research` label:
 When bead has `ys:archive:decision` label:
 
 1. **Extract decision ID** from title (e.g., "Archive: DEC-003 GraphQL client selection")
-2. **Generate SUMMARY.md** with sections: Decision title, ID (DEC-NNN-slug), Date, Status (Proposed/Accepted/Superseded), Context, Research Basis, Decision, Alternatives Considered (with pros/cons), Consequences, Implementation Notes, archive bead ID footer
+2. **Generate SUMMARY.md** with sections: Decision title, ID (DEC-NNN-slug), Date, Status (Proposed/Accepted/Superseded), Operator, Context, Research Basis, Decision, Alternatives Considered (with pros/cons), Consequences, Implementation Notes, archive bead ID footer
 3. **Generate index entry** for `_index.md`:
 ```markdown
 | [DEC-NNN](DEC-NNN-slug/SUMMARY.md) | YYYY-MM-DD | {Title} | {Status} |

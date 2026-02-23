@@ -40,6 +40,9 @@ fi
 # Generate hybrid idx-hash plan ID (collision-safe across parallel worktrees)
 . "$SCRIPT_DIR/scripts/yf-id.sh"
 
+# Resolve operator name for attribution
+OPERATOR=$(yf_operator_name)
+
 mkdir -p "$PLANS_DIR"
 
 # Generate hybrid ID with scope (includes sequential index)
@@ -59,21 +62,21 @@ if [[ ! -f "$INDEX_FILE" ]]; then
     cat > "$INDEX_FILE" <<'HEADER'
 # Plan Index
 
-| Idx | ID | Title | Date | Status |
-|-----|-----|-------|------|--------|
+| Idx | ID | Title | Date | Operator | Status |
+|-----|-----|-------|------|----------|--------|
 HEADER
 fi
 
 IDX="${PLAN_ID%%-*}"   # Extract NNNN from NNNN-xxxxx
 PLAN_DATE=$(date +%Y-%m-%d)
-printf '| %s | plan-%s | %s | %s | Active |\n' \
-    "$IDX" "$PLAN_ID" "$PLAN_TITLE" "$PLAN_DATE" >> "$INDEX_FILE"
+printf '| %s | plan-%s | %s | %s | %s | Active |\n' \
+    "$IDX" "$PLAN_ID" "$PLAN_TITLE" "$PLAN_DATE" "$OPERATOR" >> "$INDEX_FILE"
 
 # Create the gate file
 mkdir -p "$PROJECT_DIR/.yoshiko-flow"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-printf '{"plan_idx":"%s","plan_file":"docs/plans/plan-%s.md","created":"%s"}\n' \
-    "$PLAN_ID" "$PLAN_ID" "$TIMESTAMP" > "$GATE_FILE"
+printf '{"plan_idx":"%s","plan_file":"docs/plans/plan-%s.md","created":"%s","operator":"%s"}\n' \
+    "$PLAN_ID" "$PLAN_ID" "$TIMESTAMP" "$OPERATOR" > "$GATE_FILE"
 
 # Inform the agent
 # Deterministic chronicle: capture plan-save boundary

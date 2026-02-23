@@ -71,11 +71,12 @@ Filename: `docs/diary/YY-MM-DD.HH-MM.<topic>.md`
 # Diary Entry: <Title>
 
 **Date**: YYYY-MM-DD HH:MM
+**Operator**: <resolved operator name>
 **Topics**: feature, planning
 **Chronicle IDs**: abc123, def456
 
 ## Summary
-Consolidated narrative of what was accomplished.
+Narrative journal entry describing the arc of work.
 
 ## Decisions
 - Key decision 1 and rationale

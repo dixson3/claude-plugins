@@ -52,11 +52,16 @@ bd create --title "Archive: Research on [topic]" \
   --description "[research template below]"
 ```
 
+### Operator Resolution
+
+Resolve operator name via fallback cascade: merged config `.config.operator` → `plugin.json` `.author.name` → `git config user.name` → `"Unknown"`. In shell scripts, use `yf_operator_name()` from `yf-config.sh`. In agent context, read `.yoshiko-flow/config.local.json` then `.yoshiko-flow/config.json` for `.config.operator`, falling back to `git config user.name`.
+
 **Research bead body template:**
 
 ```
 Type: research
 Topic: [specific topic being researched]
+Operator: [resolved operator name]
 Status: COMPLETED
 
 ## Purpose
@@ -106,6 +111,7 @@ bd create --title "Archive: $DEC_ID [decision title]" \
 ```
 Type: decision
 ID: DEC-NNN-[slug]
+Operator: [resolved operator name]
 Status: Accepted
 
 ## Context

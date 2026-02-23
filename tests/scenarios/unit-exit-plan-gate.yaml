@@ -109,7 +109,7 @@ steps:
         path: ".yoshiko-flow/plan-gate"
         value: "plan_idx"
 
-  # Case 6: Gate JSON has required fields
+  # Case 6: Gate JSON has required fields (including operator)
   - name: "gate_json_structure"
     run: |
       python3 -c "
@@ -119,6 +119,8 @@ steps:
       assert 'plan_idx' in d, 'missing plan_idx'
       assert 'plan_file' in d, 'missing plan_file'
       assert 'created' in d, 'missing created'
+      assert 'operator' in d, 'missing operator'
+      assert len(d['operator']) > 0, 'operator is empty'
       print('OK')
       "
     assertions:
@@ -136,7 +138,22 @@ steps:
       - type: exit_code
         value: "0"
 
-  # Case 8: Auto-chain signal in output
+  # Case 8: _index.md header includes Operator column
+  - name: "index_has_operator_column"
+    run: |
+      if grep -q '| Operator |' docs/plans/_index.md; then
+        echo "OK: _index.md header has Operator column"
+      else
+        echo "FAIL: _index.md header missing Operator column"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: Auto-chain signal in output
   - name: "auto_chain_output"
     run: |
       rm -f .yoshiko-flow/plan-gate

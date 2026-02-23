@@ -48,6 +48,14 @@ if [ ! -f "$_YF_JSON" ]; then
   [ -f "$_YF_MAIN/.yoshiko-flow/config.json" ] && _YF_JSON="$_YF_MAIN/.yoshiko-flow/config.json"
 fi
 
+# Local config overlay (gitignored, per-clone settings like operator name)
+_YF_LOCAL_JSON="${_YF_JSON%.json}.local.json"
+# Worktree fallback: check main repo's config.local.json too
+if [ ! -f "$_YF_LOCAL_JSON" ]; then
+  _YF_MAIN="${_YF_MAIN:-$(yf_main_repo_root 2>/dev/null || echo "$_YF_PROJECT_DIR")}"
+  [ -f "$_YF_MAIN/.yoshiko-flow/config.local.json" ] && _YF_LOCAL_JSON="$_YF_MAIN/.yoshiko-flow/config.local.json"
+fi
+
 # --- Config access functions ---
 
 # yf_config_exists — returns 0 if config file exists
@@ -55,17 +63,16 @@ yf_config_exists() {
   [ -f "$_YF_JSON" ]
 }
 
-# yf_merged_config — prints config JSON to stdout
+# yf_merged_config — prints config JSON to stdout (deep-merges local over base)
 yf_merged_config() {
   if ! command -v jq >/dev/null 2>&1; then
     echo "{}"
     return 0
   fi
-  if [ -f "$_YF_JSON" ]; then
-    cat "$_YF_JSON"
-  else
-    echo "{}"
-  fi
+  local base="{}" local_cfg="{}"
+  [ -f "$_YF_JSON" ] && base=$(cat "$_YF_JSON")
+  [ -f "$_YF_LOCAL_JSON" ] && local_cfg=$(cat "$_YF_LOCAL_JSON")
+  echo "$base" "$local_cfg" | jq -s '.[0] * .[1]' 2>/dev/null || echo "$base"
 }
 
 # yf_read_field EXPR — runs jq expression on merged config
@@ -170,4 +177,35 @@ yf_tracker_tool() {
   else
     echo "$tool"
   fi
+}
+
+# yf_operator_name — returns operator name via fallback cascade:
+#   1. Merged config → .config.operator (typically from config.local.json)
+#   2. plugin.json → .author.name (via CLAUDE_PLUGIN_ROOT)
+#   3. git config user.name
+#   4. "Unknown"
+yf_operator_name() {
+  local name
+  # 1. Config (merged — local overrides base)
+  name=$(yf_read_field '.config.operator' 2>/dev/null)
+  if [ -n "$name" ] && [ "$name" != "null" ]; then
+    echo "$name"
+    return
+  fi
+  # 2. plugin.json author
+  if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "$CLAUDE_PLUGIN_ROOT/.claude-plugin/plugin.json" ]; then
+    name=$(jq -r '.author.name // empty' "$CLAUDE_PLUGIN_ROOT/.claude-plugin/plugin.json" 2>/dev/null)
+    if [ -n "$name" ]; then
+      echo "$name"
+      return
+    fi
+  fi
+  # 3. git config
+  name=$(git config user.name 2>/dev/null)
+  if [ -n "$name" ]; then
+    echo "$name"
+    return
+  fi
+  # 4. Fallback
+  echo "Unknown"
 }
