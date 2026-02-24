@@ -63,3 +63,4 @@
 | 0059 | plan-0059-0re8r | Plan: Review yf Test Cases Against v3.0.0 Specs | 2026-02-23 | James Dixson | Active |
 | 0060 | plan-0060-vst80 | Plan: Add Stale State Cleanup to session_land and plan_intake | 2026-02-23 | James Dixson | Active |
 | 0061 | plan-0061-k62y7 | Plan: Fix mol wisp bug, correct diary inaccuracies, add fact-check to diary creation | 2026-02-23 | James Dixson | Active |
+| 0062 | plan-0062-71nv1 | Plan: Bash Script Quick Wins — Reduce Complexity in yf Plugin Scripts | 2026-02-23 | James Dixson | Active |
