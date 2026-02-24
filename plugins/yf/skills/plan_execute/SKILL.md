@@ -89,7 +89,7 @@ For each group from the pump, launch dispatch calls **in parallel** (multiple ca
 **Formula dispatch** (tasks with `formula:<name>` label):
 Invoke the swarm system for full multi-agent workflow:
 ```
-/yf:swarm_run formula:<formula-name> feature:"<task title>" parent_bead:<task-id>
+/yf:swarm_run formula:<formula-name> feature:"<task title>" parent_task:<task-id>
 ```
 
 The swarm handles the complete lifecycle: wisp instantiation, step dispatch through specialized agents, squash on completion, and chronicle capture. The parent task is closed by swarm_run on success.

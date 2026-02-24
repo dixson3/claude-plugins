@@ -47,7 +47,7 @@ Flag any tasks about the yf plugin rather than the project — mark as `redirect
 
 ### Step 6: Output
 
-Return the triage plan as structured JSON. Action types: `create` (new issue with title/body/labels/related_issues/source_beads), `comment` (augment existing issue), `skip` (duplicate — note reason), `redirect` (plugin issue — note reason).
+Return the triage plan as structured JSON. Action types: `create` (new issue with title/body/labels/related_issues/source_tasks), `comment` (augment existing issue), `skip` (duplicate — note reason), `redirect` (plugin issue — note reason).
 
 ```json
 {
@@ -58,7 +58,7 @@ Return the triage plan as structured JSON. Action types: `create` (new issue wit
       "body": "Discovered during testing that...",
       "labels": "enhancement",
       "related_issues": [42],
-      "source_beads": ["abc", "def"]
+      "source_tasks": ["abc", "def"]
     }
   ]
 }

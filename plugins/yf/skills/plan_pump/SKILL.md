@@ -103,7 +103,7 @@ For each group, launch dispatch calls **in parallel** (multiple calls in one mes
 
 **Formula track** — dispatch via swarm_run:
 ```
-/yf:swarm_run formula:<formula-name> feature:"<task title>" parent_bead:<task-id>
+/yf:swarm_run formula:<formula-name> feature:"<task title>" parent_task:<task-id>
 ```
 
 The swarm handles the full lifecycle: wisp instantiation, multi-agent dispatch, squash, and chronicle.
