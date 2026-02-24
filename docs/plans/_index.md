@@ -60,3 +60,4 @@
 | 0056 | plan-0056-584rz | Plan: Remove beads-cli dependency — replace with file-based task system | 2026-02-23 | James Dixson | Active |
 | 0057 | plan-0057-1dpqp | Plan: Update specifications for v3.0.0 (beads-cli removal) | 2026-02-23 | James Dixson | Active |
 | 0058 | plan-0058-mx760 | Fix stale beads-cli references in v3.0.0 plugin | 2026-02-23 | James Dixson | Active |
+| 0059 | plan-0059-0re8r | Plan: Review yf Test Cases Against v3.0.0 Specs | 2026-02-23 | James Dixson | Active |
