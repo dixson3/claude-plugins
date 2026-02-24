@@ -127,6 +127,7 @@ Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–00
 | UC-026 | Task lifecycle during plan execution | task-integration | unit-plan-exec-gate.yaml | existence-only |
 | UC-027 | Automatic task pruning | task-integration | unit-plan-prune.yaml | tested |
 | UC-028 | Session close protocol | task-integration | unit-pre-push-land.yaml, unit-session-land.yaml | existence-only |
+| UC-042 | Completed-plans cleanup (gates, epics, chronicles) | task-integration | unit-session-prune-completed.yaml | untested |
 | UC-029 | Standards-driven code implementation | coder | unit-code-implement.yaml | tested |
 | UC-030 | Code-implement formula selection | coder | unit-code-implement.yaml | tested |
 | UC-031 | IG-first standards research | coder | unit-code-implement.yaml | tested |

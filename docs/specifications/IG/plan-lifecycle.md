@@ -48,6 +48,7 @@ The plan lifecycle converts plans into a dependency graph of tracked tasks with 
 1. `plan-intake.md` rule detects plan-like content without auto-chain signal
 2. Rule invokes `/yf:plan_intake`
 3. (Step 0) Foreshadowing check: auto-classify and commit uncommitted changes (UC-040)
+3b. (Step 0.5) Clean prior plan state: `bash plugins/yf/scripts/session-prune.sh completed-plans` — removes residual state from completed prior plans (fail-open)
 4. Skill saves plan file to `docs/plans/plan-NN.md` if not already saved
 5. Skill invokes `/yf:plan_create_tasks` to create task hierarchy
 6. Skill runs `plan-exec.sh start` to begin execution

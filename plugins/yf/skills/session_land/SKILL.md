@@ -108,6 +108,17 @@ For each remaining in-progress task, confirm with operator before closing.
 bash plugins/yf/scripts/session-prune.sh all 2>/dev/null || true
 ```
 
+### Step 8b: Clean Completed Plans
+
+Close orphaned gates and completed plan epics, remove closed chronicle files:
+
+```bash
+bash plugins/yf/scripts/session-prune.sh completed-plans 2>/dev/null || true
+```
+
+This runs after the standard session prune (Step 8) to catch plan lifecycle
+artifacts that the ephemeral/tasks/drafts passes don't cover.
+
 ### Step 9: Commit
 
 Stage all changes and present a diff summary:

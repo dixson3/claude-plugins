@@ -1,5 +1,8 @@
 # Plan: Add Stale State Cleanup to session_land and plan_intake
 
+**Status**: Completed
+**Date**: 2026-02-24
+
 ## Context
 
 After completing a plan, `.yoshiko-flow/` accumulates stale artifacts:

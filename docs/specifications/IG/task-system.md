@@ -65,11 +65,17 @@ The yf plugin uses a file-based task system for plan work tracking. Tasks are st
    c. Script runs `yft_cleanup --older-than <days> --force` (default 7 days)
    d. Script runs `yft_cleanup --ephemeral --force` for closed wisps
 
-**Postconditions**: Closed tasks removed from `.yoshiko-flow/tasks/`.
+3. **Session-boundary**: At session_land (Step 8b) and plan_intake (Step 0.5), `session-prune.sh completed-plans`:
+   a. Closes orphaned gates (`ys:chronicle-gate`, `ys:qualification-gate`) whose sibling work tasks are all closed
+   b. Closes completed plan epics (open epics with `plan:*` label where all child tasks are closed) with reason `"session-prune: all tasks completed"`
+   c. Removes closed chronicle files (`.yoshiko-flow/chronicler/*.json` where `status == "closed"`)
+
+**Postconditions**: Closed tasks removed from `.yoshiko-flow/tasks/`. Orphaned gates closed. Closed chronicle files removed.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/plan-prune.sh`
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/hooks/post-push-prune.sh`
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/session-prune.sh`
 
 ### UC-028: Session Close Protocol (Landing the Plane)
 
@@ -86,6 +92,7 @@ The yf plugin uses a file-based task system for plan work tracking. Tasks are st
 6. Memory reconciliation (conditional, if specs exist): invoke `/yf:memory_reconcile mode:check`
 7. Update issue status: close finished entries
 8. Session prune: `bash plugins/yf/scripts/session-prune.sh all`
+8b. Clean completed plans: `bash plugins/yf/scripts/session-prune.sh completed-plans` — closes orphaned gates, completed plan epics, removes closed chronicle files
 9. Commit: stage changes, present diff summary, commit
 10. Push with operator confirmation: AskUserQuestion "Push to remote?" If yes, `git push`.
 11. Hand off: summarize done/remaining/context

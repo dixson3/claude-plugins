@@ -65,6 +65,19 @@ If dirty, auto-classify each changed file:
 Both commits happen automatically — no operator prompt needed. The
 classification is logged in the commit messages for traceability.
 
+### Step 0.5: Clean Prior Plan State
+
+Before starting a new plan lifecycle, clean up residual state from
+completed prior plans:
+
+```bash
+bash plugins/yf/scripts/session-prune.sh completed-plans 2>/dev/null || true
+```
+
+This prevents accumulation of closed chronicles, orphaned gates, and
+completed plan epics across plans within a single session. Fail-open —
+cleanup failures do not block intake.
+
 ### Step 1: Ensure Plan File Exists
 
 Check if a plan file exists in `docs/plans/` for this plan:
