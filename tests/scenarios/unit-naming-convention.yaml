@@ -150,7 +150,7 @@ steps:
       MISSING=""
       for skill in chronicle_capture chronicle_recall chronicle_diary chronicle_disable \
                    archive_capture archive_process archive_disable archive_suggest \
-                   plan_engage plan_create_beads plan_execute plan_pump plan_breakdown \
+                   plan_engage plan_create_tasks plan_execute plan_pump plan_breakdown \
                    plan_select_agent plan_dismiss_gate plan_intake plugin_setup \
                    plugin_issue issue_capture issue_process issue_disable issue_list issue_plan; do
         if [ ! -d "$PLUGIN_DIR/plugins/yf/skills/$skill" ]; then

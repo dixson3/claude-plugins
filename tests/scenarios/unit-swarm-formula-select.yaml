@@ -22,7 +22,7 @@ steps:
   # Case 3: Consolidated rules contain formula selection content
   - name: "rules_has_formula_selection"
     run: |
-      grep -q "Formula-Labeled Beads" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" && echo "exists"
+      grep -q "Formula-Labeled Tasks" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" && echo "exists"
     assertions:
       - type: output_contains
         value: "exists"
@@ -35,10 +35,10 @@ steps:
       - type: exit_code
         value: "0"
 
-  # Case 5: plan_create_beads has Step 8b
-  - name: "plan_create_beads_has_step_8b"
+  # Case 5: plan_create_tasks has Step 8b
+  - name: "plan_create_tasks_has_step_8b"
     run: |
-      grep "Step 8b" "$PLUGIN_DIR/plugins/yf/skills/plan_create_beads/SKILL.md"
+      grep "Step 8b" "$PLUGIN_DIR/plugins/yf/skills/plan_create_tasks/SKILL.md"
     assertions:
       - type: output_contains
         value: "Formula Selection"

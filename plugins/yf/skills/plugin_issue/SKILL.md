@@ -49,11 +49,11 @@ If not authenticated, instruct the user to run `gh auth login`.
 
 ### Step 2: Disambiguation Guard
 
-Verify the issue is about yf, beads, or plugin internals — not the user's project.
+Verify the issue is about yf or plugin internals — not the user's project.
 
 Check the title, body, and conversation context for references to:
 - yf plugin skills, agents, rules, hooks, scripts
-- beads-cli (bd commands)
+- yf-task-cli
 - Plugin configuration (.yoshiko-flow/, plugin.json, preflight.json)
 - This plugin repository
 
@@ -118,7 +118,6 @@ If creating a new issue:
    ---
    **yf version:** <version from plugin.json>
    **OS:** <uname -s>
-   **beads-cli:** <bd --version>
    ```
 3. Present to operator via AskUserQuestion for confirmation
 4. Create:

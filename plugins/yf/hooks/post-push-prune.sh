@@ -1,7 +1,7 @@
 #!/bin/bash
-# post-push-prune.sh — PostToolUse hook: global bead pruning after push
+# post-push-prune.sh — PostToolUse hook: global task pruning after push
 #
-# Sequence: code push completed → prune stale beads
+# Sequence: code push completed → prune stale tasks
 # This ensures code is safely upstream before cleanup.
 set -uo pipefail
 
@@ -11,10 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 yf_is_enabled || exit 0
 yf_is_prune_on_push 2>/dev/null || exit 0
 
-# ── bd guard ──────────────────────────────────────────────────────────
-command -v bd >/dev/null 2>&1 || exit 0
-
-# ── Prune stale beads ────────────────────────────────────────────────
+# ── Prune stale tasks ────────────────────────────────────────────────
 bash "$SCRIPT_DIR/scripts/plan-prune.sh" global 2>&1 || true
 
 exit 0

@@ -28,7 +28,7 @@ Then stop. Do not execute the remaining steps.
 
 # Create Epic Worktree
 
-Create an isolated git worktree for epic-scoped development. The worktree gets its own branch and working directory while sharing the main repo's beads database.
+Create an isolated git worktree for epic-scoped development. The worktree gets its own branch and working directory while sharing the main repo's task database.
 
 ## Behavior
 
@@ -49,25 +49,18 @@ STATUS=$(echo "$RESULT" | jq -r '.status')
 
 If `status` is `error`, report the message and stop.
 
-### Step 3: Verify Beads Redirect
-
-Check that `.beads/redirect` was created in the worktree:
+### Step 3: Report
 
 ```bash
 WT_PATH=$(echo "$RESULT" | jq -r '.worktree')
-BEADS_OK=$(echo "$RESULT" | jq -r '.beads_redirect')
+BRANCH=$(echo "$RESULT" | jq -r '.branch')
 ```
-
-If `beads_redirect` is `false`, warn: "Beads redirect not created — beads operations may not work in the worktree."
-
-### Step 4: Report
 
 ```
 Epic Worktree Created
 =====================
 Branch: <branch>
 Path: <worktree-path>
-Beads: <redirect status>
 
 To work in this worktree, set CLAUDE_PROJECT_DIR to the worktree path,
 or use `cd <worktree-path>`.

@@ -5,6 +5,42 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-02-23
+
+### BREAKING CHANGE
+
+- **Removed beads-cli dependency**: The entire `bd` (beads-cli) external dependency has been replaced with a file-based task management system. No external tooling is required beyond `jq`.
+  - New `yf-tasks.sh` shell library with `yft_*` functions (create, show, update, close, delete, list, count, label, dep, comment, gate, mol)
+  - New `yf-task-cli.sh` CLI wrapper for agent use: `bash "$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh" <command> <args>`
+  - All work items (tasks, epics, gates, chronicles, archives, issues, todos, molecules) stored as JSON files under `.yoshiko-flow/` subdirectories
+  - ID convention: `task-NNNN-xxxxx` (epics), `task-NNNN-xxxxx.NN` (child tasks), `chron-NNNN-xxxxx`, `arch-NNNN-xxxxx`, `mol-NNNN-xxxxx`, `issue-NNNN-xxxxx`, `todo-NNNN-xxxxx`
+  - Activation gate simplified from 3 conditions to 2: config exists + enabled != false (no more `bd` check)
+
+### Removed
+
+- `beads-setup.sh` script — no longer needed
+- `bd-safety-net.sh` hook — no longer needed (was advisory for `bd delete`)
+- `beads_setup` skill — no longer needed
+- `bd` CLI matchers in `plugin.json` hooks (`Bash(bd update*)`, `Bash(bd close*)`, `Bash(bd delete*)`)
+- `yf_bd_available()` function from `yf-config.sh`
+
+### Changed
+
+- **All 10 core scripts**: Replaced `bd` CLI calls with `yft_*` library functions (plan-exec.sh, chronicle-check.sh, chronicle-staleness.sh, chronicle-validate.sh, plan-chronicle.sh, archive-suggest.sh, session-recall.sh, session-prune.sh, plan-prune.sh, swarm-worktree.sh)
+- **All 8 hooks**: Replaced `bd` CLI calls and guards (code-gate.sh, pre-push-land.sh, pre-push-diary.sh, session-end.sh, pre-compact.sh, worktree-create.sh, plan-exec-guard.sh, exit-plan-gate.sh)
+- **All 30+ skills**: Replaced `bd` command references with `yf-task-cli.sh` equivalents
+- **All 13 agents**: Replaced `bd` command references with `yf-task-cli.sh` equivalents
+- **Session markers**: Moved from `.beads/` to `.yoshiko-flow/` (.pending-diary, .dirty-tree)
+- **Skill rename**: `plan_create_beads` → `plan_create_tasks`
+- **Rules**: Updated all beads references to tasks terminology
+- **Plugin version**: 2.30.0 → 3.0.0
+
+### Added
+
+- `plugins/yf/scripts/yf-tasks.sh` — file-based task management library (sourceable, `yft_*` API)
+- `plugins/yf/scripts/yf-task-cli.sh` — CLI wrapper for agent use
+- `.yoshiko-flow/` subdirectories: `tasks/`, `chronicler/`, `archivist/`, `issues/`, `todos/`, `molecules/` (all gitignored)
+
 ## [2.30.0] - 2026-02-22
 
 ### Added

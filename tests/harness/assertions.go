@@ -100,30 +100,6 @@ func checkAssertion(workDir string, a Assertion, output string, exitCode int) (b
 			}
 		}
 
-	case "bd_list_contains":
-		out, code := runAssertionCmd(workDir, "bd list --json 2>/dev/null")
-		if code != 0 {
-			result = false
-			detail = "bd list --json failed"
-		} else {
-			result = strings.Contains(out, a.Value)
-			if !result {
-				detail = fmt.Sprintf("bd list does not contain %q", a.Value)
-			}
-		}
-
-	case "bd_count":
-		out, code := runAssertionCmd(workDir, "bd count 2>/dev/null")
-		if code != 0 {
-			result = false
-			detail = "bd count failed"
-		} else {
-			result = strings.TrimSpace(out) == a.Value
-			if !result {
-				detail = fmt.Sprintf("bd count is %q, expected %q", strings.TrimSpace(out), a.Value)
-			}
-		}
-
 	case "git_log_contains":
 		out, code := runAssertionCmd(workDir, "git log --oneline 2>/dev/null")
 		if code != 0 {

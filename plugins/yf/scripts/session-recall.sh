@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # session-recall.sh — SessionStart hook: output open chronicle summary
 #
-# Outputs open chronicle bead summaries to stdout so the agent starts
+# Outputs open chronicle entry summaries to stdout so the agent starts
 # every session with recovered context. Detects and consumes a
-# .beads/.pending-diary marker left by session-end.sh.
+# .yoshiko-flow/.pending-diary marker left by session-end.sh.
 #
 # Usage:
 #   bash session-recall.sh
@@ -14,16 +14,13 @@
 
 set -uo pipefail
 
-# --- Source config library ---
+# --- Source config library and task library ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/yf-config.sh"
+. "$SCRIPT_DIR/yf-tasks.sh"
 
 # --- Guards ---
 yf_is_enabled || exit 0
-
-if ! command -v bd >/dev/null 2>&1; then
-  exit 0
-fi
 
 if ! command -v jq >/dev/null 2>&1; then
   exit 0
@@ -31,8 +28,8 @@ fi
 
 # --- Project directory ---
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-BEADS_DIR="$PROJECT_DIR/.beads"
-PENDING_MARKER="$BEADS_DIR/.pending-diary"
+YF_DIR="$PROJECT_DIR/.yoshiko-flow"
+PENDING_MARKER="$YF_DIR/.pending-diary"
 PLANS_DIR="$PROJECT_DIR/docs/plans"
 
 # --- Check for pending-diary marker from previous session ---
@@ -47,7 +44,7 @@ if [ -f "$PENDING_MARKER" ]; then
 fi
 
 # --- Check for dirty-tree marker from previous session ---
-DIRTY_MARKER="$BEADS_DIR/.dirty-tree"
+DIRTY_MARKER="$YF_DIR/.dirty-tree"
 HAS_DIRTY=false
 DIRTY_FILE_COUNT=0
 if [ -f "$DIRTY_MARKER" ]; then
@@ -57,10 +54,10 @@ if [ -f "$DIRTY_MARKER" ]; then
 fi
 
 # --- Query open chronicles ---
-CHRONICLES=$( (set +e; bd list --label=ys:chronicle --status=open --format=json 2>/dev/null) || echo "[]")
+CHRONICLES=$( (set +e; yft_list -l "ys:chronicle" --status=open --json 2>/dev/null) || echo "[]")
 COUNT=$(echo "$CHRONICLES" | jq 'length' 2>/dev/null || echo "0")
 
-# --- Check for plans without beads ---
+# --- Check for plans without tasks ---
 HAS_PLAN_WARNING=false
 PLAN_WARNING_IDX=""
 if [ -d "$PLANS_DIR" ]; then
@@ -69,7 +66,7 @@ if [ -d "$PLANS_DIR" ]; then
     if ! grep -q 'Status: Completed' "$LATEST_PLAN" 2>/dev/null; then
       PLAN_IDX=$(basename "$LATEST_PLAN" .md | sed 's/^plan-//')
       if [ -n "$PLAN_IDX" ]; then
-        EPIC_COUNT=$(bd list -l "plan:$PLAN_IDX" --type=epic --limit=1 --json 2>/dev/null \
+        EPIC_COUNT=$(yft_list -l "plan:$PLAN_IDX" --type=epic --limit=1 --json 2>/dev/null \
           | jq 'length' 2>/dev/null) || EPIC_COUNT="0"
         if [ "$EPIC_COUNT" = "0" ]; then
           HAS_PLAN_WARNING=true
@@ -105,7 +102,7 @@ if [ "$COUNT" -gt 0 ]; then
 fi
 
 if $HAS_PLAN_WARNING; then
-  echo "WARNING: Plan $PLAN_WARNING_IDX exists but has no beads. Run /yf:plan_intake to set up the lifecycle."
+  echo "WARNING: Plan $PLAN_WARNING_IDX exists but has no tasks. Run /yf:plan_intake to set up the lifecycle."
   echo ""
 fi
 

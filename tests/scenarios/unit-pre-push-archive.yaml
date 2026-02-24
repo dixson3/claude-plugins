@@ -26,7 +26,7 @@ steps:
   - name: "archivist_enabled_by_default"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
-      # When bd is not available, skip gracefully
+      # When no tasks exist, skip gracefully
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-diary.sh" 2>&1)
       EXIT_CODE=$?
       echo "$OUTPUT"

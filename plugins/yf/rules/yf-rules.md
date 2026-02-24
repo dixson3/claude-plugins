@@ -9,16 +9,15 @@ Rules are ordered by priority. Hard enforcement rules are checked first; advisor
 yf is INACTIVE when ANY of:
 - `.yoshiko-flow/config.json` does not exist
 - `.yoshiko-flow/config.json` has `enabled: false`
-- The bd CLI is not available
 
 When inactive: all skills except `/yf:plugin_setup` refuse to execute, all hooks exit silently.
-To activate: install beads-cli (`brew install dixson3/tap/beads-cli`), then run `/yf:plugin_setup`.
+To activate: run `/yf:plugin_setup`.
 
-### 1.1 Beads Are the Source of Truth
+### 1.1 Tasks Are the Source of Truth
 
-Never create native Tasks (TaskCreate) for plan work. All work items come from beads.
-Before writing code for a plan, verify beads exist: `bd list -l plan:<idx>`.
-If none, invoke `/yf:plan_create_beads` first.
+Never create native Tasks (TaskCreate) for plan work. All work items come from yf tasks.
+Before writing code for a plan, verify tasks exist: `bash "$YFT" list -l plan:<idx>`.
+If none, invoke `/yf:plan_create_tasks` first.
 
 ### 1.2 Plan Intake: No Implementation Without Lifecycle
 
@@ -32,10 +31,10 @@ If (1) AND (2) AND NOT (3): invoke `/yf:plan_intake`.
 Does not apply if auto-chain has already fired.
 If `.yoshiko-flow/plan-gate` exists, the plan is gated. Never dismiss the gate to bypass the lifecycle — if auto-chain failed, diagnose and re-run `/yf:plan_intake`.
 
-### 1.3 Formula-Labeled Beads Route Through Swarm
+### 1.3 Formula-Labeled Tasks Route Through Swarm
 
-When the task pump reads a bead with a `formula:<name>` label, dispatch via `/yf:swarm_run formula:<name> feature:"<title>" parent_bead:<bead-id>`.
-Do NOT use bare Task tool dispatch for formula-labeled beads.
+When the task pump reads a task with a `formula:<name>` label, dispatch via `/yf:swarm_run formula:<name> feature:"<title>" parent_bead:<task-id>`.
+Do NOT use bare Task tool dispatch for formula-labeled tasks.
 If no formula label: dispatch via bare Task tool with `subagent_type` from `agent:<name>` label.
 
 ### 1.4 Specifications Are Anchor Documents
@@ -51,12 +50,12 @@ When `<artifact_dir>/specifications/` exists, specifications define the contract
 
 Plugin issues and project issues are distinct destinations. Never cross-route.
 
-- **Plugin issues** (`/yf:plugin_issue`): Bugs, enhancements, and feedback about the yf plugin or beads-cli. Targets the plugin repo (default: `dixson3/d3-claude-plugins`). **Manually initiated only** — never suggest proactively.
-- **Project issues** (`/yf:issue_capture`): Bugs, enhancements, and technical debt in the user's project. Stages a `ys:issue` bead for deferred submission to the project's tracker.
+- **Plugin issues** (`/yf:plugin_issue`): Bugs, enhancements, and feedback about the yf plugin. Targets the plugin repo (default: `dixson3/d3-claude-plugins`). **Manually initiated only** — never suggest proactively.
+- **Project issues** (`/yf:issue_capture`): Bugs, enhancements, and technical debt in the user's project. Stages a `ys:issue` task for deferred submission to the project's tracker.
 
 **Guards:**
 - `plugin_issue`: If the issue references project-specific code (not plugin internals), warn and redirect to `/yf:issue_capture`.
-- `issue_capture`: If the issue references yf, beads, or plugin internals, warn and redirect to `/yf:plugin_issue`.
+- `issue_capture`: If the issue references yf or plugin internals, warn and redirect to `/yf:plugin_issue`.
 - `issue_process`: Before submission, verify the plugin repo slug differs from the project tracker slug.
 - When ambiguous, ask the user.
 
@@ -66,7 +65,7 @@ Use yf worktree skills for epic worktrees — never raw `git worktree` commands.
 - **Create**: `/yf:worktree_create epic_name:<name>` (not `git worktree add`)
 - **Land**: `/yf:worktree_land` (not `git merge` + `git worktree remove`)
 
-Skills handle beads redirect, validation, rebasing, and cleanup atomically. Raw git commands leave beads inconsistent.
+Skills handle validation, rebasing, and cleanup atomically. Raw git commands leave task state inconsistent.
 Does NOT apply to Claude Code's implicit `isolation: "worktree"` on Task tool calls.
 
 ---
@@ -80,7 +79,7 @@ When ExitPlanMode completes and you see "Auto-chaining plan lifecycle...", execu
 2. Specification integrity gate (if specs exist): run intake checklist per `/yf:plan_intake` Step 1.5.
 3. Reconcile with specifications: invoke `/yf:engineer_reconcile plan_file:<path> mode:gate`.
 4. Update MEMORY.md with plan reference.
-5. Create beads: invoke `/yf:plan_create_beads`.
+5. Create tasks: invoke `/yf:plan_create_tasks`.
 6. Start execution: `bash plugins/yf/scripts/plan-exec.sh start "$ROOT_EPIC"`.
 7. Begin dispatch: invoke `/yf:plan_execute`.
 
@@ -98,7 +97,7 @@ When the user says lifecycle phrases, invoke `/yf:plan_engage`:
 ### 2.3 Breakdown Before Building
 
 Before writing code on a claimed task:
-1. Read the task: `bd show <task-id>`
+1. Read the task: `bash "$YFT" show <task-id>`
 2. If non-trivial (multiple files, multiple concerns): invoke `/yf:plan_breakdown <task-id>`
 3. If atomic (single file, single concern): proceed directly
 
@@ -112,7 +111,7 @@ When `plan-exec.sh status` returns "completed", invoke `/yf:plan_execute` Step 4
 
 ### 3.1 Comment Protocol
 
-Swarm agents communicate via structured comments on the parent bead:
+Swarm agents communicate via structured comments on the parent task:
 - `FINDINGS:` — research/analysis (Purpose, Sources, Summary, Recommendations)
 - `CHANGES:` — implementation (Files Modified, Files Created, Summary)
 - `REVIEW:PASS` or `REVIEW:BLOCK` — review (Verdict, Summary, Issues, Files Reviewed)
@@ -136,7 +135,7 @@ Budget: 1 retry per step (configurable via `max_retries`).
 ### 4.2 Landing the Plane
 
 When ending a work session, invoke `/yf:session_land`.
-The pre-push hook (`pre-push-land.sh`) enforces clean-tree and closed-beads prerequisites.
+The pre-push hook (`pre-push-land.sh`) enforces clean-tree and closed-tasks prerequisites.
 
 ---
 
@@ -154,7 +153,7 @@ At most once per swarm completion. Skip trivial swarms.
 ### 5.2 Research Spike During Planning
 
 During plan mode, if 3+ web searches or comparing alternatives: suggest `/yf:swarm_run formula:research-spike feature:"<topic>"`.
-Check for existing archive beads first. At most once per planning session.
+Check for existing archive tasks first. At most once per planning session.
 
 ### 5.3 Chronicle Worthiness
 

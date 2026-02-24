@@ -2,7 +2,7 @@
 # session-prune.sh — Dynamic cleanup of stale artifacts at session close
 #
 # Usage:
-#   session-prune.sh beads [--dry-run]      # Clean stale closed beads
+#   session-prune.sh tasks [--dry-run]       # Clean stale closed tasks
 #   session-prune.sh ephemeral [--dry-run]   # Remove stale .yoshiko-flow/ files
 #   session-prune.sh drafts [--dry-run]      # Close stale auto-generated drafts
 #   session-prune.sh all [--dry-run]         # Run all three in sequence
@@ -14,6 +14,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/yf-config.sh"
+. "$SCRIPT_DIR/yf-tasks.sh"
 
 COMMAND="${1:-}"
 DRY_RUN=false
@@ -26,7 +27,7 @@ for arg in "$@"; do
 done
 
 if [ -z "$COMMAND" ]; then
-  echo "Usage: session-prune.sh <beads|ephemeral|drafts|all> [--dry-run]" >&2
+  echo "Usage: session-prune.sh <tasks|ephemeral|drafts|all> [--dry-run]" >&2
   exit 0
 fi
 
@@ -48,30 +49,25 @@ get_older_than_days() {
   fi
 }
 
-do_beads() {
-  if ! command -v bd >/dev/null 2>&1; then
-    echo "session-prune beads: bd not available, skipping"
-    return 0
-  fi
-
+do_tasks() {
   DAYS=$(get_older_than_days)
 
   if [ "$DRY_RUN" = "true" ]; then
-    echo "Dry run: would run beads cleanup (older than $DAYS days):"
-    bd admin cleanup --older-than "$DAYS" --dry-run 2>/dev/null || true
+    echo "Dry run: would run tasks cleanup (older than $DAYS days):"
+    yft_cleanup --older-than "$DAYS" --dry-run 2>/dev/null || true
     echo ""
     echo "Dry run: would clean ephemeral wisps:"
-    bd admin cleanup --ephemeral --dry-run 2>/dev/null || true
+    yft_cleanup --ephemeral --dry-run 2>/dev/null || true
     return 0
   fi
 
-  RESULT=$(bd admin cleanup --older-than "$DAYS" --force 2>&1 || true)
+  RESULT=$(yft_cleanup --older-than "$DAYS" 2>&1 || true)
   CLEANED=$(echo "$RESULT" | grep -oE '[0-9]+ issue' | head -1 | grep -oE '[0-9]+' || echo "0")
 
-  WISP_RESULT=$(bd admin cleanup --ephemeral --force 2>&1 || true)
+  WISP_RESULT=$(yft_cleanup --ephemeral 2>&1 || true)
   WISPS=$(echo "$WISP_RESULT" | grep -oE '[0-9]+ issue' | head -1 | grep -oE '[0-9]+' || echo "0")
 
-  echo "session-prune beads: $CLEANED beads cleaned, $WISPS ephemeral cleaned (threshold: ${DAYS}d)"
+  echo "session-prune tasks: $CLEANED tasks cleaned, $WISPS ephemeral cleaned (threshold: ${DAYS}d)"
 }
 
 do_ephemeral() {
@@ -105,7 +101,7 @@ do_ephemeral() {
   done
 
   # Remove session sentinels (always, regardless of date)
-  for sentinel in ".chronicle-nudge" ".beads-check-cache" "plan-chronicle-ok" "plan-intake-ok" "plan-intake-skip"; do
+  for sentinel in ".chronicle-nudge" ".tasks-check-cache" "plan-chronicle-ok" "plan-intake-ok" "plan-intake-skip"; do
     if [ -f "$YF_DIR/$sentinel" ]; then
       if [ "$DRY_RUN" = "true" ]; then
         echo "Dry run: would remove $sentinel (session sentinel)"
@@ -120,10 +116,6 @@ do_ephemeral() {
 }
 
 do_drafts() {
-  if ! command -v bd >/dev/null 2>&1; then
-    echo "session-prune drafts: bd not available, skipping"
-    return 0
-  fi
   if ! command -v jq >/dev/null 2>&1; then
     echo "session-prune drafts: jq not available, skipping"
     return 0
@@ -131,7 +123,7 @@ do_drafts() {
 
   # Query open chronicle drafts
   local drafts
-  drafts=$(bd list --label=ys:chronicle --label=ys:chronicle:draft --status=open --format=json 2>/dev/null || echo "[]")
+  drafts=$(yft_list -l "ys:chronicle,ys:chronicle:draft" --status=open --json 2>/dev/null || echo "[]")
 
   local now_epoch
   now_epoch=$(date +%s)
@@ -164,7 +156,7 @@ do_drafts() {
       if [ "$DRY_RUN" = "true" ]; then
         echo "Dry run: would close $id (age: $((age / 3600))h)"
       else
-        bd close "$id" --reason="session-prune: stale auto-generated draft (>24h)" 2>/dev/null || true
+        yft_close "$id" --reason="session-prune: stale auto-generated draft (>24h)" 2>/dev/null || true
       fi
       closed=$((closed + 1))
     fi
@@ -174,8 +166,8 @@ do_drafts() {
 }
 
 case "$COMMAND" in
-  beads)
-    do_beads
+  tasks)
+    do_tasks
     ;;
   ephemeral)
     do_ephemeral
@@ -184,13 +176,13 @@ case "$COMMAND" in
     do_drafts
     ;;
   all)
-    "$0" beads "$@" || true
+    "$0" tasks "$@" || true
     "$0" ephemeral "$@" || true
     "$0" drafts "$@" || true
     ;;
   *)
     echo "Unknown command: $COMMAND" >&2
-    echo "Usage: session-prune.sh <beads|ephemeral|drafts|all> [--dry-run]" >&2
+    echo "Usage: session-prune.sh <tasks|ephemeral|drafts|all> [--dry-run]" >&2
     ;;
 esac
 

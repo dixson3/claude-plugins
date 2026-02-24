@@ -22,6 +22,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Engage Plan Skill
 
@@ -35,8 +40,8 @@ Draft ───► Ready ───► Executing ◄──► Paused ───►
 
 | State | Trigger | What Happens |
 |---|---|---|
-| **Draft** | "engage the plan" | Plan saved to `docs/plans/`. No beads created. |
-| **Ready** | "the plan is ready" / "activate the plan" | Beads created via `/yf:plan_create_beads`. Gate open on root epic. Tasks deferred. |
+| **Draft** | "engage the plan" | Plan saved to `docs/plans/`. No tasks created. |
+| **Ready** | "the plan is ready" / "activate the plan" | Tasks created via `/yf:plan_create_tasks`. Gate open on root epic. Tasks deferred. |
 | **Executing** | "execute the plan" / "start the plan" / "run the plan" | Gate resolved. Tasks undeferred. Dispatch loop begins via `/yf:plan_execute`. |
 | **Paused** | "pause the plan" / "stop the plan" | New gate created. Pending tasks deferred. In-flight tasks finish. |
 | **Completed** | Automatic (or "mark plan complete") | All plan tasks closed. Gate closed. Plan status updated. |
@@ -98,9 +103,9 @@ When the user says "the plan is ready" or "activate the plan":
 
 1. **Locate plan**: Find the most recent Draft plan in `docs/plans/`
 2. **Update plan status**: Change status from "Draft" to "Ready"
-3. **Create beads**: Invoke `/yf:plan_create_beads` with the plan file
+3. **Create tasks**: Invoke `/yf:plan_create_tasks` with the plan file
    - This creates the epic/task hierarchy, gates, labels, and defers all tasks
-4. **Report**: Show created beads summary and root epic ID
+4. **Report**: Show created tasks summary and root epic ID
 
 ### Transition: -> Executing
 
@@ -144,8 +149,8 @@ Same as -> Executing transition. `plan-exec.sh start` handles both Ready and Pau
 | Part | `plan-<idx>-part<N>-<name>.md` | `plan-0003-a3x7m-part1-api.md` |
 
 ### Status Values
-- `Draft` - Plan saved, no beads
-- `Ready` - Beads created, gate open, tasks deferred
+- `Draft` - Plan saved, no tasks
+- `Ready` - Tasks created, gate open, tasks deferred
 - `In Progress` - Executing, tasks undeferred
 - `Paused` - Gate re-opened, pending tasks deferred
 - `Completed` - All criteria met
@@ -157,4 +162,4 @@ Same as -> Executing transition. `plan-exec.sh start` handles both Ready and Pau
 - Include enough detail for implementation without original conversation
 - Reference specific file paths and code patterns
 - List dependencies between parts
-- Always use beads for tracking once plan reaches Ready state
+- Always use tasks for tracking once plan reaches Ready state

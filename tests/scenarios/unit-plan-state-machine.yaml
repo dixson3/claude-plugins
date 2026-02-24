@@ -2,16 +2,25 @@ name: "Unit: plan-exec.sh — plan state machine transitions"
 
 setup:
   - "git init"
-  - "mkdir -p .claude .yoshiko-flow docs/plans"
+  - "mkdir -p .claude .yoshiko-flow/tasks docs/plans"
   - "echo '# test' > CLAUDE.md"
   - "git add -A && git commit -m 'init'"
-  - "bd init 2>/dev/null || true"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}' > .yoshiko-flow/config.json"
   - |
-    ROOT=$(bd create --title="State Machine Test Epic" --type=epic --priority=2 -l ys:plan,plan:99 --silent)
+    ROOT="task-sm-001"
+    T1="task-sm-002"
+    T2="task-sm-003"
+    cat > .yoshiko-flow/tasks/${ROOT}.json << TASKJSON
+    {"id":"${ROOT}","type":"epic","title":"State Machine Test Epic","status":"open","labels":["ys:plan","plan:99"],"created":"2026-01-01T00:00:00Z"}
+    TASKJSON
+    cat > .yoshiko-flow/tasks/${T1}.json << TASKJSON
+    {"id":"${T1}","type":"task","title":"Task A","status":"open","labels":["ys:plan","plan:99"],"parent":"${ROOT}","created":"2026-01-01T00:00:01Z"}
+    TASKJSON
+    cat > .yoshiko-flow/tasks/${T2}.json << TASKJSON
+    {"id":"${T2}","type":"task","title":"Task B","status":"open","labels":["ys:plan","plan:99"],"parent":"${ROOT}","created":"2026-01-01T00:00:02Z"}
+    TASKJSON
     echo "$ROOT" > .test-epic-id
-    T1=$(bd create --type=task --title="Task A" --parent="$ROOT" -l ys:plan,plan:99 --priority=2 --silent)
     echo "$T1" > .test-task1-id
-    T2=$(bd create --type=task --title="Task B" --parent="$ROOT" -l ys:plan,plan:99 --priority=2 --silent)
     echo "$T2" > .test-task2-id
 
 steps:
@@ -48,8 +57,9 @@ steps:
     run: |
       ROOT=$(cat .test-epic-id)
       EXPECTED=$(git rev-parse HEAD)
-      LABELS=$(bd label list "$ROOT" --json 2>/dev/null)
-      SHA_LABEL=$(echo "$LABELS" | jq -r '.[] | select(startswith("start-sha:"))' | head -1)
+      # Read labels from task file
+      LABELS=$(jq -r '.labels[]' "$WORK_DIR/.yoshiko-flow/tasks/${ROOT}.json" 2>/dev/null)
+      SHA_LABEL=$(echo "$LABELS" | grep '^start-sha:' | head -1)
       RECORDED="${SHA_LABEL#start-sha:}"
       echo "expected=$EXPECTED recorded=$RECORDED"
       [ "$EXPECTED" = "$RECORDED" ] && echo "OK: start-sha matches HEAD"
@@ -88,13 +98,21 @@ steps:
   - name: "completed_when_tasks_closed"
     run: |
       ROOT=$(cat .test-epic-id)
-      # Close ALL open tasks for plan:99 (includes work tasks + auto-chronicle beads)
-      for id in $(bd list -l plan:99 --status=open --type=task --limit=0 --json 2>/dev/null | jq -r '.[].id'); do
-        bd close "$id" 2>/dev/null
+      # Close all open/in_progress task files for plan:99 by updating their status
+      for f in "$WORK_DIR/.yoshiko-flow/tasks"/task-sm-*.json; do
+        [ -f "$f" ] || continue
+        TYPE=$(jq -r '.type' "$f" 2>/dev/null)
+        [ "$TYPE" = "epic" ] && continue
+        jq '.status = "closed"' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
       done
-      # Also close any in-progress tasks
-      for id in $(bd list -l plan:99 --status=in_progress --type=task --limit=0 --json 2>/dev/null | jq -r '.[].id'); do
-        bd close "$id" 2>/dev/null
+      # Also close any auto-created chronicle tasks
+      for f in "$WORK_DIR/.yoshiko-flow/tasks"/task-*.json; do
+        [ -f "$f" ] || continue
+        HAS_PLAN=$(jq -r '.labels // [] | any(. == "plan:99")' "$f" 2>/dev/null)
+        [ "$HAS_PLAN" = "true" ] || continue
+        TYPE=$(jq -r '.type' "$f" 2>/dev/null)
+        [ "$TYPE" = "epic" ] && continue
+        jq '.status = "closed"' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
       done
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" status "$ROOT" 2>&1
     assertions:

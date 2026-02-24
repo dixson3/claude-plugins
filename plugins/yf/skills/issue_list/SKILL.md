@@ -1,6 +1,6 @@
 ---
 name: yf:issue_list
-description: List remote issues and staged issue beads in a combined view
+description: List remote issues and staged issue entries in a combined view
 arguments:
   - name: state
     description: "Filter by state: open, closed, all (default: open)"
@@ -28,7 +28,13 @@ Then stop. Do not execute the remaining steps.
 
 # Issue List
 
-Show a combined view of remote tracker issues and locally staged `ys:issue` beads.
+Show a combined view of remote tracker issues and locally staged `ys:issue` entries.
+
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 ## Behavior
 
@@ -47,12 +53,12 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/tracker-api.sh" list \
   --state "${state:-open}" --limit "${limit:-20}"
 ```
 
-### Step 3: Query Staged Beads
+### Step 3: Query Staged Entries
 
 ```bash
-bd list --label=ys:issue --status=open --json 2>/dev/null
+bash "$YFT" list -l ys:issue --status=open --json 2>/dev/null
 ```
 
 ### Step 4: Present Combined View
 
-Report includes: tracker name and project, remote issues (number + title), staged beads (ID + title + labels), and summary counts. If none found, reports no open issues.
+Report includes: tracker name and project, remote issues (number + title), staged entries (ID + title + labels), and summary counts. If none found, reports no open issues.

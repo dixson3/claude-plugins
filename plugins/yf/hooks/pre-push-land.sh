@@ -3,7 +3,7 @@
 #
 # Blocks push (exit 2) when:
 #   1. Uncommitted changes exist (dirty working tree)
-#   2. In-progress beads exist (work not completed)
+#   2. In-progress tasks exist (work not completed)
 #
 # Compatible with bash 3.2+ (macOS default).
 # Fail-open on guard failures (exit 0).
@@ -13,17 +13,10 @@ set -uo pipefail
 # --- Source config library ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 . "$SCRIPT_DIR/scripts/yf-config.sh"
+. "$SCRIPT_DIR/scripts/yf-tasks.sh"
 
-# --- Guards: fail-open if yf disabled or tools missing ---
+# --- Guards: fail-open if yf disabled ---
 yf_is_enabled || exit 0
-
-if ! command -v bd >/dev/null 2>&1; then
-  exit 0
-fi
-
-if ! command -v jq >/dev/null 2>&1; then
-  exit 0
-fi
 
 # --- Check conditions ---
 BLOCK=false
@@ -53,18 +46,18 @@ if [ "$DIRTY_COUNT" -gt 0 ]; then
   OUTPUT="${OUTPUT}"$'\n'
 fi
 
-# Check 2: In-progress beads
-IN_PROGRESS=$(bd list --status=in_progress --json 2>/dev/null || echo "[]")
+# Check 2: In-progress tasks
+IN_PROGRESS=$(yft_list --status=in_progress --json 2>/dev/null || echo "[]")
 IP_COUNT=$(echo "$IN_PROGRESS" | jq 'length' 2>/dev/null || echo "0")
 if [ "$IP_COUNT" -gt 0 ]; then
   BLOCK=true
-  OUTPUT="${OUTPUT}[ ] In-progress beads: ${IP_COUNT} issue(s)"$'\n'
+  OUTPUT="${OUTPUT}[ ] In-progress tasks: ${IP_COUNT} issue(s)"$'\n'
   echo "$IN_PROGRESS" | jq -r '.[] | "    \(.id): \(.title)"' 2>/dev/null | while IFS= read -r line; do
     OUTPUT="${OUTPUT}${line}"$'\n'
   done
   # Re-read since pipe subshell loses OUTPUT
-  BEAD_LIST=$(echo "$IN_PROGRESS" | jq -r '.[] | "    \(.id): \(.title)"' 2>/dev/null || echo "    (unable to list)")
-  OUTPUT="${OUTPUT}${BEAD_LIST}"$'\n'
+  TASK_LIST=$(echo "$IN_PROGRESS" | jq -r '.[] | "    \(.id): \(.title)"' 2>/dev/null || echo "    (unable to list)")
+  OUTPUT="${OUTPUT}${TASK_LIST}"$'\n'
   OUTPUT="${OUTPUT}    Action: Close or update status before pushing"$'\n'
   OUTPUT="${OUTPUT}"$'\n'
 fi

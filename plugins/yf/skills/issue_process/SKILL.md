@@ -1,9 +1,9 @@
 ---
 name: yf:issue_process
-description: Evaluate, consolidate, and submit staged issue beads to the project tracker
+description: Evaluate, consolidate, and submit staged issue tasks to the project tracker
 arguments:
   - name: plan_idx
-    description: Only process issue beads tagged with this plan index
+    description: Only process issue tasks tagged with this plan index
     required: false
 ---
 
@@ -22,25 +22,30 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Issue Processing
 
-Evaluate, consolidate, and submit staged `ys:issue` beads to the project tracker. Uses the `yf_issue_triage` agent for judgment on duplicates, consolidation, and cross-referencing.
+Evaluate, consolidate, and submit staged `ys:issue` tasks to the project tracker. Uses the `yf_issue_triage` agent for judgment on duplicates, consolidation, and cross-referencing.
 
 ## Behavior
 
-### Step 1: Query Open Issue Beads
+### Step 1: Query Open Issue Tasks
 
 ```bash
-bd list --label=ys:issue --status=open --json
+bash "$YFT" list --label=ys:issue --status=open --json
 ```
 
 If `plan_idx` is specified, filter further:
 ```bash
-bd list --label=ys:issue --label=plan:<idx> --status=open --json
+bash "$YFT" list --label=ys:issue --label=plan:<idx> --status=open --json
 ```
 
-If no open issue beads: report "No staged issues found. Nothing to process." and stop.
+If no open issue tasks: report "No staged issues found. Nothing to process." and stop.
 
 ### Step 2: Detect Tracker
 
@@ -68,14 +73,14 @@ Verify `PLUGIN_REPO` differs from `PROJECT_SLUG`. If they match, error:
 
 ### Step 5: Launch Triage Agent
 
-Use the `yf_issue_triage` agent to evaluate all open beads against existing remote issues:
+Use the `yf_issue_triage` agent to evaluate all open tasks against existing remote issues:
 
 ```
 Task(subagent_type="yf:yf_issue_triage", ...)
 ```
 
 Pass the agent:
-- All open `ys:issue` beads (IDs, titles, descriptions)
+- All open `ys:issue` tasks (IDs, titles, descriptions)
 - List of existing remote issues (numbers, titles, states)
 - Tracker type (github/gitlab/file)
 
@@ -89,16 +94,16 @@ Present the triage plan to the operator via AskUserQuestion:
 Issue Triage Plan
 =================
 1. CREATE: "Add input validation for API endpoints"
-   Source beads: abc, def (consolidated)
+   Source tasks: abc, def (consolidated)
 
 2. COMMENT on #33: "Additional context from testing"
-   Source bead: ghi
+   Source task: ghi
 
 3. SKIP: Duplicate of action #1
-   Source bead: jkl
+   Source task: jkl
 
 4. REDIRECT: This is a plugin issue, not a project issue
-   Source bead: mno → Use /yf:plugin_issue
+   Source task: mno → Use /yf:plugin_issue
 
 Approve this plan?
 ```
@@ -127,12 +132,12 @@ gh issue comment <num> --repo "$PROJECT_SLUG" --body "<body>"
 
 **redirect:** Report to operator for manual `/yf:plugin_issue`.
 
-### Step 8: Close Processed Beads
+### Step 8: Close Processed Tasks
 
 ```bash
-bd close <bead-id> -r "Submitted as <tracker-type> issue"
+bash "$YFT" close <task-id> -r "Submitted as <tracker-type> issue"
 ```
 
 ### Step 9: Report
 
-Report includes: counts and details for each action type (created, commented, skipped, redirected), and total beads closed.
+Report includes: counts and details for each action type (created, commented, skipped, redirected), and total tasks closed.

@@ -15,7 +15,7 @@ On first session start, the preflight system automatically installs rules and cr
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, swarm execution with worktree isolation, context persistence, diary generation, specification artifacts, standards-driven code generation, hash-based IDs, epic worktrees, research/decision archiving, plugin issue reporting, and project issue tracking | 2.30.0 |
+| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, swarm execution with worktree isolation, context persistence, diary generation, specification artifacts, standards-driven code generation, hash-based IDs, epic worktrees, research/decision archiving, plugin issue reporting, and project issue tracking | 3.0.0 |
 
 ## Yoshiko Flow (yf)
 
@@ -23,11 +23,9 @@ Yoshiko Flow freezes the context that makes software maintainable. It breaks pla
 
 ### Getting Started
 
-1. **Install [beads-cli](https://github.com/dixson3/beads-cli)** (>= 0.44.0) — a git-backed issue tracker used for plan tracking.
+1. **Install [jq](https://jqlang.github.io/jq/)** — JSON processor used by internal scripts.
 
-2. **Install [jq](https://jqlang.github.io/jq/)** — JSON processor used by internal scripts.
-
-3. **Load the marketplace** and run setup:
+2. **Load the marketplace** and run setup:
    ```bash
    claude --plugin-dir /path/to/d3-claude-plugins
    ```
@@ -36,7 +34,7 @@ Yoshiko Flow freezes the context that makes software maintainable. It breaks pla
    /yf:plugin_setup
    ```
 
-4. **Start planning** — Enter plan mode, write your plan, exit. Yoshiko Flow takes it from there: saving the plan, creating tracked tasks, and beginning execution.
+3. **Start planning** — Enter plan mode, write your plan, exit. Yoshiko Flow takes it from there: saving the plan, creating tracked tasks, and beginning execution.
 
 ### Plan Lifecycle
 
@@ -46,15 +44,15 @@ Converts plans into a dependency graph of tracked tasks with automatic decomposi
 Draft ───> Ready ───> Executing <──> Paused ───> Completed
 ```
 
-The auto-chain on ExitPlanMode handles the full lifecycle without manual intervention: it formats the plan, creates the beads hierarchy, resolves the gate, and begins dispatch. Manual triggers exist for finer control.
+The auto-chain on ExitPlanMode handles the full lifecycle without manual intervention: it formats the plan, creates the task hierarchy, resolves the gate, and begins dispatch. Manual triggers exist for finer control.
 
 | Skill | Description |
 |-------|-------------|
 | `/yf:plan_engage` | State machine for all lifecycle transitions |
-| `/yf:plan_create_beads` | Convert plan docs to beads hierarchy |
+| `/yf:plan_create_tasks` | Convert plan docs to task hierarchy |
 | `/yf:plan_intake` | Intake checklist for plans entering outside the auto-chain |
 | `/yf:plan_execute` | Orchestrated task dispatch with dependency ordering |
-| `/yf:plan_pump` | Pull ready beads into parallel agent dispatch |
+| `/yf:plan_pump` | Pull ready tasks into parallel agent dispatch |
 | `/yf:plan_breakdown` | Recursive decomposition of non-trivial tasks |
 | `/yf:plan_select_agent` | Auto-discover agents and match to tasks |
 | `/yf:plan_dismiss_gate` | Escape hatch to abandon plan gate |
@@ -65,7 +63,7 @@ Captures observations and context as work progresses, then composes diary entrie
 
 | Skill | Description |
 |-------|-------------|
-| `/yf:chronicle_capture` | Capture context as a chronicle bead |
+| `/yf:chronicle_capture` | Capture context as a chronicle entry |
 | `/yf:chronicle_recall` | Restore context from open chronicles |
 | `/yf:chronicle_diary` | Generate diary entries from chronicles |
 | `/yf:chronicle_disable` | Close chronicles without diary generation |
@@ -76,9 +74,9 @@ Flags research findings and design decisions during work, then processes them in
 
 | Skill | Description |
 |-------|-------------|
-| `/yf:archive_capture` | Capture research or decisions as archive beads |
-| `/yf:archive_process` | Process archive beads into permanent docs |
-| `/yf:archive_disable` | Close archive beads without generating docs |
+| `/yf:archive_capture` | Capture research or decisions as archive entries |
+| `/yf:archive_process` | Process archive entries into permanent docs |
+| `/yf:archive_disable` | Close archive entries without generating docs |
 | `/yf:archive_suggest` | Scan git history for archive candidates |
 
 ### Engineer (Specification Artifacts)

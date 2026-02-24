@@ -3,7 +3,6 @@ type: integration
 
 project:
   git: true
-  beads: true
   yf_enabled: true
   plugin_link: true
 

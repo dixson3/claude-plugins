@@ -1,7 +1,7 @@
 name: "Unit: session-recall.sh — SessionStart chronicle recovery"
 
 setup:
-  - "mkdir -p .yoshiko-flow .beads"
+  - "mkdir -p .yoshiko-flow/tasks .yoshiko-flow/chronicler"
   - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
@@ -28,18 +28,10 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/.pending-diary"
-      mkdir -p "$WORK_DIR/mock-bin"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo "[]"
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
+      rm -f "$WORK_DIR/.yoshiko-flow/.pending-diary"
+      # Ensure no chronicle files
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/"*.json
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
       EXIT_CODE=$?
       if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ]; then
         echo "OK: silent when no chronicles and no marker"
@@ -58,21 +50,19 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/.pending-diary"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo '[{"id":"test-001","title":"Chronicle: test context"},{"id":"test-002","title":"Chronicle: more context"}]'
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
+      rm -f "$WORK_DIR/.yoshiko-flow/.pending-diary"
+      # Create open chronicle task files
+      cat > "$WORK_DIR/.yoshiko-flow/chronicler/chron-recall-001.json" << 'TASKJSON'
+      {"id":"chron-recall-001","type":"chronicle","title":"Chronicle: test context","status":"open","labels":["ys:chronicle"],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
+      cat > "$WORK_DIR/.yoshiko-flow/chronicler/chron-recall-002.json" << 'TASKJSON'
+      {"id":"chron-recall-002","type":"chronicle","title":"Chronicle: more context","status":"open","labels":["ys:chronicle"],"created":"2026-01-01T00:00:01Z"}
+      TASKJSON
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
       EXIT_CODE=$?
       echo "$OUTPUT"
       if echo "$OUTPUT" | grep -q "CHRONICLER: 2 open chronicle(s) detected" && \
-         echo "$OUTPUT" | grep -q "test-001" && \
+         echo "$OUTPUT" | grep -q "chron-recall-001" && \
          echo "$OUTPUT" | grep -q "chronicle_recall"; then
         echo "OK: outputs chronicle summary with recall suggestion"
       else
@@ -90,24 +80,18 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      mkdir -p "$WORK_DIR/.beads"
-      cat > "$WORK_DIR/.beads/.pending-diary" << 'MARKER'
+      cat > "$WORK_DIR/.yoshiko-flow/.pending-diary" << 'MARKER'
       {"created":"2026-02-09T14:30:00Z","reason":"session_end","chronicle_count":3,"draft_created":true}
       MARKER
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo '[{"id":"test-001","title":"Chronicle: test context"}]'
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
+      # Keep at least one chronicle so output includes it
+      cat > "$WORK_DIR/.yoshiko-flow/chronicler/chron-recall-001.json" << 'TASKJSON'
+      {"id":"chron-recall-001","type":"chronicle","title":"Chronicle: test context","status":"open","labels":["ys:chronicle"],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
       EXIT_CODE=$?
       echo "$OUTPUT"
       # Check marker was consumed
-      if [ -f "$WORK_DIR/.beads/.pending-diary" ]; then
+      if [ -f "$WORK_DIR/.yoshiko-flow/.pending-diary" ]; then
         echo "FAIL: marker was not consumed"
         exit 1
       fi
@@ -129,23 +113,15 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      mkdir -p "$WORK_DIR/.beads"
-      cat > "$WORK_DIR/.beads/.pending-diary" << 'MARKER'
+      cat > "$WORK_DIR/.yoshiko-flow/.pending-diary" << 'MARKER'
       {"created":"2026-02-09T14:30:00Z","reason":"session_end","chronicle_count":2,"draft_created":false}
       MARKER
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo "[]"
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
+      # Remove all chronicle files
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/"*.json
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
       EXIT_CODE=$?
       echo "$OUTPUT"
-      if [ -f "$WORK_DIR/.beads/.pending-diary" ]; then
+      if [ -f "$WORK_DIR/.yoshiko-flow/.pending-diary" ]; then
         echo "FAIL: marker was not consumed"
         exit 1
       fi
@@ -166,14 +142,9 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/.pending-diary"
-      # Use a bd that fails
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      exit 1
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" >/dev/null 2>&1
+      rm -f "$WORK_DIR/.yoshiko-flow/.pending-diary"
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/"*.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" >/dev/null 2>&1
       echo "OK: exit code $?"
     assertions:
       - type: exit_code
@@ -181,29 +152,22 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: Warns about plan without beads
-  - name: "plan_without_beads_warns"
+  # Case 7: Warns about plan without tasks
+  - name: "plan_without_tasks_warns"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/.pending-diary"
+      rm -f "$WORK_DIR/.yoshiko-flow/.pending-diary"
       mkdir -p "$WORK_DIR/docs/plans"
       printf '# Plan 99\n**Status:** Draft' > "$WORK_DIR/docs/plans/plan-99.md"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo "[]"
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
+      # No task files for plan:99
+      rm -f "$WORK_DIR/.yoshiko-flow/tasks/"*.json
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
       echo "$OUTPUT"
-      if echo "$OUTPUT" | grep -q "WARNING.*Plan 99.*no beads"; then
-        echo "OK: warns about plan without beads"
+      if echo "$OUTPUT" | grep -q "WARNING.*Plan 99.*no tasks"; then
+        echo "OK: warns about plan without tasks"
       else
-        echo "FAIL: should warn about plan without beads"
+        echo "FAIL: should warn about plan without tasks"
         exit 1
       fi
     assertions:
@@ -217,19 +181,11 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/.pending-diary"
+      rm -f "$WORK_DIR/.yoshiko-flow/.pending-diary"
       mkdir -p "$WORK_DIR/docs/plans"
       printf '# Plan 99\n**Status: Completed**' > "$WORK_DIR/docs/plans/plan-99.md"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo "[]"
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/"*.json
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
       if [ -z "$OUTPUT" ]; then
         echo "OK: no warning for completed plan"
       else
@@ -247,23 +203,14 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/.pending-diary"
+      rm -f "$WORK_DIR/.yoshiko-flow/.pending-diary"
       rm -rf "$WORK_DIR/docs/plans"
-      mkdir -p "$WORK_DIR/.beads"
-      echo '{"created":"2026-02-18T10:00:00Z","reason":"session_end","dirty_count":5}' > "$WORK_DIR/.beads/.dirty-tree"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo "[]"
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
+      echo '{"created":"2026-02-18T10:00:00Z","reason":"session_end","dirty_count":5}' > "$WORK_DIR/.yoshiko-flow/.dirty-tree"
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/"*.json
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
       echo "$OUTPUT"
       # Marker should be consumed
-      if [ -f "$WORK_DIR/.beads/.dirty-tree" ]; then
+      if [ -f "$WORK_DIR/.yoshiko-flow/.dirty-tree" ]; then
         echo "FAIL: dirty-tree marker was not consumed"
         exit 1
       fi
@@ -285,19 +232,11 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/.pending-diary"
-      rm -f "$WORK_DIR/.beads/.dirty-tree"
+      rm -f "$WORK_DIR/.yoshiko-flow/.pending-diary"
+      rm -f "$WORK_DIR/.yoshiko-flow/.dirty-tree"
       rm -rf "$WORK_DIR/docs/plans"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo "[]"
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/"*.json
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/session-recall.sh" 2>&1)
       if [ -z "$OUTPUT" ]; then
         echo "OK: silent when no dirty-tree marker"
       else
@@ -312,7 +251,7 @@ steps:
 
 teardown:
   - "rm -f .yoshiko-flow/config.json"
-  - "rm -f .beads/.pending-diary"
-  - "rm -f .beads/.dirty-tree"
-  - "rm -rf mock-bin"
+  - "rm -f .yoshiko-flow/.pending-diary"
+  - "rm -f .yoshiko-flow/.dirty-tree"
+  - "rm -f .yoshiko-flow/chronicler/chron-recall-*"
   - "rm -rf docs/plans"

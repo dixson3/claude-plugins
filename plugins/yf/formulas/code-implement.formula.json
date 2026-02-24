@@ -9,25 +9,25 @@
     {
       "id": "research-standards",
       "title": "Research standards for {{feature}}",
-      "description": "Check for existing coding standards IGs and research technology-specific best practices for {{feature}}. SUBAGENT:yf:yf_swarm_researcher\n\nPost a FINDINGS: comment on the parent bead with:\n- Purpose: Standards investigation for the implementation task\n- Sources: Internal (IGs, existing patterns) and External (best practices)\n- Standards: Concrete coding standards to follow\n- Recommendations: Suggested implementation approach",
+      "description": "Check for existing coding standards IGs and research technology-specific best practices for {{feature}}. SUBAGENT:yf:yf_swarm_researcher\n\nPost a FINDINGS: comment on the parent task with:\n- Purpose: Standards investigation for the implementation task\n- Sources: Internal (IGs, existing patterns) and External (best practices)\n- Standards: Concrete coding standards to follow\n- Recommendations: Suggested implementation approach",
       "needs": []
     },
     {
       "id": "implement",
       "title": "Implement {{feature}}",
-      "description": "Implement {{feature}} following the coding standards from upstream FINDINGS. Read relevant IGs if referenced. SUBAGENT:general-purpose\n\nPost a CHANGES: comment on the parent bead listing files created/modified, standards applied, and implementation summary.",
+      "description": "Implement {{feature}} following the coding standards from upstream FINDINGS. Read relevant IGs if referenced. SUBAGENT:general-purpose\n\nPost a CHANGES: comment on the parent task listing files created/modified, standards applied, and implementation summary.",
       "needs": ["research-standards"]
     },
     {
       "id": "test",
       "title": "Test {{feature}}",
-      "description": "Write and run tests for {{feature}}. Read CHANGES for implementation details and FINDINGS for testing standards. SUBAGENT:yf:yf_swarm_tester\n\nPost a TESTS: comment on the parent bead with pass/fail results, test files, and coverage notes.",
+      "description": "Write and run tests for {{feature}}. Read CHANGES for implementation details and FINDINGS for testing standards. SUBAGENT:yf:yf_swarm_tester\n\nPost a TESTS: comment on the parent task with pass/fail results, test files, and coverage notes.",
       "needs": ["implement"]
     },
     {
       "id": "review",
       "title": "Review {{feature}}",
-      "description": "Review the implementation of {{feature}} against coding standards from FINDINGS, relevant IGs, and test results from TESTS. SUBAGENT:yf:yf_swarm_reviewer\n\nPost a REVIEW: comment on the parent bead with verdict (REVIEW:PASS or REVIEW:BLOCK), standards compliance assessment, and IG alignment notes.",
+      "description": "Review the implementation of {{feature}} against coding standards from FINDINGS, relevant IGs, and test results from TESTS. SUBAGENT:yf:yf_swarm_reviewer\n\nPost a REVIEW: comment on the parent task with verdict (REVIEW:PASS or REVIEW:BLOCK), standards compliance assessment, and IG alignment notes.",
       "needs": ["test"],
       "chronicle": true
     }

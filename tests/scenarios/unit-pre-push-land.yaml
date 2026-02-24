@@ -1,7 +1,7 @@
 name: "Unit: pre-push-land.sh — PreToolUse blocking hook"
 
 setup:
-  - "mkdir -p .yoshiko-flow .beads"
+  - "mkdir -p .yoshiko-flow/tasks"
   - "git init . >/dev/null 2>&1 || true"
   - "git config user.email 'test@test.com' && git config user.name 'Test'"
   - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
@@ -11,13 +11,7 @@ steps:
   - name: "exits_zero_when_disabled"
     run: |
       echo '{"enabled":false}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      mkdir -p "$WORK_DIR/mock-bin"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      echo "[]"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh" 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh" 2>&1
       EXIT_CODE=$?
       if [ "$EXIT_CODE" -eq 0 ]; then
         echo "OK: exits 0 when disabled"
@@ -31,26 +25,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Exits 0 when bd not installed
-  - name: "exits_zero_when_bd_missing"
-    run: |
-      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      # Use empty PATH to simulate bd not found (but keep bash accessible)
-      CLAUDE_PROJECT_DIR="$WORK_DIR" PATH="/usr/bin:/bin" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh" 2>&1
-      EXIT_CODE=$?
-      if [ "$EXIT_CODE" -eq 0 ]; then
-        echo "OK: exits 0 when bd missing"
-      else
-        echo "FAIL: expected exit 0, got $EXIT_CODE"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 3: Exits 0 when tree clean and no in-progress beads
+  # Case 2: Exits 0 when tree clean and no in-progress tasks
   - name: "exits_zero_when_clean"
     run: |
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
@@ -58,13 +33,9 @@ steps:
       cd "$WORK_DIR"
       git add -A >/dev/null 2>&1 || true
       git commit -m "clean tree" --allow-empty >/dev/null 2>&1 || true
-      mkdir -p "$WORK_DIR/mock-bin"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      echo "[]"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh" 2>&1
+      # Ensure no in-progress task files
+      rm -f "$WORK_DIR/.yoshiko-flow/tasks/"*.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh" 2>&1
       EXIT_CODE=$?
       if [ "$EXIT_CODE" -eq 0 ]; then
         echo "OK: exits 0 when clean"
@@ -78,19 +49,15 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Exits 2 when uncommitted changes exist
+  # Case 3: Exits 2 when uncommitted changes exist
   - name: "blocks_when_dirty_tree"
     run: |
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       # Create uncommitted file
       echo "dirty" > "$WORK_DIR/dirty-file.txt"
-      mkdir -p "$WORK_DIR/mock-bin"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      echo "[]"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh" 2>&1)
+      # Ensure no in-progress tasks
+      rm -f "$WORK_DIR/.yoshiko-flow/tasks/"*.json
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh" 2>&1)
       EXIT_CODE=$?
       echo "$OUTPUT"
       if [ "$EXIT_CODE" -eq 2 ]; then
@@ -107,8 +74,8 @@ steps:
       - type: output_contains
         value: "LAND-THE-PLANE"
 
-  # Case 5: Exits 2 when in-progress beads exist
-  - name: "blocks_when_in_progress_beads"
+  # Case 4: Exits 2 when in-progress tasks exist
+  - name: "blocks_when_in_progress_tasks"
     run: |
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       # Clean tree
@@ -116,21 +83,15 @@ steps:
       rm -f "$WORK_DIR/dirty-file.txt"
       git add -A >/dev/null 2>&1 || true
       git commit -m "clean" --allow-empty >/dev/null 2>&1 || true
-      mkdir -p "$WORK_DIR/mock-bin"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo '[{"id":"test-001","title":"In-progress task"}]'
-        exit 0
-      fi
-      echo "[]"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh" 2>&1)
+      # Create an in-progress task file
+      cat > "$WORK_DIR/.yoshiko-flow/tasks/task-push-001.json" << 'TASKJSON'
+      {"id":"task-push-001","type":"task","title":"In-progress task","status":"in_progress","labels":[],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh" 2>&1)
       EXIT_CODE=$?
       echo "$OUTPUT"
       if [ "$EXIT_CODE" -eq 2 ]; then
-        echo "OK: blocks with exit 2 for in-progress beads"
+        echo "OK: blocks with exit 2 for in-progress tasks"
       else
         echo "FAIL: expected exit 2, got $EXIT_CODE"
         exit 1
@@ -141,24 +102,18 @@ steps:
       - type: output_contains
         value: "OK"
       - type: output_contains
-        value: "In-progress beads"
+        value: "In-progress tasks"
 
-  # Case 6: Output contains structured checklist format
+  # Case 5: Output contains structured checklist format
   - name: "output_has_structured_checklist"
     run: |
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       echo "uncommitted" > "$WORK_DIR/test-file.txt"
-      mkdir -p "$WORK_DIR/mock-bin"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo '[{"id":"test-001","title":"Active work"}]'
-        exit 0
-      fi
-      echo "[]"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh" 2>&1)
+      # Create an in-progress task file
+      cat > "$WORK_DIR/.yoshiko-flow/tasks/task-push-002.json" << 'TASKJSON'
+      {"id":"task-push-002","type":"task","title":"Active work","status":"in_progress","labels":[],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-land.sh" 2>&1)
       echo "$OUTPUT"
       if echo "$OUTPUT" | grep -q "LAND-THE-PLANE" && \
          echo "$OUTPUT" | grep -q "Uncommitted changes" && \
@@ -177,4 +132,4 @@ steps:
 teardown:
   - "rm -f .yoshiko-flow/config.json"
   - "rm -f dirty-file.txt test-file.txt"
-  - "rm -rf mock-bin"
+  - "rm -f .yoshiko-flow/tasks/task-push-*"

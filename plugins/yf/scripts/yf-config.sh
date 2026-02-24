@@ -94,16 +94,10 @@ _yf_check_flag() {
   [ "$val" != "false" ]
 }
 
-# yf_bd_available — returns 0 if bd CLI is available
-yf_bd_available() {
-  command -v bd >/dev/null 2>&1
-}
-
 # yf_is_enabled — returns 0 if enabled, 1 if disabled
-# Three-condition activation gate (DD-015):
+# Two-condition activation gate (DD-015):
 #   1. Config exists
 #   2. enabled != false
-#   3. bd CLI available
 yf_is_enabled() {
   yf_config_exists || return 1
   if command -v jq >/dev/null 2>&1; then
@@ -111,7 +105,6 @@ yf_is_enabled() {
     val=$(yf_merged_config | jq -r 'if .enabled == null then true else .enabled end' 2>/dev/null)
     [ "$val" = "false" ] && return 1
   fi
-  yf_bd_available || return 1
   return 0
 }
 

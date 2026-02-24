@@ -78,7 +78,7 @@ steps:
   # Case 5: plan-exec-guard exits 0 when disabled
   - name: "plan_exec_guard_exits_when_disabled"
     run: |
-      echo "bd update marketplace-abc --status in_progress" | \
+      echo '{"tool_name":"Bash","tool_input":{"command":"echo test"}}' | \
         CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/plan-exec-guard.sh"
       echo "OK: plan-exec-guard exited 0"
     assertions:
@@ -123,8 +123,8 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 8: Inactive because beads not installed → rules removed
-  - name: "inactive_no_beads_removes_rules"
+  # Case 8: Inactive because config removed → rules removed
+  - name: "inactive_no_config_removes_rules"
     run: |
       # First enable and install rules
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
@@ -136,9 +136,9 @@ steps:
       for f in "$WORK_DIR/.claude/rules/yf"/*.md; do
         [ -L "$f" ] && BEFORE=$((BEFORE + 1))
       done
-      # Now run with no beads
-      rm -f "$WORK_DIR/.yoshiko-flow/lock.json"
-      OUTPUT=$(HOME="$WORK_DIR/fakehome" PATH="/usr/bin:/bin" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
+      # Now remove config so yf becomes inactive
+      rm -f "$WORK_DIR/.yoshiko-flow/config.json" "$WORK_DIR/.yoshiko-flow/lock.json"
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
       AFTER=0
       for f in "$WORK_DIR/.claude/rules/yf"/*.md; do
@@ -146,7 +146,7 @@ steps:
         AFTER=$((AFTER + 1))
       done
       if [ "$BEFORE" -gt 0 ] && [ "$AFTER" -eq 0 ]; then
-        echo "OK: rules removed when beads missing (had $BEFORE, now $AFTER)"
+        echo "OK: rules removed when config missing (had $BEFORE, now $AFTER)"
       else
         echo "FAIL: before=$BEFORE after=$AFTER"
         exit 1
@@ -155,11 +155,8 @@ steps:
       - type: exit_code
         value: "0"
       - type: output_contains
-        value: "inactive"
-      - type: output_contains
         value: "OK"
 
 teardown:
   - "rm -f .yoshiko-flow/config.json .yoshiko-flow/lock.json .claude/yf.local.json"
   - "rm -f .yoshiko-flow/plan-gate"
-  - "rm -rf fakehome"

@@ -1,8 +1,8 @@
 #!/bin/bash
 # plan-exec-guard.sh — Pre-tool-use hook for plan execution enforcement
 #
-# Fires before bd claim/close operations. Prevents agents from picking up
-# or completing tasks on non-executing plans.
+# Fires before yf-task-cli.sh update/close operations. Prevents agents from
+# picking up or completing tasks on non-executing plans.
 
 set -euo pipefail
 
@@ -19,8 +19,8 @@ fi
 
 TASK_ID=""
 
-if echo "$TOOL_INPUT" | grep -qE 'bd (update|close)'; then
-    TASK_ID=$(echo "$TOOL_INPUT" | grep -oE '(marketplace-[a-z0-9]+(\.[0-9]+)*|bd-[a-z0-9]+)' | head -1)
+if echo "$TOOL_INPUT" | grep -qE 'yf-task-cli\.sh (update|close)'; then
+    TASK_ID=$(echo "$TOOL_INPUT" | grep -oE 'task-[a-z0-9]+(\.[0-9]+)*' | head -1)
 fi
 
 if [[ -z "$TASK_ID" ]]; then

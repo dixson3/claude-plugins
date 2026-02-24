@@ -2,7 +2,7 @@ name: "Unit: plan-chronicle.sh and chronicle-validate.sh"
 
 setup:
   - "git init"
-  - "mkdir -p .claude .yoshiko-flow .beads docs/plans"
+  - "mkdir -p .claude .yoshiko-flow/tasks .yoshiko-flow/chronicler docs/plans"
   - "echo '# test' > CLAUDE.md"
   - "echo '# Plan 99: Test Plan' > docs/plans/plan-99.md"
   - "echo '**Status:** Draft' >> docs/plans/plan-99.md"
@@ -10,32 +10,33 @@ setup:
   - "echo '## Overview' >> docs/plans/plan-99.md"
   - "echo 'This is a test plan for chronicle validation.' >> docs/plans/plan-99.md"
   - "git add -A && git commit -m 'init'"
-  - "bd init 2>/dev/null || true"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}' > .yoshiko-flow/config.json"
 
 steps:
-  # Case 1: plan-chronicle.sh save creates a bead with correct labels
-  - name: "save_creates_chronicle_bead"
+  # Case 1: plan-chronicle.sh save creates a task with correct labels
+  - name: "save_creates_chronicle_task"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-plan-"*
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-chronicle.sh" save "plan:99" "$WORK_DIR/docs/plans/plan-99.md" 2>&1
-      # Verify bead was created with correct labels
-      BEAD=$(bd list --label=ys:chronicle:auto --status=open --limit=1 --json 2>/dev/null || echo "[]")
-      COUNT=$(echo "$BEAD" | jq 'length' 2>/dev/null || echo "0")
-      if [ "$COUNT" -gt 0 ]; then
-        TITLE=$(echo "$BEAD" | jq -r '.[0].title' 2>/dev/null || echo "")
-        if echo "$TITLE" | grep -q "save"; then
-          echo "OK: save chronicle bead created with correct title"
-        else
-          echo "FAIL: bead title doesn't contain 'save': $TITLE"
-          exit 1
+      # Verify task was created with correct labels
+      FOUND=false
+      for f in "$WORK_DIR/.yoshiko-flow/chronicler/"*.json; do
+        [ -f "$f" ] || continue
+        if jq -r '.labels[]' "$f" 2>/dev/null | grep -q "ys:chronicle:auto" && \
+           jq -r '.title' "$f" 2>/dev/null | grep -q "save"; then
+          FOUND=true
+          break
         fi
+      done
+      if $FOUND; then
+        echo "OK: save chronicle task created with correct title"
       else
         # Check dedup file as backup verification
         DEDUP_FILE="$WORK_DIR/.yoshiko-flow/.chronicle-plan-$(date +%Y%m%d)"
         if [ -f "$DEDUP_FILE" ] && grep -q "plan:99-save" "$DEDUP_FILE" 2>/dev/null; then
           echo "OK: save chronicle created (verified via dedup file)"
         else
-          echo "FAIL: no chronicle bead or dedup entry found"
+          echo "FAIL: no chronicle task or dedup entry found"
           exit 1
         fi
       fi
@@ -68,7 +69,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: plan-chronicle.sh intake creates a bead with plan file excerpt
+  # Case 3: plan-chronicle.sh intake creates a task with plan file excerpt
   - name: "intake_creates_chronicle_with_excerpt"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-plan-"*
@@ -107,9 +108,9 @@ steps:
   - name: "validate_creates_fallbacks_for_missing"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-plan-"*
-      # Close any existing chronicles for plan:98 (clean slate)
-      # Create a fresh plan with no chronicles
-      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-validate.sh" "plan:98" 2>&1)
+      # Clean slate
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/"*.json
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-validate.sh" "plan:98" 2>&1)
       if echo "$OUTPUT" | grep -q "created"; then
         echo "OK: fallbacks created for missing boundaries"
       else
@@ -127,20 +128,19 @@ steps:
   - name: "validate_reports_full_coverage"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-plan-"*
-      # Create all three boundary chronicles manually
-      bd create --type task --priority 3 \
-        --labels "ys:chronicle,ys:chronicle:auto,ys:topic:planning,plan:97" \
-        --title "Chronicle (Auto): Plan plan:97 — save" \
-        --description "test" --silent 2>/dev/null
-      bd create --type task --priority 3 \
-        --labels "ys:chronicle,ys:chronicle:auto,ys:topic:planning,plan:97" \
-        --title "Chronicle (Auto): Plan plan:97 — start" \
-        --description "test" --silent 2>/dev/null
-      bd create --type task --priority 3 \
-        --labels "ys:chronicle,ys:chronicle:auto,ys:topic:planning,plan:97" \
-        --title "Chronicle (Auto): Plan plan:97 — complete" \
-        --description "test" --silent 2>/dev/null
-      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-validate.sh" "plan:97" 2>&1)
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/"*.json
+      # Create all three boundary chronicles manually as task files
+      YFT="$PLUGIN_DIR/plugins/yf/scripts/yf-task-cli.sh"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$YFT" create --type=task --priority=3 \
+        -l "ys:chronicle,ys:chronicle:auto,ys:topic:planning,plan:97" \
+        --title "Chronicle (Auto): Plan plan:97 — save" 2>/dev/null
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$YFT" create --type=task --priority=3 \
+        -l "ys:chronicle,ys:chronicle:auto,ys:topic:planning,plan:97" \
+        --title "Chronicle (Auto): Plan plan:97 — start" 2>/dev/null
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$YFT" create --type=task --priority=3 \
+        -l "ys:chronicle,ys:chronicle:auto,ys:topic:planning,plan:97" \
+        --title "Chronicle (Auto): Plan plan:97 — complete" 2>/dev/null
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-validate.sh" "plan:97" 2>&1)
       if echo "$OUTPUT" | grep -q "3/3 boundaries covered"; then
         echo "OK: full coverage reported"
       else
@@ -157,4 +157,4 @@ steps:
 teardown:
   - "rm -f .yoshiko-flow/.chronicle-plan-*"
   - "rm -f docs/plans/plan-99.md"
-  - "chmod 755 .beads 2>/dev/null || true"
+  - "rm -f .yoshiko-flow/chronicler/*.json .yoshiko-flow/tasks/*.json"

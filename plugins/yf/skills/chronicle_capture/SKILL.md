@@ -1,6 +1,6 @@
 ---
 name: yf:chronicle_capture
-description: Capture current context as a chronicle bead
+description: Capture current context as a chronicle task
 arguments:
   - name: topic
     description: Topic label for the chronicle (e.g., feature, bugfix, refactor, docs)
@@ -22,14 +22,19 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Chronicler Capture Skill
 
-Capture the current context as a chronicle bead for later recall.
+Capture the current context as a chronicle task for later recall.
 
 ## Instructions
 
-Create a bead that captures the current working context, including:
+Create a task that captures the current working context, including:
 - What was being worked on
 - Key decisions made
 - Current state/progress
@@ -41,12 +46,12 @@ When invoked with `/yf:chronicle_capture [topic:<topic>]`:
 
 1. **Analyze context**: Review the current conversation and work state
 2. **Summarize**: Create a concise summary of the context
-3. **Create bead**: Use beads-cli to create the chronicle
+3. **Create task**: Use yf-task-cli to create the chronicle
 
-### Bead Creation
+### Task Creation
 
 ```bash
-bd create --title "<brief summary>" \
+bash "$YFT" create --title "<brief summary>" \
   --labels=ys:chronicle,ys:topic:<topic> \
   --body "<detailed context>"
 ```
@@ -54,13 +59,13 @@ bd create --title "<brief summary>" \
 ### Labels
 
 Always include:
-- `ys:chronicle` - Marks this as a chronicle bead
+- `ys:chronicle` - Marks this as a chronicle task
 
-**Plan-context auto-detection:** Before creating the bead, check if a plan is currently executing:
+**Plan-context auto-detection:** Before creating the task, check if a plan is currently executing:
 ```bash
-bd list -l exec:executing --type=epic --status=open --limit=1 --json 2>/dev/null
+bash "$YFT" list -l exec:executing --type=epic --status=open --limit=1 --json 2>/dev/null
 ```
-If a plan is executing, extract its `plan:<idx>` label and auto-tag the chronicle bead with it. This links the chronicle to the specific plan execution so the diary agent can process plan chronicles as a group.
+If a plan is executing, extract its `plan:<idx>` label and auto-tag the chronicle task with it. This links the chronicle to the specific plan execution so the diary agent can process plan chronicles as a group.
 
 Optional topic labels:
 - `ys:topic:feature` - New feature work
@@ -72,7 +77,7 @@ Optional topic labels:
 
 ## Context to Capture
 
-Include in the bead body:
+Include in the task body:
 
 ### Summary
 Brief description of what was happening.
@@ -96,4 +101,4 @@ Brief description of what was happening.
 
 ## Expected Output
 
-Report includes: summary, topic, labels applied, bead ID created. Ends with pointer to `/yf:chronicle_recall`.
+Report includes: summary, topic, labels applied, task ID created. Ends with pointer to `/yf:chronicle_recall`.

@@ -80,13 +80,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: Rules reference plan_create_beads
-  - name: "references_plan_create_beads"
+  # Case 6: Rules reference plan_create_tasks
+  - name: "references_plan_create_tasks"
     run: |
-      if grep -q "plan_create_beads" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
-        echo "OK: references plan_create_beads"
+      if grep -q "plan_create_tasks" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"; then
+        echo "OK: references plan_create_tasks"
       else
-        echo "FAIL: missing plan_create_beads reference"
+        echo "FAIL: missing plan_create_tasks reference"
         exit 1
       fi
     assertions:

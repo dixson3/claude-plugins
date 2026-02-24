@@ -1,7 +1,7 @@
 name: "Unit: session-end.sh — SessionEnd auto-draft + pending marker"
 
 setup:
-  - "mkdir -p .yoshiko-flow .beads"
+  - "mkdir -p .yoshiko-flow/tasks .yoshiko-flow/chronicler"
   - "git init . >/dev/null 2>&1 || true"
   - "git config user.email 'test@test.com' && git config user.name 'Test'"
   - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
@@ -11,10 +11,10 @@ steps:
   - name: "exits_when_yf_disabled"
     run: |
       echo '{"enabled":false}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/.pending-diary"
+      rm -f "$WORK_DIR/.yoshiko-flow/.pending-diary"
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
       EXIT_CODE=$?
-      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ] && [ ! -f "$WORK_DIR/.beads/.pending-diary" ]; then
+      if [ "$EXIT_CODE" -eq 0 ] && [ -z "$OUTPUT" ] && [ ! -f "$WORK_DIR/.yoshiko-flow/.pending-diary" ]; then
         echo "OK: exits silently when yf disabled, no marker written"
       else
         echo "FAIL: should exit 0 silently with no marker (exit=$EXIT_CODE, output=$OUTPUT)"
@@ -31,22 +31,18 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/.pending-diary"
-      mkdir -p "$WORK_DIR/mock-bin"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo '[{"id":"test-001","title":"Chronicle: work"},{"id":"test-002","title":"Chronicle: more"}]'
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      # Also mock chronicle-check.sh by making it a no-op (we control bd output)
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
+      rm -f "$WORK_DIR/.yoshiko-flow/.pending-diary"
+      # Create open chronicle task files
+      cat > "$WORK_DIR/.yoshiko-flow/chronicler/chron-end-001.json" << 'TASKJSON'
+      {"id":"chron-end-001","type":"chronicle","title":"Chronicle: work","status":"open","labels":["ys:chronicle"],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
+      cat > "$WORK_DIR/.yoshiko-flow/chronicler/chron-end-002.json" << 'TASKJSON'
+      {"id":"chron-end-002","type":"chronicle","title":"Chronicle: more","status":"open","labels":["ys:chronicle"],"created":"2026-01-01T00:00:01Z"}
+      TASKJSON
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
       EXIT_CODE=$?
-      if [ -f "$WORK_DIR/.beads/.pending-diary" ]; then
-        MARKER_CONTENT=$(cat "$WORK_DIR/.beads/.pending-diary")
+      if [ -f "$WORK_DIR/.yoshiko-flow/.pending-diary" ]; then
+        MARKER_CONTENT=$(cat "$WORK_DIR/.yoshiko-flow/.pending-diary")
         echo "MARKER: $MARKER_CONTENT"
         if echo "$MARKER_CONTENT" | grep -q '"reason": "session_end"' && \
            echo "$MARKER_CONTENT" | grep -q '"chronicle_count": 2'; then
@@ -70,22 +66,15 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/.pending-diary"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo "[]"
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
+      rm -f "$WORK_DIR/.yoshiko-flow/.pending-diary"
+      # Remove chronicle files
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/"*.json
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
       EXIT_CODE=$?
-      if [ "$EXIT_CODE" -eq 0 ] && [ ! -f "$WORK_DIR/.beads/.pending-diary" ]; then
+      if [ "$EXIT_CODE" -eq 0 ] && [ ! -f "$WORK_DIR/.yoshiko-flow/.pending-diary" ]; then
         echo "OK: no marker when no open chronicles"
       else
-        echo "FAIL: should not write marker (exit=$EXIT_CODE, marker_exists=$(test -f "$WORK_DIR/.beads/.pending-diary" && echo yes || echo no))"
+        echo "FAIL: should not write marker (exit=$EXIT_CODE, marker_exists=$(test -f "$WORK_DIR/.yoshiko-flow/.pending-diary" && echo yes || echo no))"
         exit 1
       fi
     assertions:
@@ -94,17 +83,12 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Always exits 0 even when bd fails
+  # Case 4: Always exits 0 even on errors
   - name: "always_exits_zero"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      exit 1
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" >/dev/null 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" >/dev/null 2>&1
       echo "OK: exit code $?"
     assertions:
       - type: exit_code
@@ -117,22 +101,15 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/.dirty-tree"
+      rm -f "$WORK_DIR/.yoshiko-flow/.dirty-tree"
       # Create uncommitted file to make tree dirty
       echo "dirty" > "$WORK_DIR/uncommitted.txt"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo "[]"
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
+      # Remove chronicles so pending-diary doesn't interfere
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/"*.json
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
       EXIT_CODE=$?
-      if [ -f "$WORK_DIR/.beads/.dirty-tree" ]; then
-        MARKER=$(cat "$WORK_DIR/.beads/.dirty-tree")
+      if [ -f "$WORK_DIR/.yoshiko-flow/.dirty-tree" ]; then
+        MARKER=$(cat "$WORK_DIR/.yoshiko-flow/.dirty-tree")
         if echo "$MARKER" | grep -q '"reason":"session_end"' && \
            echo "$MARKER" | grep -q '"dirty_count":'; then
           echo "OK: dirty-tree marker written with correct content"
@@ -155,22 +132,13 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/.dirty-tree"
+      rm -f "$WORK_DIR/.yoshiko-flow/.dirty-tree"
       rm -f "$WORK_DIR/uncommitted.txt"
       cd "$WORK_DIR"
       git add -A >/dev/null 2>&1 || true
       git commit -m "clean" --allow-empty >/dev/null 2>&1 || true
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        echo "[]"
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
-      if [ ! -f "$WORK_DIR/.beads/.dirty-tree" ]; then
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/session-end.sh" 2>&1)
+      if [ ! -f "$WORK_DIR/.yoshiko-flow/.dirty-tree" ]; then
         echo "OK: no dirty-tree marker when tree clean"
       else
         echo "FAIL: dirty-tree marker should not exist"
@@ -184,7 +152,7 @@ steps:
 
 teardown:
   - "rm -f .yoshiko-flow/config.json"
-  - "rm -f .beads/.pending-diary"
-  - "rm -f .beads/.dirty-tree"
+  - "rm -f .yoshiko-flow/.pending-diary"
+  - "rm -f .yoshiko-flow/.dirty-tree"
   - "rm -f uncommitted.txt"
-  - "rm -rf mock-bin"
+  - "rm -f .yoshiko-flow/chronicler/chron-end-*"

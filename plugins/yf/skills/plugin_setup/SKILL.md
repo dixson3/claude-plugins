@@ -14,22 +14,6 @@ Zero-question setup. Enables yf with sensible defaults.
 
 ## Behavior
 
-### Beads CLI Dependency Check
-
-Before any setup action, verify that the bd CLI is available:
-
-```bash
-if ! command -v bd >/dev/null 2>&1; then
-  BD_AVAILABLE=false
-fi
-```
-
-If `BD_AVAILABLE` is `false`, tell the user:
-
-> Yoshiko Flow requires beads-cli (bd). Install it first: `brew install dixson3/tap/beads-cli`
-
-Then stop. Do not write any config or run preflight.
-
 ### Default (no arguments)
 
 Enable yf with `artifact_dir: docs`. No questions asked.

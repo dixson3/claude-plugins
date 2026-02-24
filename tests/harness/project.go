@@ -19,14 +19,13 @@ type TestProject struct {
 // ProjectConfig controls what gets provisioned.
 type ProjectConfig struct {
 	Git        bool              `yaml:"git"`
-	Beads      bool              `yaml:"beads"`
 	YfEnabled  bool              `yaml:"yf_enabled"`
 	PluginLink bool              `yaml:"plugin_link"`
 	Files      map[string]string `yaml:"files"`
 }
 
 // ProvisionProject creates a self-contained test environment:
-// bare remote, cloned working copy, optional beads init, optional yf config.
+// bare remote, cloned working copy, optional yf config.
 func ProvisionProject(realPluginDir string, cfg ProjectConfig) (*TestProject, error) {
 	baseDir, err := os.MkdirTemp("", "test-project-*")
 	if err != nil {
@@ -115,18 +114,7 @@ func ProvisionProject(realPluginDir string, cfg ProjectConfig) (*TestProject, er
 		}
 	}
 
-	// Step 6: Run beads-setup if requested
-	if cfg.Beads {
-		setupScript := filepath.Join(realPluginDir, "plugins", "yf", "scripts", "beads-setup.sh")
-		cmd := exec.Command("bash", setupScript)
-		cmd.Dir = project.WorkDir
-		cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+project.WorkDir)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			return project, fmt.Errorf("beads-setup: %w\n%s", err, string(out))
-		}
-	}
-
-	// Step 7: Enable yf if requested
+	// Step 6: Enable yf if requested
 	if cfg.YfEnabled {
 		yfDir := filepath.Join(project.WorkDir, ".yoshiko-flow")
 		if err := os.MkdirAll(yfDir, 0755); err != nil {

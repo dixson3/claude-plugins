@@ -22,6 +22,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Issue to Plan
 
@@ -55,7 +60,7 @@ For GitHub/GitLab: the issue remains open (these trackers don't have a native in
 
 ### Step 4: Write Plan-Issue Link
 
-Create a marker so `plan_create_beads` can apply the issue label:
+Create a marker so `plan_create_tasks` can apply the issue label:
 
 ```bash
 echo "<issue>" > "${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/plan-issue-link"
@@ -83,7 +88,7 @@ Tell the operator to enter plan mode. The auto-chain will pick up the `plan-issu
 
 ## Plan-Issue Link
 
-When `plan_create_beads` runs and `.yoshiko-flow/plan-issue-link` exists:
+When `plan_create_tasks` runs and `.yoshiko-flow/plan-issue-link` exists:
 1. Read the issue number from the file
 2. Add `issue:<num>` label to the root epic
 3. Delete the marker file

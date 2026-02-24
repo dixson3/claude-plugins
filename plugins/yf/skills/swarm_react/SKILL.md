@@ -2,8 +2,8 @@
 name: yf:swarm_react
 description: Reactive bugfix from BLOCK/FAIL verdicts — spawns bugfix formula and retries failed step
 arguments:
-  - name: parent_bead
-    description: "Parent bead ID where the failure comment was posted"
+  - name: parent_task
+    description: "Parent task ID where the failure comment was posted"
     required: true
   - name: verdict
     description: "Verdict type: BLOCK (from REVIEW:BLOCK) or FAIL (from TESTS with failures)"
@@ -31,6 +31,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Swarm React
 
@@ -43,18 +48,18 @@ Spawns a reactive bugfix formula when a swarm step reports a failure (REVIEW:BLO
 Check guard conditions:
 
 1. **Depth check**: If current `depth >= 2`, skip reactive bugfix (at max nesting depth)
-2. **Dedup check**: Check for `ys:bugfix-attempt` label on the parent bead:
+2. **Dedup check**: Check for `ys:bugfix-attempt` label on the parent task:
    ```bash
-   bd label list <parent_bead> --json 2>/dev/null | jq -r '.[] | select(. == "ys:bugfix-attempt")'
+   bash "$YFT" label list <parent_task> --json 2>/dev/null | jq -r '.[] | select(. == "ys:bugfix-attempt")'
    ```
    If label exists, skip — only one reactive bugfix per step execution
 3. **Config check**: Read `reactive_bugfix` from `.yoshiko-flow/config.json` (default: `true`). If `false`, skip.
 
 ### Step 2: Classify Failure
 
-Read the failure comment from the parent bead:
+Read the failure comment from the parent task:
 ```bash
-bd show <parent_bead> --comments
+bash "$YFT" show <parent_task> --comments
 ```
 
 **Bug BLOCKs** (eligible for reactive bugfix):
@@ -84,26 +89,26 @@ From the comment, extract:
 ### Step 4: Spawn Bugfix Formula
 
 ```bash
-bd label add <parent_bead> ys:bugfix-attempt
+bash "$YFT" label add <parent_task> ys:bugfix-attempt
 ```
 
 Invoke the bugfix formula:
 ```
-/yf:swarm_run formula:bugfix feature:"Fix: <failure summary>" parent_bead:<parent_bead> depth:<current_depth+1> context:"<failure details from comment>"
+/yf:swarm_run formula:bugfix feature:"Fix: <failure summary>" parent_task:<parent_task> depth:<current_depth+1> context:"<failure details from comment>"
 ```
 
 ### Step 4.5: Auto-Capture Chronicle
 
-Create a chronicle bead to preserve the reactive bugfix context (per `swarm-chronicle-bridge` rule):
+Create a chronicle task to preserve the reactive bugfix context (per `swarm-chronicle-bridge` rule):
 
 ```bash
-PLAN_LABEL=$(bd label list <parent_bead> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
+PLAN_LABEL=$(bash "$YFT" label list <parent_task> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
 LABELS="ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto"
 [ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
 
-bd create --type=task \
+bash "$YFT" create --type=task \
   --title="Chronicle (Auto): Reactive bugfix — <failure summary>" \
-  --description="Reactive bugfix triggered on <parent_bead>.
+  --description="Reactive bugfix triggered on <parent_task>.
 Verdict: <verdict>
 Failed step: <step_id>
 Bugfix formula: <bugfix mol-id>
@@ -129,12 +134,12 @@ Each step has a `max_retries` budget (default: 1, configurable per step in formu
 
 If the retry fails again:
 - The block stands
-- The parent bead stays open for manual intervention
+- The parent task stays open for manual intervention
 - Report: "Retry failed. Manual intervention required."
 
 ## Output
 
-Report includes: parent bead, verdict type, failure summary, bugfix swarm mol-id, bugfix result, and retry status for the failed step.
+Report includes: parent task, verdict type, failure summary, bugfix swarm mol-id, bugfix result, and retry status for the failed step.
 
 ## Important
 

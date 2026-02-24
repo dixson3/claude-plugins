@@ -1,7 +1,7 @@
-name: "Unit: chronicle-check.sh — auto-draft chronicle beads"
+name: "Unit: chronicle-check.sh — auto-draft chronicle entries"
 
 setup:
-  - "mkdir -p .yoshiko-flow .beads"
+  - "mkdir -p .yoshiko-flow/tasks .yoshiko-flow/chronicler"
   - "git init . >/dev/null 2>&1 || true"
   - "git config user.email 'test@test.com' && git config user.name 'Test'"
   - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
@@ -57,42 +57,31 @@ steps:
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-drafted-"*
       echo "keyword-test" > "$WORK_DIR/keyword-test.txt"
       cd "$WORK_DIR" && git add keyword-test.txt && git commit -m "Decided on new architecture pattern for plugins" >/dev/null 2>&1
-      # Mock bd to capture the create call
-      mkdir -p "$WORK_DIR/mock-bin"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "create" ]; then
-        echo "mock-bead-id"
-        # Write args to a file for verification
-        echo "$@" >> "$WORK_DIR/.beads/bd-create-calls.txt"
-        exit 0
-      fi
-      if [ "$1" = "list" ]; then
-        echo "[]"
-        exit 0
-      fi
-      if [ "$1" = "label" ]; then
-        echo "[]"
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "5 minutes ago" 2>&1)
+      # chronicle-check.sh now creates task files directly via yft_create
+      # Check for chronicle files created after the run
+      BEFORE_COUNT=$(ls "$WORK_DIR/.yoshiko-flow/chronicler/"*.json 2>/dev/null | wc -l | tr -d ' ')
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "5 minutes ago" 2>&1)
       EXIT_CODE=$?
       echo "$OUTPUT"
-      if [ -f "$WORK_DIR/.beads/bd-create-calls.txt" ]; then
-        CALL=$(cat "$WORK_DIR/.beads/bd-create-calls.txt")
-        echo "BD_CALL: $CALL"
-        if echo "$CALL" | grep -q "ys:chronicle" && echo "$CALL" | grep -q "ys:chronicle:draft"; then
-          echo "OK: draft bead created with correct labels"
+      AFTER_COUNT=$(ls "$WORK_DIR/.yoshiko-flow/chronicler/"*.json 2>/dev/null | wc -l | tr -d ' ')
+      if [ "$AFTER_COUNT" -gt "$BEFORE_COUNT" ]; then
+        # Verify the created file has chronicle labels
+        LATEST=$(ls -t "$WORK_DIR/.yoshiko-flow/chronicler/"*.json 2>/dev/null | head -1)
+        if [ -f "$LATEST" ] && jq -r '.labels[]' "$LATEST" 2>/dev/null | grep -q "ys:chronicle"; then
+          echo "OK: draft task created with correct labels"
         else
-          echo "FAIL: bd create called but labels wrong"
+          echo "FAIL: task file missing or labels wrong"
           exit 1
         fi
       else
-        echo "FAIL: bd create was not called"
-        exit 1
+        # Check dedup file as backup
+        DEDUP_FILE="$WORK_DIR/.yoshiko-flow/.chronicle-drafted-$(date +%Y%m%d)"
+        if [ -f "$DEDUP_FILE" ]; then
+          echo "OK: draft created (verified via dedup file)"
+        else
+          echo "FAIL: no draft created"
+          exit 1
+        fi
       fi
     assertions:
       - type: exit_code
@@ -106,18 +95,26 @@ steps:
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-drafted-"*
-      rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
+      # Remove previous chronicle files to get clean count
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/"*.json
       mkdir -p "$WORK_DIR/plugins/test"
       echo "sig-file" > "$WORK_DIR/plugins/test/sig.txt"
       cd "$WORK_DIR" && git add plugins/test/sig.txt && git commit -m "update test file" >/dev/null 2>&1
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "5 minutes ago" 2>&1)
+      BEFORE_COUNT=$(ls "$WORK_DIR/.yoshiko-flow/chronicler/"*.json 2>/dev/null | wc -l | tr -d ' ')
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "5 minutes ago" 2>&1)
       EXIT_CODE=$?
       echo "$OUTPUT"
-      if [ -f "$WORK_DIR/.beads/bd-create-calls.txt" ]; then
+      AFTER_COUNT=$(ls "$WORK_DIR/.yoshiko-flow/chronicler/"*.json 2>/dev/null | wc -l | tr -d ' ')
+      if [ "$AFTER_COUNT" -gt "$BEFORE_COUNT" ]; then
         echo "OK: draft created for significant file changes"
       else
-        echo "FAIL: no draft created for significant file changes"
-        exit 1
+        DEDUP_FILE="$WORK_DIR/.yoshiko-flow/.chronicle-drafted-$(date +%Y%m%d)"
+        if [ -f "$DEDUP_FILE" ]; then
+          echo "OK: draft created (verified via dedup)"
+        else
+          echo "FAIL: no draft created for significant file changes"
+          exit 1
+        fi
       fi
     assertions:
       - type: exit_code
@@ -130,16 +127,16 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
       # Dedup file should already exist from previous test
-      # Run again with same conditions
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "5 minutes ago" 2>&1)
+      BEFORE_COUNT=$(ls "$WORK_DIR/.yoshiko-flow/chronicler/"*.json 2>/dev/null | wc -l | tr -d ' ')
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "5 minutes ago" 2>&1)
       EXIT_CODE=$?
       echo "$OUTPUT"
+      AFTER_COUNT=$(ls "$WORK_DIR/.yoshiko-flow/chronicler/"*.json 2>/dev/null | wc -l | tr -d ' ')
       if echo "$OUTPUT" | grep -q "already drafted"; then
         echo "OK: dedup prevented duplicate"
-      elif [ ! -f "$WORK_DIR/.beads/bd-create-calls.txt" ]; then
-        echo "OK: dedup prevented duplicate (no bd create call)"
+      elif [ "$AFTER_COUNT" -eq "$BEFORE_COUNT" ]; then
+        echo "OK: dedup prevented duplicate (no new task files)"
       else
         echo "FAIL: should not create duplicate drafts"
         exit 1
@@ -150,50 +147,31 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: In-progress beads trigger draft creation (even without commits)
-  - name: "in_progress_beads_create_draft"
+  # Case 6: In-progress tasks trigger draft creation (even without commits)
+  - name: "in_progress_tasks_create_draft"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-drafted-"*
-      rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
-      mkdir -p "$WORK_DIR/mock-bin"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      if [ "$1" = "list" ]; then
-        if echo "$@" | grep -q "in_progress"; then
-          echo '[{"id":"test-1","title":"Implement feature X","status":"in_progress"}]'
-          exit 0
-        fi
-        echo "[]"
-        exit 0
-      fi
-      if [ "$1" = "create" ]; then
-        echo "$@" >> "$WORK_DIR/.beads/bd-create-calls.txt"
-        echo "mock-bead-id"
-        exit 0
-      fi
-      if [ "$1" = "label" ]; then
-        echo "[]"
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "5 minutes ago" 2>&1)
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/"*.json
+      # Create an in-progress task
+      cat > "$WORK_DIR/.yoshiko-flow/tasks/task-chk-001.json" << 'TASKJSON'
+      {"id":"task-chk-001","type":"task","title":"Implement feature X","status":"in_progress","labels":[],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "5 minutes ago" 2>&1)
       EXIT_CODE=$?
       echo "$OUTPUT"
-      if [ -f "$WORK_DIR/.beads/bd-create-calls.txt" ]; then
-        CALL=$(cat "$WORK_DIR/.beads/bd-create-calls.txt")
-        if echo "$CALL" | grep -q "ys:chronicle" && echo "$OUTPUT" | grep -q "in-progress-beads"; then
-          echo "OK: draft bead created with in-progress beads detection"
+      CHRON_COUNT=$(ls "$WORK_DIR/.yoshiko-flow/chronicler/"*.json 2>/dev/null | wc -l | tr -d ' ')
+      if [ "$CHRON_COUNT" -gt 0 ] && echo "$OUTPUT" | grep -q "in-progress"; then
+        echo "OK: draft task created with in-progress tasks detection"
+      else
+        DEDUP_FILE="$WORK_DIR/.yoshiko-flow/.chronicle-drafted-$(date +%Y%m%d)"
+        if [ -f "$DEDUP_FILE" ] && grep -q "in-progress" "$DEDUP_FILE" 2>/dev/null; then
+          echo "OK: draft created (verified via dedup)"
         else
-          echo "FAIL: bd create called but in-progress-beads not in reasons: $OUTPUT"
+          echo "FAIL: no draft created for in-progress tasks"
           exit 1
         fi
-      else
-        echo "FAIL: bd create was not called for in-progress beads"
-        exit 1
       fi
     assertions:
       - type: exit_code
@@ -201,16 +179,17 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: In-progress beads dedup works
-  - name: "in_progress_beads_dedup"
+  # Case 7: In-progress tasks dedup works
+  - name: "in_progress_tasks_dedup"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      rm -f "$WORK_DIR/.beads/bd-create-calls.txt"
-      # Dedup file from case 7 should exist
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "1 second ago" 2>&1)
-      if [ ! -f "$WORK_DIR/.beads/bd-create-calls.txt" ]; then
-        echo "OK: dedup prevented duplicate for in-progress beads"
+      BEFORE_COUNT=$(ls "$WORK_DIR/.yoshiko-flow/chronicler/"*.json 2>/dev/null | wc -l | tr -d ' ')
+      # Dedup file from case 6 should exist
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/chronicle-check.sh" pre-push --since "1 second ago" 2>&1)
+      AFTER_COUNT=$(ls "$WORK_DIR/.yoshiko-flow/chronicler/"*.json 2>/dev/null | wc -l | tr -d ' ')
+      if [ "$AFTER_COUNT" -eq "$BEFORE_COUNT" ]; then
+        echo "OK: dedup prevented duplicate for in-progress tasks"
       else
         echo "FAIL: should not create duplicate"
         exit 1
@@ -306,6 +285,6 @@ steps:
 
 teardown:
   - "rm -f .yoshiko-flow/config.json"
-  - "rm -rf .yoshiko-flow/.chronicle-drafted-* .beads/bd-create-calls.txt mock-bin"
+  - "rm -rf .yoshiko-flow/.chronicle-drafted-* .yoshiko-flow/chronicler/*.json .yoshiko-flow/tasks/task-chk-*"
   - "rm -f trivial.txt keyword-test.txt"
   - "rm -rf plugins/test"

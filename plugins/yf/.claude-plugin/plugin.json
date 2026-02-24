@@ -1,7 +1,7 @@
 {
   "name": "yf",
-  "version": "2.30.0",
-  "description": "Yoshiko Flow — plan lifecycle, swarm execution with implicit formula triggering and worktree isolation, WorktreeCreate hooks, context persistence, diary generation, research/decision archiving, specification artifacts, standards-driven code generation, hybrid idx-hash IDs, plan index registry, epic worktree lifecycle, automatic bead pruning, zero-question setup, doctor-driven beads repair, plugin issue reporting, and project issue tracking",
+  "version": "3.0.0",
+  "description": "Yoshiko Flow — plan lifecycle, swarm execution with implicit formula triggering and worktree isolation, WorktreeCreate hooks, context persistence, diary generation, research/decision archiving, specification artifacts, standards-driven code generation, hybrid idx-hash IDs, plan index registry, epic worktree lifecycle, automatic pruning, zero-question setup, file-based task management, plugin issue reporting, and project issue tracking",
   "author": {
     "name": "James Dixson",
     "email": "dixson3@gmail.com"
@@ -70,42 +70,6 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/code-gate.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash(bd update*--status*in_progress*)",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/plan-exec-guard.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash(bd update*--claim*)",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/plan-exec-guard.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash(bd close*)",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/plan-exec-guard.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash(bd delete*)",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/bd-safety-net.sh"
           }
         ]
       },

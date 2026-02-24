@@ -1,7 +1,7 @@
 name: "Unit: pre-compact.sh — PreCompact auto-draft"
 
 setup:
-  - "mkdir -p .yoshiko-flow .beads"
+  - "mkdir -p .yoshiko-flow"
   - "git init . >/dev/null 2>&1 || true"
   - "git config user.email 'test@test.com' && git config user.name 'Test'"
 
@@ -24,31 +24,15 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Runs chronicle-check.sh (calls bd)
+  # Case 2: Runs chronicle-check.sh (creates chronicle files)
   - name: "runs_chronicle_check"
     run: |
-      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
-      mkdir -p "$WORK_DIR/mock-bin"
-      # Create a bd mock that logs calls
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      echo "$@" >> "$WORK_DIR/.beads/bd-calls.txt"
-      if [ "$1" = "list" ]; then
-        echo "[]"
-        exit 0
-      fi
-      if [ "$1" = "label" ]; then
-        echo "[]"
-        exit 0
-      fi
-      echo "{}"
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      rm -f "$WORK_DIR/.beads/bd-calls.txt"
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      mkdir -p "$WORK_DIR/.yoshiko-flow/chronicler"
       # Need a git commit for chronicle-check to analyze
       echo "compact-test" > "$WORK_DIR/compact-test.txt"
       cd "$WORK_DIR" && git add compact-test.txt && git commit -m "test compact" >/dev/null 2>&1
-      OUTPUT=$(PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" 2>&1)
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" 2>&1)
       EXIT_CODE=$?
       echo "exit=$EXIT_CODE"
       if [ "$EXIT_CODE" -eq 0 ]; then
@@ -63,35 +47,13 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: Always exits 0 even when bd missing
-  - name: "always_exits_zero_bd_missing"
-    run: |
-      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
-      # Use a PATH with no bd
-      OUTPUT=$(PATH="/usr/bin:/bin" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" 2>&1)
-      EXIT_CODE=$?
-      if [ "$EXIT_CODE" -eq 0 ]; then
-        echo "OK: exits 0 when bd missing"
-      else
-        echo "FAIL: should exit 0 (exit=$EXIT_CODE)"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 4: Always exits 0 even when chronicle-check fails
+  # Case 3: Always exits 0 even when chronicle-check fails
   - name: "always_exits_zero_on_failure"
     run: |
-      rm -f "$WORK_DIR/.yoshiko-flow/config.json"
-      cat > "$WORK_DIR/mock-bin/bd" << 'MOCK'
-      #!/bin/bash
-      exit 1
-      MOCK
-      chmod +x "$WORK_DIR/mock-bin/bd"
-      PATH="$WORK_DIR/mock-bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" >/dev/null 2>&1
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      # Remove chronicler dir to cause potential issues
+      rm -rf "$WORK_DIR/.yoshiko-flow/chronicler"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-compact.sh" >/dev/null 2>&1
       echo "OK: exit code $?"
     assertions:
       - type: exit_code
@@ -101,6 +63,5 @@ steps:
 
 teardown:
   - "rm -f .yoshiko-flow/config.json"
-  - "rm -f .beads/bd-calls.txt"
-  - "rm -rf mock-bin"
+  - "rm -rf .yoshiko-flow/chronicler"
   - "rm -f compact-test.txt"

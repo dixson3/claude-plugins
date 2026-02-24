@@ -1,6 +1,6 @@
 ---
-name: yf:plan_create_beads
-description: Convert a plan document into a beads hierarchy with epics, tasks, gates, and dependencies
+name: yf:plan_create_tasks
+description: Convert a plan document into a task hierarchy with epics, tasks, gates, and dependencies
 arguments:
   - name: plan_file
     description: "Path to plan file (default: most recent plan in docs/plans/)"
@@ -26,9 +26,15 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 Then stop. Do not execute the remaining steps.
 
 
-# Plan to Beads Skill
+# Plan to Tasks Skill
 
-Reads a plan document and creates a structured beads hierarchy with proper dependencies, labels, gates, and deferred state.
+Reads a plan document and creates a structured task hierarchy with proper dependencies, labels, gates, and deferred state.
+
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 ## Behavior
 
@@ -43,9 +49,9 @@ Extract the plan index from the filename — strip the `plan-` prefix and `.md` 
 
 ### Step 2: Check Idempotency
 
-Check for existing beads with this plan label:
+Check for existing tasks with this plan label:
 ```bash
-bd list -l plan:<idx> --limit=1
+bash "$YFT" list -l plan:<idx> --limit=1
 ```
 
 If issues already exist for this plan, report and skip creation. Do not create duplicates.
@@ -56,7 +62,7 @@ Read the master plan file and any part files (`plan-<idx>-part*`).
 
 **Mapping rules:**
 
-| Plan Element | Beads Type | Key Fields |
+| Plan Element | Task Type | Key Fields |
 |---|---|---|
 | Master plan title | Epic | `--description`, `--design`, `--acceptance`, `--notes` |
 | Part/phase heading | Epic (child of master) | `--parent`, `--description`, `--design`, `--acceptance` |
@@ -65,7 +71,7 @@ Read the master plan file and any part files (`plan-<idx>-part*`).
 ### Step 4: Create Root Epic
 
 ```bash
-bd create --title="<Plan Title>" \
+bash "$YFT" create --title="<Plan Title>" \
   --type=epic \
   --priority=1 \
   --description="<Overview section>" \
@@ -88,12 +94,12 @@ For each actionable item, create a task following the Step 4 pattern with `--typ
 
 1. **Cross-part dependencies**: Parse `**Dependencies:**` sections in part files
    ```bash
-   bd dep add <dependent-task> <dependency-task>
+   bash "$YFT" dep add <dependent-task> <dependency-task>
    ```
 
 2. **Sequential ordering**: For ordered tasks within a part, wire sequential deps
    ```bash
-   bd dep add <task-2> <task-1>  # task-2 depends on task-1
+   bash "$YFT" dep add <task-2> <task-1>  # task-2 depends on task-1
    ```
 
 ### Step 8: Agent Selection
@@ -114,7 +120,7 @@ For each task, invoke `/yf:swarm_select_formula <task-id>` to apply `formula:<na
 Create a human gate on the root epic to control execution state:
 
 ```bash
-bd create --type=gate \
+bash "$YFT" create --type=gate \
   --title="Plan execution gate" \
   --parent=<root-epic-id> \
   -l plan-exec,plan:<idx> \
@@ -128,7 +134,7 @@ The gate starts open (not resolved) -- plan is Ready but not Executing.
 Create a chronicle gate so diary generation waits for plan completion:
 
 ```bash
-bd create --type=gate \
+bash "$YFT" create --type=gate \
   --title="Generate diary from plan-<idx> chronicles" \
   --parent=<root-epic-id> \
   -l ys:chronicle-gate,plan:<idx> \
@@ -142,7 +148,7 @@ This gate stays open until all plan tasks close. When `plan-exec.sh status` dete
 Create a qualification gate for the code-review step that runs before plan completion:
 
 ```bash
-bd create --type=task \
+bash "$YFT" create --type=task \
   --title="Qualification review for plan-<idx>" \
   --parent=<root-epic-id> \
   --description="Code review qualification gate. Must pass before plan completion." \
@@ -154,10 +160,10 @@ This gate stays open until `/yf:swarm_qualify` runs the code-review formula and 
 
 ### Step 10: Defer All Tasks
 
-Defer all created tasks so they don't appear in `bd ready` until execution starts:
+Defer all created tasks so they don't appear in `bash "$YFT" list --ready` until execution starts:
 
 ```bash
-bd update <task-id> --defer=+100y
+bash "$YFT" update <task-id> --defer=+100y
 ```
 
 Use a far-future defer date. Tasks will be undeferred when `plan-exec.sh start` runs.
@@ -173,7 +179,7 @@ Report:
 - Agent assignments made
 
 ```
-Plan-to-Beads Summary
+Plan-to-Tasks Summary
 =====================
 Plan: plan-<idx> — <Title>
 Root Epic: marketplace-abc
@@ -192,10 +198,10 @@ If `dry_run` is specified, show what would be created without actually creating:
 - List all epics and tasks that would be created
 - Show dependency wiring plan
 - Show agent assignments
-- Do not call `bd create` or `bd dep add`
+- Do not call `bash "$YFT" create` or `bash "$YFT" dep add`
 
 ## Error Handling
 
 - If plan file not found, report and exit
-- If beads-cli not available, report the error
-- If duplicate plan detected (idempotency check), report existing beads
+- If yf-task-cli not available, report the error
+- If duplicate plan detected (idempotency check), report existing tasks

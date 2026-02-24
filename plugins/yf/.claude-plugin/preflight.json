@@ -4,10 +4,7 @@
     "rules": [
       { "source": "rules/yf-rules.md", "target": ".claude/rules/yf/yf-rules.md" }
     ],
-    "directories": ["docs/plans", "docs/diary", "docs/research", "docs/decisions", "docs/specifications", "docs/specifications/EDD", "docs/specifications/IG", "docs/todos", ".yoshiko-flow"],
-    "setup": [
-      { "name": "beads-setup", "check": "test -d .beads && bd config get no-git-ops 2>/dev/null | grep -q true && grep -qF '!config.yaml' .beads/.gitignore", "run": "bash $PLUGIN_ROOT/scripts/beads-setup.sh" }
-    ],
+    "directories": ["docs/plans", "docs/diary", "docs/research", "docs/decisions", "docs/specifications", "docs/specifications/EDD", "docs/specifications/IG", "docs/todos", ".yoshiko-flow", ".yoshiko-flow/tasks", ".yoshiko-flow/chronicler", ".yoshiko-flow/archivist", ".yoshiko-flow/issues", ".yoshiko-flow/todos", ".yoshiko-flow/molecules"],
     "hooks": [
       "hooks/worktree-create.sh",
       "hooks/worktree-remove.sh"

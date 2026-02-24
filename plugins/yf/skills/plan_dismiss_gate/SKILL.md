@@ -19,6 +19,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Dismiss Gate Skill
 
@@ -55,5 +60,5 @@ Code edits are now unblocked.
 
 - This is a destructive action relative to the plan lifecycle -- the plan will not be executed
 - If the user wants to resume the plan later, they should create a new plan rather than un-abandon
-- Do NOT delete any beads that may have been created; they serve as historical record
+- Do NOT delete any tasks that may have been created; they serve as historical record
 - Do NOT delete the plan file itself; only update its status

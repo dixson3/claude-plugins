@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # chronicle-staleness.sh — Create checkpoint chronicle when work goes stale
 #
-# Detects when in-progress beads exist but no recent chronicle bead has been
+# Detects when in-progress tasks exist but no recent chronicle entry has been
 # created. Creates a checkpoint chronicle to prevent context loss during long
 # sessions.
 #
@@ -16,16 +16,13 @@
 
 set -uo pipefail
 
-# --- Source config library ---
+# --- Source config library and task library ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/yf-config.sh"
+. "$SCRIPT_DIR/yf-tasks.sh"
 
 # --- Guards ---
 yf_is_enabled || exit 0
-
-if ! command -v bd >/dev/null 2>&1; then
-  exit 0
-fi
 
 if ! command -v jq >/dev/null 2>&1; then
   exit 0
@@ -64,22 +61,22 @@ if [ -f "$DEDUP_FILE" ] && grep -qF "$DEDUP_KEY" "$DEDUP_FILE" 2>/dev/null; then
   exit 0
 fi
 
-# --- Check for in-progress beads ---
-IN_PROGRESS=$(bd list --status=in_progress --type=task --limit=0 --json 2>/dev/null || echo "[]")
+# --- Check for in-progress tasks ---
+IN_PROGRESS=$(yft_list --status=in_progress --type=task --limit=0 --json 2>/dev/null || echo "[]")
 IN_PROGRESS_COUNT=$(echo "$IN_PROGRESS" | jq 'length' 2>/dev/null || echo "0")
 
 if [ "$IN_PROGRESS_COUNT" -eq 0 ]; then
   exit 0
 fi
 
-# --- Check for recent chronicle beads ---
-# Get the most recent chronicle bead's creation date
-LATEST_CHRONICLE=$(bd list --label=ys:chronicle --status=open --limit=1 --json 2>/dev/null || echo "[]")
+# --- Check for recent chronicle entries ---
+# Get the most recent chronicle entry's creation date
+LATEST_CHRONICLE=$(yft_list -l "ys:chronicle" --status=open --limit=1 --json 2>/dev/null || echo "[]")
 LATEST_CREATED=$(echo "$LATEST_CHRONICLE" | jq -r '.[0].created // empty' 2>/dev/null || true)
 
 STALE=false
 if [ -z "$LATEST_CREATED" ]; then
-  # No chronicle beads at all — definitely stale if work is in progress
+  # No chronicle entries at all — definitely stale if work is in progress
   STALE=true
 else
   # Compare creation time to threshold
@@ -105,15 +102,15 @@ echo "$DEDUP_KEY" >> "$DEDUP_FILE" 2>/dev/null || true
 
 # --- Detect plan context ---
 PLAN_LABEL=""
-PLAN_EPIC=$( (set +e; bd list --type=epic --status=open -l exec:executing --format=json 2>/dev/null | jq -r '.[0].id // empty' 2>/dev/null) || true)
+PLAN_EPIC=$( (set +e; yft_list --type=epic --status=open -l "exec:executing" --json 2>/dev/null | jq -r '.[0].id // empty' 2>/dev/null) || true)
 if [ -n "$PLAN_EPIC" ]; then
-  PLAN_LABEL=$( (set +e; bd label list "$PLAN_EPIC" --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' 2>/dev/null | head -1) || true)
+  PLAN_LABEL=$( (set +e; yft_label_list "$PLAN_EPIC" --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' 2>/dev/null | head -1) || true)
 fi
 
 # --- Get in-progress task titles ---
 IN_PROGRESS_TITLES=$(echo "$IN_PROGRESS" | jq -r '.[0:5] | .[].title' 2>/dev/null || true)
 
-# --- Create checkpoint chronicle bead ---
+# --- Create checkpoint chronicle entry ---
 TITLE="Chronicle (Checkpoint): ${IN_PROGRESS_COUNT} tasks in progress"
 DESCRIPTION="## Staleness Checkpoint
 
@@ -131,8 +128,8 @@ if [ -n "$PLAN_LABEL" ]; then
   LABELS="${LABELS},${PLAN_LABEL}"
 fi
 
-bd create --type task --priority 3 \
-  --labels "$LABELS" \
+yft_create --type=chronicle --priority=3 \
+  -l "$LABELS" \
   --title "$TITLE" \
   --description "$DESCRIPTION" >/dev/null 2>&1 || true
 

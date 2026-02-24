@@ -1,5 +1,5 @@
 #!/bin/bash
-# dispatch-state.sh — Track which beads/steps have been dispatched to agents
+# dispatch-state.sh — Track which tasks/steps have been dispatched to agents
 #
 # Unified dispatch state for both the plan pump and swarm dispatch loop.
 # Manages ephemeral state in .yoshiko-flow/<store>-state.json files.

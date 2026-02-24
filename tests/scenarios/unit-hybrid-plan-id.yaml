@@ -40,9 +40,9 @@ steps:
   # Case 3: Extraction instructions show hybrid format
   - name: "extraction_instructions_show_hybrid_format"
     run: |
-      # plan_create_beads should mention stripping plan- prefix with hybrid example
-      if ! grep -q 'plan-[0-9]\{4\}-[a-z0-9]\{5\}' "$PLUGIN_DIR"/plugins/yf/skills/plan_create_beads/SKILL.md; then
-        echo "FAIL: plan_create_beads/SKILL.md missing hybrid ID extraction example"
+      # plan_create_tasks should mention stripping plan- prefix with hybrid example
+      if ! grep -q 'plan-[0-9]\{4\}-[a-z0-9]\{5\}' "$PLUGIN_DIR"/plugins/yf/skills/plan_create_tasks/SKILL.md; then
+        echo "FAIL: plan_create_tasks/SKILL.md missing hybrid ID extraction example"
         exit 1
       fi
       # plan_intake should mention hybrid format in argument description

@@ -28,16 +28,12 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: All required entries present (no .beads/ — beads manages its own .gitignore)
+  # Case 3: All required entries present
   - name: "all_entries_present"
     run: |
       FAIL=false
       if ! grep -q '.claude/rules/yf/' "$WORK_DIR/.gitignore"; then
         echo "FAIL: missing entry: .claude/rules/yf/"
-        FAIL=true
-      fi
-      if grep -q '\.beads/' "$WORK_DIR/.gitignore"; then
-        echo "FAIL: .beads/ should not be in managed block"
         FAIL=true
       fi
       if $FAIL; then exit 1; fi

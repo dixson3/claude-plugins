@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# chronicle-check.sh — Auto-create draft chronicle beads from git activity
+# chronicle-check.sh — Auto-create draft chronicle entries from git activity
 #
 # Analyzes git commits for keywords, significant file changes, and activity
-# volume. Creates draft chronicle beads that the diary agent can later
+# volume. Creates draft chronicle entries that the diary agent can later
 # enrich, consolidate, or close.
 #
 # Usage:
@@ -17,9 +17,10 @@
 
 set -uo pipefail
 
-# --- Source config library ---
+# --- Source config library and task library ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/yf-config.sh"
+. "$SCRIPT_DIR/yf-tasks.sh"
 
 # --- Guard: exit if yf disabled ---
 yf_is_enabled || exit 0
@@ -30,10 +31,6 @@ cd "$PROJECT_DIR" || exit 0
 
 # --- Check prerequisites ---
 if ! command -v git >/dev/null 2>&1 || ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  exit 0
-fi
-
-if ! command -v bd >/dev/null 2>&1; then
   exit 0
 fi
 
@@ -157,7 +154,7 @@ fi
 
 # --- Analyze: wisp squashes (swarm activity) ---
 WISP_SQUASH_COUNT=0
-WISP_LIST=$(bd mol wisp list --json 2>/dev/null || echo "[]")
+WISP_LIST=$(yft_list --type=molecule --json 2>/dev/null || echo "[]")
 if [ "$WISP_LIST" != "[]" ] && [ -n "$WISP_LIST" ]; then
   WISP_SQUASH_COUNT=$(echo "$WISP_LIST" | jq '[.[] | select(.status == "squashed")] | length' 2>/dev/null || echo "0")
 fi
@@ -167,15 +164,15 @@ if [ "$WISP_SQUASH_COUNT" -gt 0 ]; then
   CANDIDATE_REASONS="${CANDIDATE_REASONS}wisp-squashes:${WISP_SQUASH_COUNT} "
 fi
 
-# --- Analyze: in-progress beads (work without commits) ---
-IN_PROGRESS_BEADS=""
+# --- Analyze: in-progress tasks (work without commits) ---
+IN_PROGRESS_TASKS=""
 IN_PROGRESS_COUNT=0
-IN_PROGRESS_BEADS=$(bd list --status=in_progress --type=task --limit=0 --json 2>/dev/null || echo "[]")
-IN_PROGRESS_COUNT=$(echo "$IN_PROGRESS_BEADS" | jq 'length' 2>/dev/null || echo "0")
+IN_PROGRESS_TASKS=$(yft_list --status=in_progress --type=task --limit=0 --json 2>/dev/null || echo "[]")
+IN_PROGRESS_COUNT=$(echo "$IN_PROGRESS_TASKS" | jq 'length' 2>/dev/null || echo "0")
 
 if [ "$IN_PROGRESS_COUNT" -gt 0 ]; then
   CANDIDATES=$((CANDIDATES + 1))
-  CANDIDATE_REASONS="${CANDIDATE_REASONS}in-progress-beads:${IN_PROGRESS_COUNT} "
+  CANDIDATE_REASONS="${CANDIDATE_REASONS}in-progress-tasks:${IN_PROGRESS_COUNT} "
 fi
 
 if [ "$CANDIDATES" -eq 0 ]; then
@@ -188,15 +185,15 @@ fi
 # --- Detect plan context (only executing plans) ---
 PLAN_LABEL=""
 PLAN_IDX=""
-PLAN_EPIC=$( (set +e; bd list --type=epic --status=open -l exec:executing --format=json 2>/dev/null | jq -r '.[0].id // empty' 2>/dev/null) || true)
+PLAN_EPIC=$( (set +e; yft_list --type=epic --status=open -l "exec:executing" --json 2>/dev/null | jq -r '.[0].id // empty' 2>/dev/null) || true)
 if [ -n "$PLAN_EPIC" ]; then
-  PLAN_LABEL=$( (set +e; bd label list "$PLAN_EPIC" --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' 2>/dev/null | head -1) || true)
+  PLAN_LABEL=$( (set +e; yft_label_list "$PLAN_EPIC" --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' 2>/dev/null | head -1) || true)
   if [ -n "$PLAN_LABEL" ]; then
     PLAN_IDX="${PLAN_LABEL#plan:}"
   fi
 fi
 
-# --- Create draft beads ---
+# --- Create draft entries ---
 CREATED=0
 
 # Build a dedup key from the combination of reasons
@@ -257,7 +254,7 @@ $(echo "$COMMITS" | head -5)
 fi
 
 if [ "$IN_PROGRESS_COUNT" -gt 0 ]; then
-  IN_PROGRESS_TITLES=$(echo "$IN_PROGRESS_BEADS" | jq -r '.[0:5] | .[].title' 2>/dev/null || true)
+  IN_PROGRESS_TITLES=$(echo "$IN_PROGRESS_TASKS" | jq -r '.[0:5] | .[].title' 2>/dev/null || true)
   DESCRIPTION="${DESCRIPTION}
 ## In-Progress Work
 ${IN_PROGRESS_COUNT} tasks currently in progress:
@@ -277,9 +274,9 @@ if [ -n "$PLAN_LABEL" ]; then
   LABELS="${LABELS},${PLAN_LABEL}"
 fi
 
-# Create the draft bead
-bd create --type task --priority 3 \
-  --labels "$LABELS" \
+# Create the draft entry
+yft_create --type=chronicle --priority=3 \
+  -l "$LABELS" \
   --title "$TITLE" \
   --description "$DESCRIPTION" >/dev/null 2>&1 && CREATED=1
 
@@ -292,13 +289,13 @@ if [ "$MODE" = "pre-push" ]; then
   if [ "$CREATED" -gt 0 ]; then
     echo ""
     echo "=========================================="
-    echo "  CHRONICLE-CHECK: Draft bead created"
+    echo "  CHRONICLE-CHECK: Draft entry created"
     echo "=========================================="
     echo ""
     echo "Auto-detected significant work:"
     echo "  ${CANDIDATE_REASONS}"
     echo ""
-    echo "A draft chronicle bead has been created."
+    echo "A draft chronicle entry has been created."
     echo "Run /yf:chronicle_diary to process it into a diary entry."
     echo ""
     echo "=========================================="

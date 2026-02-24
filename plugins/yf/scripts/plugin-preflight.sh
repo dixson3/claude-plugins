@@ -65,12 +65,6 @@ fi
 # --- Source the config library ---
 . "$SCRIPT_DIR/yf-config.sh"
 
-# --- Beads dependency check ---
-if ! yf_bd_available; then
-  echo "YF_DEPENDENCY_MISSING: bd"
-  echo "preflight: yf requires beads-cli (bd). Install: brew install dixson3/tap/beads-cli"
-fi
-
 # --- Setup needed signal (fail-closed activation) ---
 if ! yf_config_exists; then
   echo "YF_SETUP_NEEDED"
@@ -121,19 +115,7 @@ if [ "$YF_ENABLED" = "false" ]; then
   exit 0
 fi
 
-# --- Inactive: bd CLI not available ---
-if ! yf_bd_available; then
-  REMOVED=0
-  for F in "$PROJECT_DIR/.claude/rules/yf"/*.md; do
-    [ -e "$F" ] || [ -L "$F" ] || continue
-    rm -f "$F"
-    REMOVED=$((REMOVED + 1))
-    echo "preflight: yf — removed (inactive) .claude/rules/yf/$(basename "$F")"
-  done
-  rmdir "$PROJECT_DIR/.claude/rules/yf" 2>/dev/null || true
-  echo "preflight: inactive — bd CLI not available"
-  exit 0
-fi
+# --- (bd CLI check removed in v3.0.0 — file-based task system) ---
 
 # --- Compute symlink target for a rule ---
 # Uses relative path when plugin is inside the project tree, absolute otherwise
@@ -276,16 +258,16 @@ j=0; while [ $j -lt "$SETUP_COUNT" ]; do
     if ! (cd "$PROJECT_DIR" && eval "$SETUP_CHECK") >/dev/null 2>&1; then
       echo "preflight: $PLUGIN_NAME — running setup: $SETUP_NAME"
       SETUP_OUTPUT=$(cd "$PROJECT_DIR" && eval "$SETUP_RUN" 2>&1) || true
-      if echo "$SETUP_OUTPUT" | grep -q "BEADS_SETUP_FAILED"; then
-        # Beads setup failed — deactivate plugin
-        echo "YF_BEADS_UNHEALTHY"
+      if echo "$SETUP_OUTPUT" | grep -q "SETUP_FAILED"; then
+        # Setup failed — deactivate plugin
+        echo "YF_SETUP_UNHEALTHY"
         echo "$SETUP_OUTPUT" | grep -v "^$" >&2
         for F in "$PROJECT_DIR/.claude/rules/yf"/*.md; do
           [ -e "$F" ] || [ -L "$F" ] || continue
           rm -f "$F"
         done
         rmdir "$PROJECT_DIR/.claude/rules/yf" 2>/dev/null || true
-        echo "preflight: inactive — beads setup failed"
+        echo "preflight: inactive — task setup failed"
         exit 0
       else
         COMPLETED=true

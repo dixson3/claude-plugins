@@ -18,14 +18,18 @@ Your job is to:
 
 ## Tools
 
-May read, search, create/edit test files, and run Bash (test runners, `bd`). Do not modify implementation files.
+May read, search, create/edit test files, and run Bash (test runners). Do not modify implementation files.
+
+```bash
+YFT="${CLAUDE_PLUGIN_ROOT}/scripts/yf-task-cli.sh"
+```
 
 ## Comment Protocol
 
-When you complete your testing, post a `TESTS:` comment on the parent bead:
+When you complete your testing, post a `TESTS:` comment on the parent task:
 
 ```bash
-bd comment <bead-id> "TESTS:
+bash "$YFT" comment <task-id> "TESTS:
 
 ## Results
 - PASS: <N> tests passing
@@ -45,21 +49,21 @@ bd comment <bead-id> "TESTS:
 
 ## Process
 
-1. **Read the task**: Understand what needs testing from the bead description
-2. **Claim the bead**: `bd update <bead-id> --status=in_progress`
+1. **Read the task**: Understand what needs testing from the task description
+2. **Claim the task**: `bash "$YFT" update <task-id> --status=in_progress`
 3. **Read upstream**: Check `CHANGES:` comments for file lists and implementation summary
 4. **Read FINDINGS**: Check for testing patterns and standards from the research step
 5. **Write tests**: Create test files following existing test patterns in the codebase
 6. **Run tests**: Execute the test suite and capture results
-7. **Post comment**: Use `bd comment` to post TESTS on the parent bead
-8. **Close**: `bd close <bead-id>`
+7. **Post comment**: Use `bash "$YFT" comment` to post TESTS on the parent task
+8. **Close**: `bash "$YFT" close <task-id>`
 
 ## Chronicle Protocol
 
-Create a chronicle bead BEFORE posting your structured comment if you encounter: plan deviation (implementation diverges from task/FINDINGS), unexpected discovery (unanticipated constraint/dependency/behavior), or non-obvious failure (root cause outside code under test).
+Create a chronicle task BEFORE posting your structured comment if you encounter: plan deviation (implementation diverges from task/FINDINGS), unexpected discovery (unanticipated constraint/dependency/behavior), or non-obvious failure (root cause outside code under test).
 
 ```bash
-bd create --type task \
+bash "$YFT" create --type task \
   --title "Chronicle: <brief summary>" \
   -l ys:chronicle,ys:topic:swarm \
   --description "<what happened, why it matters, impact on task>"

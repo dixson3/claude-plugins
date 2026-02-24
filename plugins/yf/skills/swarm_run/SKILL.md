@@ -11,8 +11,8 @@ arguments:
   - name: context
     description: "Additional context passed to the formula"
     required: false
-  - name: parent_bead
-    description: "Parent bead ID (if running under a plan task)"
+  - name: parent_task
+    description: "Parent task ID (if running under a plan task)"
     required: false
   - name: depth
     description: "Nesting depth for composed formulas (default: 0, max: 2)"
@@ -34,6 +34,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Swarm Run
 
@@ -58,23 +63,23 @@ test -f "$FORMULA_PATH" || echo "Formula not found: $FORMULA_PATH"
 ### Step 2: Instantiate as Wisp
 
 ```bash
-bd mol wisp "$FORMULA_PATH" --var feature="<feature>" --var context="<context>"
+bash "$YFT" mol wisp "$FORMULA_PATH" --var feature="<feature>" --var context="<context>"
 ```
 
-Capture the molecule ID from the output. If `parent_bead` is specified, tag the wisp:
+Capture the molecule ID from the output. If `parent_task` is specified, tag the wisp:
 ```bash
-bd update <mol-id> -l ys:swarm,parent:<parent_bead>
+bash "$YFT" update <mol-id> -l ys:swarm,parent:<parent_task>
 ```
 
 ### Step 3: Dispatch Steps
 
-Invoke `/yf:swarm_dispatch` with the wisp molecule ID and parent bead:
+Invoke `/yf:swarm_dispatch` with the wisp molecule ID and parent task:
 
 ```
-/yf:swarm_dispatch mol_id:<mol-id> parent_bead:<parent_bead or mol-id>
+/yf:swarm_dispatch mol_id:<mol-id> parent_task:<parent_task or mol-id>
 ```
 
-If no `parent_bead` was provided, use the molecule ID itself as the comment target.
+If no `parent_task` was provided, use the molecule ID itself as the comment target.
 
 This runs the full dispatch loop until all steps are complete.
 
@@ -84,7 +89,7 @@ After all steps complete:
 
 #### 4a. Synthesize Results
 
-Collect all comments from the parent bead (FINDINGS, CHANGES, REVIEW, TESTS) and create a synthesis:
+Collect all comments from the parent task (FINDINGS, CHANGES, REVIEW, TESTS) and create a synthesis:
 
 ```
 Swarm Complete: <formula name>
@@ -101,23 +106,23 @@ Overall: <PASS/BLOCK based on review verdict>
 #### 4b. Squash Wisp
 
 ```bash
-bd mol squash <mol-id> --summary "<synthesized results>"
+bash "$YFT" mol squash <mol-id> --summary "<synthesized results>"
 ```
 
-This creates a digest and cleans up ephemeral step beads.
+This creates a digest and cleans up ephemeral step tasks.
 
 #### 4c. Auto-Chronicle (E1)
 
-Create a chronicle bead with labels `ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto` (plus any `plan:*` label from parent bead). Description includes: formula, feature, step count, retries, BLOCK verdicts, final outcome, per-step results, key findings, and key changes.
+Create a chronicle task with labels `ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto` (plus any `plan:*` label from parent task). Description includes: formula, feature, step count, retries, BLOCK verdicts, final outcome, per-step results, key findings, and key changes.
 
-#### 4d. Close Parent Bead (if applicable)
+#### 4d. Close Parent Task (if applicable)
 
-If `parent_bead` was provided (running under a plan task) and the review passed:
+If `parent_task` was provided (running under a plan task) and the review passed:
 ```bash
-bd close <parent_bead>
+bash "$YFT" close <parent_task>
 ```
 
-If the review blocked, leave the parent bead open and report the block.
+If the review blocked, leave the parent task open and report the block.
 
 ### Step 5: Clear Dispatch State
 
@@ -133,7 +138,7 @@ bash plugins/yf/scripts/dispatch-state.sh swarm clear --scope <mol-id>
 
 ### Step 6: Report
 
-Report: formula, feature, wisp ID, steps completed, chronicle bead ID, per-step summaries, overall PASS/BLOCK.
+Report: formula, feature, wisp ID, steps completed, chronicle task ID, per-step summaries, overall PASS/BLOCK.
 
 ## Depth Tracking
 

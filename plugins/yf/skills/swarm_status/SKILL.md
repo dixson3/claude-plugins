@@ -18,6 +18,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Swarm Status
 
@@ -36,7 +41,7 @@ If no pending dispatches, report "No active swarm dispatches."
 ### Step 2: List Active Wisps
 
 ```bash
-bd mol wisp list 2>/dev/null
+bash "$YFT" mol wisp list 2>/dev/null
 ```
 
 If no active wisps, report "No active wisps."
@@ -45,7 +50,7 @@ If no active wisps, report "No active wisps."
 
 Show molecule details:
 ```bash
-bd mol show <mol-id> --json 2>/dev/null
+bash "$YFT" mol show <mol-id> --json 2>/dev/null
 ```
 
 Extract:

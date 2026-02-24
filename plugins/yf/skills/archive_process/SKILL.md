@@ -1,6 +1,6 @@
 ---
 name: yf:archive_process
-description: Process archive beads into permanent documentation (research summaries and decision records)
+description: Process archive tasks into permanent documentation (research summaries and decision records)
 arguments:
   - name: plan_idx
     description: "Optional plan index to filter archives (e.g., 0019-k4m9q). Only processes archives tagged with plan:<idx>."
@@ -22,39 +22,44 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Archive Process Skill
 
-Generate permanent documentation from open archive beads.
+Generate permanent documentation from open archive tasks.
 
 ## Instructions
 
 Use the `yf_archive_process` agent to:
-1. Query all open archive beads
+1. Query all open archive tasks
 2. Determine type (research or decision) from labels
 3. Generate SUMMARY.md files and update indexes
-4. Close the processed beads
+4. Close the processed tasks
 
 ## Behavior
 
 When invoked with `/yf:archive_process [plan:<idx>]`:
 
-1. **Query beads**: List all open beads with `ys:archive` label (optionally filtered by `plan:<idx>`)
+1. **Query tasks**: List all open tasks with `ys:archive` label (optionally filtered by `plan:<idx>`)
 2. **Launch agent**: Use the `yf_archive_process` agent to process
 3. **Write files**: Create SUMMARY.md files and update index files from agent response
-4. **Close beads**: Mark processed beads as closed
+4. **Close tasks**: Mark processed tasks as closed
 5. **Report results**: Show what was created
 
 ### Agent Invocation
 
 If `plan_idx` is specified:
 ```bash
-bd list --label=ys:archive --label=plan:<idx> --status=open
+bash "$YFT" list --label=ys:archive --label=plan:<idx> --status=open
 ```
 
 If no `plan_idx`:
 ```bash
-bd list --label=ys:archive --status=open
+bash "$YFT" list --label=ys:archive --status=open
 ```
 
 ### File Creation
@@ -64,21 +69,21 @@ For each entry from the agent:
 - Write the SUMMARY.md file
 - Write or update the index file
 
-### Closing Beads
+### Closing Tasks
 
-For each bead in `beads_to_close`:
+For each task in `tasks_to_close`:
 ```bash
-bd close <bead-id>
+bash "$YFT" close <task-id>
 ```
 
-For each bead in `beads_to_close_with_reason`:
+For each task in `tasks_to_close_with_reason`:
 ```bash
-bd close <bead-id> --reason "<reason>"
+bash "$YFT" close <task-id> --reason "<reason>"
 ```
 
 ## Expected Output
 
-Report includes: list of open archive beads, generated file paths (SUMMARY.md per bead), updated indexes, close status for each bead, and total count. If no open archives, reports nothing to process.
+Report includes: list of open archive tasks, generated file paths (SUMMARY.md per task), updated indexes, close status for each task, and total count. If no open archives, reports nothing to process.
 
 ## Archive Directory
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 # plan-chronicle.sh — Deterministic chronicle stub at plan boundaries
 #
-# Creates a guaranteed chronicle bead at plan lifecycle boundaries.
+# Creates a guaranteed chronicle entry at plan lifecycle boundaries.
 # Reuses the dedup/label pattern from plan-exec.sh create_transition_chronicle().
 #
 # Usage:
@@ -13,6 +13,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/yf-tasks.sh"
 
 COMMAND="${1:-}"
 PLAN_LABEL="${2:-}"
@@ -22,9 +23,6 @@ if [[ -z "$COMMAND" || -z "$PLAN_LABEL" ]]; then
     echo "Usage: plan-chronicle.sh <save|intake> <plan_label> [plan_file_path]" >&2
     exit 0  # fail-open
 fi
-
-# Guard: bd must be available
-command -v bd >/dev/null 2>&1 || exit 0
 
 # --- Dedup: one chronicle per plan-boundary per day ---
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
@@ -81,8 +79,8 @@ if [[ -n "$PLAN_LABEL" ]]; then
     LABELS="${LABELS},${PLAN_LABEL}"
 fi
 
-bd create --type task --priority 3 \
-    --labels "$LABELS" \
+yft_create --type=chronicle --priority=3 \
+    -l "$LABELS" \
     --title "$TITLE" \
     --description "$DESCRIPTION" >/dev/null 2>&1 || exit 0
 

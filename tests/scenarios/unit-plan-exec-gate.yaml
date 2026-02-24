@@ -1,12 +1,16 @@
 name: "Unit: plan-exec.sh gate removal"
 setup:
   - "git init"
-  - "mkdir -p .claude .yoshiko-flow docs/plans"
+  - "mkdir -p .claude .yoshiko-flow/tasks docs/plans"
   - "echo '# test' > CLAUDE.md"
   - "git add -A && git commit -m 'init'"
-  - "bd init 2>/dev/null || true"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}' > .yoshiko-flow/config.json"
   - |
-    ROOT=$(bd create --title="Test Epic" --type=epic --priority=2 -l ys:plan,plan:99 --silent)
+    # Create a root epic task file
+    ROOT="task-exec-gate-001"
+    cat > .yoshiko-flow/tasks/${ROOT}.json << TASKJSON
+    {"id":"${ROOT}","type":"epic","title":"Test Epic","status":"open","labels":["ys:plan","plan:99"],"created":"2026-01-01T00:00:00Z"}
+    TASKJSON
     echo "$ROOT" > .test-epic-id
 
 steps:
@@ -42,3 +46,4 @@ steps:
 teardown:
   - "rm -f .yoshiko-flow/plan-gate"
   - "rm -f .test-epic-id"
+  - "rm -f .yoshiko-flow/tasks/task-exec-gate-*"

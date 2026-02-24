@@ -2,7 +2,7 @@
 # archive-suggest.sh — Analyze git history for archive candidates
 #
 # Scans recent commits for research and decision activity keywords.
-# Optionally creates draft beads for detected candidates.
+# Optionally creates draft tasks for detected candidates.
 #
 # Usage:
 #   bash archive-suggest.sh [--draft] [--since "<timespec>"]
@@ -12,9 +12,10 @@
 
 set -uo pipefail
 
-# --- Source config library ---
+# --- Source config library and task library ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/yf-config.sh"
+. "$SCRIPT_DIR/yf-tasks.sh"
 
 # --- Guard: exit if yf disabled ---
 yf_is_enabled || { echo "yf disabled — skipping"; exit 0; }
@@ -47,7 +48,7 @@ while [ $# -gt 0 ]; do
       echo "Usage: archive-suggest.sh [--draft] [--since \"<timespec>\"]"
       echo ""
       echo "Options:"
-      echo "  --draft, -d     Auto-create draft beads for candidates"
+      echo "  --draft, -d     Auto-create draft tasks for candidates"
       echo "  --since, -s     Time range to analyze (default: \"24 hours ago\")"
       exit 0
       ;;
@@ -118,28 +119,21 @@ echo "Research candidates: $RESEARCH_COUNT"
 echo "Decision candidates: $DECISION_COUNT"
 echo ""
 
-# Check existing beads
-if command -v bd >/dev/null 2>&1; then
-  OPEN_BEADS=$( (set +e; bd list --label=ys:archive --status=open --format=json 2>/dev/null | jq 'length' 2>/dev/null) || echo "0")
-  echo "Open archive beads: $OPEN_BEADS"
-  echo ""
-fi
+# Check existing tasks
+OPEN_TASKS=$( (set +e; yft_list -l "ys:archive" --status=open --json 2>/dev/null | jq 'length' 2>/dev/null) || echo "0")
+echo "Open archive tasks: $OPEN_TASKS"
+echo ""
 
 if $CREATE_DRAFTS; then
-  if ! command -v bd >/dev/null 2>&1; then
-    echo "beads-cli not found — cannot create drafts"
-    exit 0
-  fi
-
-  echo "Creating draft beads..."
+  echo "Creating draft tasks..."
   echo ""
 
   CREATED=0
 
   if [ "$RESEARCH_COUNT" -gt 0 ]; then
     RESEARCH_SUMMARY=$(echo "$RESEARCH_HITS" | head -3)
-    bd create --type task --priority 3 \
-      --labels "ys:archive,ys:archive:research,ys:archive:draft" \
+    yft_create --type=archive --priority=3 \
+      -l "ys:archive,ys:archive:research,ys:archive:draft" \
       --title "Archive: Draft - Research activity detected" \
       --description "## Auto-Detected Archive Candidate
 
@@ -158,16 +152,16 @@ $RESEARCH_SUMMARY
 - [ ] Add recommendations
 
 ## Instructions
-Review the commits above and enrich this bead with actual research details.
-If multiple distinct research topics, create separate beads for each.
-Close this bead if not archive-worthy." 2>/dev/null && CREATED=$((CREATED + 1))
-    echo "Created research draft bead"
+Review the commits above and enrich this task with actual research details.
+If multiple distinct research topics, create separate tasks for each.
+Close this task if not archive-worthy." 2>/dev/null && CREATED=$((CREATED + 1))
+    echo "Created research draft task"
   fi
 
   if [ "$DECISION_COUNT" -gt 0 ]; then
     DECISION_SUMMARY=$(echo "$DECISION_HITS" | head -3)
-    bd create --type task --priority 2 \
-      --labels "ys:archive,ys:archive:decision,ys:archive:draft" \
+    yft_create --type=archive --priority=2 \
+      -l "ys:archive,ys:archive:decision,ys:archive:draft" \
       --title "Archive: Draft - Decision activity detected" \
       --description "## Auto-Detected Archive Candidate
 
@@ -186,14 +180,14 @@ $DECISION_SUMMARY
 - [ ] Document reasoning and consequences
 
 ## Instructions
-Review the commits above and enrich this bead with actual decision details.
-If multiple distinct decisions, create separate beads for each.
-Close this bead if not archive-worthy." 2>/dev/null && CREATED=$((CREATED + 1))
-    echo "Created decision draft bead"
+Review the commits above and enrich this task with actual decision details.
+If multiple distinct decisions, create separate tasks for each.
+Close this task if not archive-worthy." 2>/dev/null && CREATED=$((CREATED + 1))
+    echo "Created decision draft task"
   fi
 
   echo ""
-  echo "Created $CREATED draft bead(s)"
+  echo "Created $CREATED draft task(s)"
   echo "Run /yf:archive_process to process them after enrichment."
 else
   echo "Recommendations:"
@@ -205,7 +199,7 @@ else
     echo "2. Run /yf:archive_capture type:decision to document the decisions"
   fi
   echo ""
-  echo "Or run with --draft to auto-create draft beads:"
+  echo "Or run with --draft to auto-create draft tasks:"
   echo "  /yf:archive_suggest --draft"
 fi
 

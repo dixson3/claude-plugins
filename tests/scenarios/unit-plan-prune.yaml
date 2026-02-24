@@ -1,29 +1,28 @@
-name: "Unit: plan-prune.sh — automatic bead pruning"
+name: "Unit: plan-prune.sh — automatic task pruning"
 
 setup:
   - "git init"
-  - "mkdir -p .yoshiko-flow docs/plans"
+  - "mkdir -p .yoshiko-flow/tasks docs/plans"
   - "echo '# test' > CLAUDE.md"
   - "git add -A && git commit -m 'init'"
-  - "bd init 2>/dev/null || true"
   - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
-  # Case 1: Plan-scoped prune deletes closed beads with plan label
+  # Case 1: Plan-scoped prune deletes closed tasks with plan label
   - name: "plan_prune_deletes_closed"
     run: |
-      # Create and close a bead with plan label
-      ID=$(bd create --title="Test task" --type=task -l plan:99 --silent)
-      bd close "$ID" 2>/dev/null
+      # Create a closed task with plan label
+      cat > "$WORK_DIR/.yoshiko-flow/tasks/task-prune-001.json" << 'TASKJSON'
+      {"id":"task-prune-001","type":"task","title":"Test task","status":"closed","labels":["plan:99"],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" plan "plan:99" 2>&1)
       echo "$OUTPUT"
-      # Verify it was pruned (should not appear in list)
-      REMAINING=$(bd list -l plan:99 --status=closed --limit=0 --json 2>/dev/null | jq 'length')
-      if [ "$REMAINING" -eq 0 ]; then
-        echo "OK: closed bead pruned"
+      # Verify it was pruned (file should be gone)
+      if [ ! -f "$WORK_DIR/.yoshiko-flow/tasks/task-prune-001.json" ]; then
+        echo "OK: closed task pruned"
       else
-        echo "FAIL: bead still exists"
+        echo "FAIL: task still exists"
         exit 1
       fi
     assertions:
@@ -38,8 +37,9 @@ steps:
   - name: "plan_prune_skips_when_disabled"
     run: |
       echo '{"enabled":true,"config":{"auto_prune":{"on_plan_complete":false}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      ID=$(bd create --title="Test task 2" --type=task -l plan:98 --silent)
-      bd close "$ID" 2>/dev/null
+      cat > "$WORK_DIR/.yoshiko-flow/tasks/task-prune-002.json" << 'TASKJSON'
+      {"id":"task-prune-002","type":"task","title":"Test task 2","status":"closed","labels":["plan:98"],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" plan "plan:98" 2>&1)
       echo "$OUTPUT"
@@ -55,7 +55,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: Plan-scoped prune handles empty result (no closed beads)
+  # Case 3: Plan-scoped prune handles empty result (no closed tasks)
   - name: "plan_prune_empty_result"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -63,7 +63,7 @@ steps:
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" plan "plan:97" 2>&1)
       echo "$OUTPUT"
-      if echo "$OUTPUT" | grep -q "No closed beads"; then
+      if echo "$OUTPUT" | grep -q "No closed tasks"; then
         echo "OK: handles empty"
       else
         echo "FAIL: unexpected output"
@@ -75,7 +75,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Global prune calls bd admin cleanup with configured threshold
+  # Case 4: Global prune runs cleanup with configured threshold
   - name: "global_prune_runs_cleanup"
     run: |
       echo '{"enabled":true,"config":{"auto_prune":{"on_push":true,"older_than_days":14}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
@@ -143,16 +143,17 @@ steps:
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
-      ID=$(bd create --title="Dry run task" --type=task -l plan:96 --silent)
-      bd close "$ID" 2>/dev/null
+      # Create a closed task
+      cat > "$WORK_DIR/.yoshiko-flow/tasks/task-prune-003.json" << 'TASKJSON'
+      {"id":"task-prune-003","type":"task","title":"Dry run task","status":"closed","labels":["plan:96"],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
       OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/plan-prune.sh" plan "plan:96" --dry-run 2>&1)
       echo "$OUTPUT"
-      # Verify bead still exists
-      REMAINING=$(bd list -l plan:96 --status=closed --limit=0 --json 2>/dev/null | jq 'length')
-      if [ "$REMAINING" -gt 0 ] && echo "$OUTPUT" | grep -q "Dry run"; then
-        echo "OK: dry run preserved bead"
+      # Verify task still exists
+      if [ -f "$WORK_DIR/.yoshiko-flow/tasks/task-prune-003.json" ] && echo "$OUTPUT" | grep -q "Dry run"; then
+        echo "OK: dry run preserved task"
       else
-        echo "FAIL: bead was deleted or no dry run output"
+        echo "FAIL: task was deleted or no dry run output"
         exit 1
       fi
     assertions:
@@ -183,3 +184,4 @@ steps:
 
 teardown:
   - "rm -f .yoshiko-flow/config.json"
+  - "rm -f .yoshiko-flow/tasks/task-prune-*"

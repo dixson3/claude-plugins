@@ -7,10 +7,9 @@
 #
 # Always exits 0. Caller reads JSON output.
 #
-# Three conditions (DD-015):
+# Two conditions (DD-015):
 #   1. .yoshiko-flow/config.json exists
 #   2. enabled != false
-#   3. bd CLI available
 #
 # Environment:
 #   CLAUDE_PROJECT_DIR — project root (defaults to ".")
@@ -31,12 +30,6 @@ if command -v jq >/dev/null 2>&1; then
     echo '{"active":false,"reason":"Plugin is disabled in config","action":"Run /yf:plugin_setup to reactivate"}'
     exit 0
   fi
-fi
-
-# Check condition 3: bd CLI available
-if ! yf_bd_available; then
-  echo '{"active":false,"reason":"bd CLI not available","action":"Install beads-cli: brew install dixson3/tap/beads-cli"}'
-  exit 0
 fi
 
 # All conditions pass

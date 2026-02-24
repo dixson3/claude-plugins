@@ -1,6 +1,6 @@
 ---
 name: yf:archive_capture
-description: Capture research findings or design decisions as archive beads
+description: Capture research findings or design decisions as archive tasks
 arguments:
   - name: type
     description: "Archive type: research or decision (required)"
@@ -25,14 +25,19 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Archivist Capture Skill
 
-Capture research findings or design decisions as archive beads for later processing into permanent documentation.
+Capture research findings or design decisions as archive tasks for later processing into permanent documentation.
 
 ## Instructions
 
-Create a bead that captures either a research finding (sources, conclusions) or a design decision (context, alternatives, reasoning).
+Create a task that captures either a research finding (sources, conclusions) or a design decision (context, alternatives, reasoning).
 
 ## Behavior
 
@@ -40,12 +45,12 @@ When invoked with `/yf:archive_capture type:<type> [area:<area>]`:
 
 1. **Validate type**: Must be `research` or `decision`
 2. **Analyze context**: Review the current conversation for the relevant research or decision
-3. **Create bead**: Use beads-cli to create the archive bead
+3. **Create task**: Use yf-task-cli to create the archive task
 
 ### For Research (`type:research`)
 
 ```bash
-bd create --title "Archive: Research on [topic]" \
+bash "$YFT" create --title "Archive: Research on [topic]" \
   --type task \
   --priority 3 \
   --labels "ys:archive,ys:archive:research[,ys:area:<area>][,plan:<idx>]" \
@@ -56,7 +61,7 @@ bd create --title "Archive: Research on [topic]" \
 
 Resolve operator name via fallback cascade: merged config `.config.operator` → `plugin.json` `.author.name` → `git config user.name` → `"Unknown"`. In shell scripts, use `yf_operator_name()` from `yf-config.sh`. In agent context, read `.yoshiko-flow/config.local.json` then `.yoshiko-flow/config.json` for `.config.operator`, falling back to `git config user.name`.
 
-**Research bead body template:**
+**Research task body template:**
 
 ```
 Type: research
@@ -99,14 +104,14 @@ DEC_ID=$(yf_generate_id "DEC" "docs/decisions/_index.md")
 ```
 
 ```bash
-bd create --title "Archive: $DEC_ID [decision title]" \
+bash "$YFT" create --title "Archive: $DEC_ID [decision title]" \
   --type task \
   --priority 2 \
   --labels "ys:archive,ys:archive:decision[,ys:area:<area>][,plan:<idx>]" \
   --description "[decision template below]"
 ```
 
-**Decision bead body template:**
+**Decision task body template:**
 
 ```
 Type: decision
@@ -148,24 +153,24 @@ Status: Accepted
 ### Labels
 
 Always include:
-- `ys:archive` — Marks this as an archive bead
+- `ys:archive` — Marks this as an archive task
 - `ys:archive:research` or `ys:archive:decision` — Type label
 
 Optional:
 - `ys:area:<area>` — Topic area (e.g., `ys:area:api`, `ys:area:architecture`, `ys:area:tooling`)
 
-**Plan-context auto-detection:** Before creating the bead, check if a plan is currently executing:
+**Plan-context auto-detection:** Before creating the task, check if a plan is currently executing:
 ```bash
-bd list -l exec:executing --type=epic --status=open --limit=1 --json 2>/dev/null
+bash "$YFT" list -l exec:executing --type=epic --status=open --limit=1 --json 2>/dev/null
 ```
-If a plan is executing, extract its `plan:<idx>` label and auto-tag the archive bead with it.
+If a plan is executing, extract its `plan:<idx>` label and auto-tag the archive task with it.
 
 ## Expected Output
 
-Report includes: topic, type, area, labels applied, bead ID created. Ends with pointer to `/yf:archive_process`.
+Report includes: topic, type, area, labels applied, task ID created. Ends with pointer to `/yf:archive_process`.
 
 ## Content Guidelines
 
-- **Research beads**: 200-400 words minimum. Include all sources with URLs.
-- **Decision beads**: 300-500 words minimum. Include alternatives considered with pros/cons.
+- **Research tasks**: 200-400 words minimum. Include all sources with URLs.
+- **Decision tasks**: 300-500 words minimum. Include alternatives considered with pros/cons.
 - Include enough detail for the archivist agent to generate a complete SUMMARY.md.

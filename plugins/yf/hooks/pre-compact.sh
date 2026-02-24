@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # pre-compact.sh — PreCompact hook: capture work before context erasure
 #
-# Runs chronicle-check.sh to create draft beads from significant git
+# Runs chronicle-check.sh to create draft tasks from significant git
 # activity before context compaction erases the conversation history.
 #
 # Compatible with bash 3.2+ (macOS default).
@@ -15,10 +15,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # --- Guards ---
 yf_is_enabled || exit 0
-
-if ! command -v bd >/dev/null 2>&1; then
-  exit 0
-fi
 
 # --- Run chronicle-check to create drafts from git activity ---
 bash "$SCRIPT_DIR/scripts/chronicle-check.sh" check 2>/dev/null || true

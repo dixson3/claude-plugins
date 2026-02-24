@@ -87,7 +87,7 @@ steps:
     run: |
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1
       # After preflight, check git status for unexpected modifications
-      # Expected untracked: .yoshiko-flow/, .claude/, .gitignore, .beads/, .gitattributes, AGENTS.md, docs/
+      # Expected untracked: .yoshiko-flow/, .claude/, .gitignore, .gitattributes, AGENTS.md, docs/
       # NOT expected: modifications to CLAUDE.md or any other committed files
       DIRTY=$(git status --porcelain | grep -v '^\?\?' | grep -v '^ M \.gitignore' || true)
       if [ -z "$DIRTY" ]; then

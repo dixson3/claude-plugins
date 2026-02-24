@@ -9,19 +9,19 @@
     {
       "id": "implement",
       "title": "Implement {{feature}}",
-      "description": "Implement {{feature}}. SUBAGENT:general-purpose\n\nPost a CHANGES: comment on the parent bead listing files created/modified and a brief summary.",
+      "description": "Implement {{feature}}. SUBAGENT:general-purpose\n\nPost a CHANGES: comment on the parent task listing files created/modified and a brief summary.",
       "needs": []
     },
     {
       "id": "test",
       "title": "Test {{feature}}",
-      "description": "Write and run tests for {{feature}}. SUBAGENT:general-purpose\n\nPost a TESTS: comment on the parent bead with pass/fail results, coverage notes, and test file paths.",
+      "description": "Write and run tests for {{feature}}. SUBAGENT:general-purpose\n\nPost a TESTS: comment on the parent task with pass/fail results, coverage notes, and test file paths.",
       "needs": ["implement"]
     },
     {
       "id": "review",
       "title": "Review {{feature}}",
-      "description": "Review the implementation and tests for {{feature}}. SUBAGENT:Explore\n\nPost a REVIEW: comment on the parent bead with verdict (REVIEW:PASS or REVIEW:BLOCK) and details.",
+      "description": "Review the implementation and tests for {{feature}}. SUBAGENT:Explore\n\nPost a REVIEW: comment on the parent task with verdict (REVIEW:PASS or REVIEW:BLOCK) and details.",
       "needs": ["test"],
       "chronicle": true
     }

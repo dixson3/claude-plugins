@@ -4,7 +4,7 @@ description: Scan git history for archive candidates (research findings and desi
 user_invocable: true
 arguments:
   - name: draft
-    description: "Auto-create draft beads for detected candidates"
+    description: "Auto-create draft tasks for detected candidates"
     required: false
   - name: since
     description: "Time range to analyze (default: '24 hours ago')"
@@ -45,14 +45,14 @@ When invoked with `/yf:archive_suggest [--draft] [--since "<timespec>"]`:
 
 1. **Run the script**: Execute `archive-suggest.sh` with provided arguments
 2. **Report findings**: Show research and decision candidates found
-3. **If `--draft`**: Script auto-creates draft beads for detected candidates
+3. **If `--draft`**: Script auto-creates draft tasks for detected candidates
 4. **If no `--draft`**: Suggest manual `/yf:archive_capture` invocations for each candidate
 
 ### Arguments
 
-- `--draft` or `-d`: Auto-create draft beads with `ys:archive:draft` label
+- `--draft` or `-d`: Auto-create draft tasks with `ys:archive:draft` label
 - `--since "<timespec>"` or `-s "<timespec>"`: Time range (default: "24 hours ago")
 
 ## Expected Output
 
-Report includes: time range analyzed, commit count, research and decision candidates with commit SHAs, summary counts, and recommendations for `/yf:archive_capture` invocations. If `--draft`, reports auto-created draft beads instead.
+Report includes: time range analyzed, commit count, research and decision candidates with commit SHAs, summary counts, and recommendations for `/yf:archive_capture` invocations. If `--draft`, reports auto-created draft tasks instead.

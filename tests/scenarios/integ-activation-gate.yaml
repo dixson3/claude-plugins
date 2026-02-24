@@ -1,9 +1,8 @@
-name: "Integration: activation gate — three-condition control"
+name: "Integration: activation gate — two-condition control"
 type: integration
 
 project:
   git: true
-  beads: false
   yf_enabled: false
   plugin_link: true
 
@@ -44,15 +43,13 @@ steps:
   # Step 3: Setup activates yf
   - name: "setup_activates"
     run: |
-      # Initialize beads first
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/beads-setup.sh" >/dev/null 2>&1
       # Create config (simulating /yf:plugin_setup)
       mkdir -p "$WORK_DIR/.yoshiko-flow"
       echo '{"enabled": true, "config": {"artifact_dir": "docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       # Run preflight
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plugin-preflight.sh" 2>&1)
       echo "$OUTPUT"
-      if echo "$OUTPUT" | grep -q "YF_SETUP_NEEDED\|YF_BEADS_UNHEALTHY"; then
+      if echo "$OUTPUT" | grep -q "YF_SETUP_NEEDED"; then
         echo "FAIL: yf still inactive after setup"
         exit 1
       fi

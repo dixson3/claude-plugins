@@ -34,6 +34,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Engineer: Update Specification
 
@@ -99,14 +104,14 @@ Read the spec file and extract existing IDs for the relevant type to check for c
 
 ### Step 3.5: Chronicle Spec Mutation
 
-After executing the action (add/update/deprecate), create a chronicle bead. Every spec mutation is a contract change worth recording.
+After executing the action (add/update/deprecate), create a chronicle task. Every spec mutation is a contract change worth recording.
 
 ```bash
-PLAN_LABEL=$(bd list -l exec:executing --type=epic --status=open --limit=1 --json 2>/dev/null | jq -r '.[0].labels[]? | select(startswith("plan:"))' | head -1)
+PLAN_LABEL=$(bash "$YFT" list -l exec:executing --type=epic --status=open --limit=1 --json 2>/dev/null | jq -r '.[0].labels[]? | select(startswith("plan:"))' | head -1)
 LABELS="ys:chronicle,ys:chronicle:auto,ys:topic:engineer"
 [ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
 
-bd create --type task \
+bash "$YFT" create --type task \
   --title "Chronicle: engineer_update — $ACTION $ENTRY_ID" \
   -l "$LABELS" \
   --description "Spec mutation: $ACTION

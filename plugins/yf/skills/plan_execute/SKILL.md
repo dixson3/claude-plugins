@@ -25,10 +25,15 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Execute Plan Skill
 
-Orchestrates plan execution using the task pump. The pump reads ready beads from the plan DAG, classifies each into a **formula track** (dispatched via `/yf:swarm_run`) or an **agent track** (dispatched via bare Task tool calls), and launches them in parallel. The execution loop continues until all work is complete.
+Orchestrates plan execution using the task pump. The pump reads ready tasks from the plan DAG, classifies each into a **formula track** (dispatched via `/yf:swarm_run`) or an **agent track** (dispatched via bare Task tool calls), and launches them in parallel. The execution loop continues until all work is complete.
 
 ## Prerequisites
 
@@ -41,7 +46,7 @@ Orchestrates plan execution using the task pump. The pump reads ready beads from
 
 If `plan_idx` not specified, find the most recent active plan:
 ```bash
-bd list -l ys:plan --type=epic --status=open --sort=created --reverse --limit=1
+bash "$YFT" list -l ys:plan --type=epic --status=open --sort=created --reverse --limit=1
 ```
 
 Extract the `plan:<idx>` label and root epic ID.
@@ -61,66 +66,66 @@ Repeat until no more tasks:
 
 Call `/yf:plan_pump` with the plan index. The pump:
 
-1. Calls `plan-exec.sh next <root-epic-id>` to get ready beads
-2. Filters out already-dispatched beads via `dispatch-state.sh pump is-dispatched`
-3. Classifies each bead into **formula track** (has `formula:<name>` label → dispatch via `/yf:swarm_run`) or **agent track** (has `agent:<name>` label only → dispatch via bare Task tool)
-4. Returns two groups: formula beads (for swarm dispatch) and agent beads (for bare Task dispatch)
+1. Calls `plan-exec.sh next <root-epic-id>` to get ready tasks
+2. Filters out already-dispatched tasks via `dispatch-state.sh pump is-dispatched`
+3. Classifies each task into **formula track** (has `formula:<name>` label → dispatch via `/yf:swarm_run`) or **agent track** (has `agent:<name>` label only → dispatch via bare Task tool)
+4. Returns two groups: formula tasks (for swarm dispatch) and agent tasks (for bare Task dispatch)
 
 #### 3b. Check Empty Result
 
-If the pump returns no beads to dispatch:
+If the pump returns no tasks to dispatch:
 - Check `plan-exec.sh status <root-epic-id>`:
   - **completed** -> proceed to Step 4 (completion)
   - **paused** -> report "Plan is paused. Say 'resume the plan' to continue." and stop
   - **executing** with in-progress tasks -> wait for subagents to return, then re-pump
 
 > **CRITICAL: Dispatch Routing**
-> Beads with a `formula:<name>` label MUST be dispatched via `/yf:swarm_run`, NOT via bare Task tool calls. Bare dispatch of formula-labeled beads is a bug — it bypasses multi-agent workflows (research → implement → review), structured bead comments (FINDINGS/CHANGES/REVIEW/TESTS), reactive bugfix spawning, and chronicle capture.
+> Tasks with a `formula:<name>` label MUST be dispatched via `/yf:swarm_run`, NOT via bare Task tool calls. Bare dispatch of formula-labeled tasks is a bug — it bypasses multi-agent workflows (research → implement → review), structured task comments (FINDINGS/CHANGES/REVIEW/TESTS), reactive bugfix spawning, and chronicle capture.
 
 #### 3c. Dispatch in Parallel
 
-For each group from the pump, launch dispatch calls **in parallel** (multiple calls in one message). The pump classifies beads into two tracks:
+For each group from the pump, launch dispatch calls **in parallel** (multiple calls in one message). The pump classifies tasks into two tracks:
 
 **Formula dispatch** (tasks with `formula:<name>` label):
 Invoke the swarm system for full multi-agent workflow:
 ```
-/yf:swarm_run formula:<formula-name> feature:"<bead title>" parent_bead:<task-id>
+/yf:swarm_run formula:<formula-name> feature:"<task title>" parent_bead:<task-id>
 ```
 
-The swarm handles the complete lifecycle: wisp instantiation, step dispatch through specialized agents, squash on completion, and chronicle capture. The parent bead is closed by swarm_run on success.
+The swarm handles the complete lifecycle: wisp instantiation, step dispatch through specialized agents, squash on completion, and chronicle capture. The parent task is closed by swarm_run on success.
 
 **Agent dispatch** (tasks with `agent:<name>` label, no formula):
 ```
 Task(
   subagent_type = "<agent-name>",
-  prompt = "Work on bead <task-id>
+  prompt = "Work on task <task-id>
 
-Context from bd show:
+Context from bash "$YFT" show:
 <full task context>
 
 Instructions:
-1. Claim the task: bd update <task-id> --status=in_progress
+1. Claim the task: bash "$YFT" update <task-id> --status=in_progress
 2. Review scope — if non-trivial, invoke /yf:plan_breakdown first
 3. Do the work described in the task
-4. Close when done: bd close <task-id>
-5. If you create sub-tasks, use bd create with --parent=<task-id>
+4. Close when done: bash "$YFT" close <task-id>
+5. If you create sub-tasks, use bash "$YFT" create with --parent=<task-id>
    and invoke /yf:plan_select_agent on each"
 )
 ```
 
-**Direct execution** (tasks without agent or formula label): Claim with `bd update <task-id> --status=in_progress` and work directly.
+**Direct execution** (tasks without agent or formula label): Claim with `bash "$YFT" update <task-id> --status=in_progress` and work directly.
 
-Mark each dispatched bead:
+Mark each dispatched task:
 ```bash
-plugins/yf/scripts/dispatch-state.sh pump mark-dispatched <bead-id>
+plugins/yf/scripts/dispatch-state.sh pump mark-dispatched <task-id>
 ```
 
 #### 3d. Wait and Loop
 
 After dispatching a batch:
 1. Wait for all dispatched Task tool calls to return
-2. Mark completed beads: `dispatch-state.sh pump mark-done <bead-id>`
-3. Loop back to Step 3a — newly unblocked beads become ready
+2. Mark completed tasks: `dispatch-state.sh pump mark-done <task-id>`
+3. Loop back to Step 3a — newly unblocked tasks become ready
 
 ### Step 3e: Qualification Gate
 
@@ -140,7 +145,7 @@ After qualification passes (or is advisory/disabled):
 1. **Verify completion chronicle**: A completion chronicle stub was already created by `plan-exec.sh` when it detected completion. Verify it exists:
 
    ```bash
-   bd list -l "ys:chronicle:auto,plan:<idx>" --status=open --json 2>/dev/null \
+   bash "$YFT" list -l "ys:chronicle:auto,plan:<idx>" --status=open --json 2>/dev/null \
      | jq '[.[] | select(.title | ascii_downcase | contains("complete"))] | length'
    ```
 
@@ -182,20 +187,20 @@ After qualification passes (or is advisory/disabled):
 ```bash
 PLAN_LABEL="plan:<idx>"
 # Task counts
-CLOSED=$(bd count -l "$PLAN_LABEL" --status=closed --type=task 2>/dev/null || echo "0")
-TOTAL=$(bd list -l "$PLAN_LABEL" --type=task --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+CLOSED=$(bash "$YFT" count -l "$PLAN_LABEL" --status=closed --type=task 2>/dev/null || echo "0")
+TOTAL=$(bash "$YFT" list -l "$PLAN_LABEL" --type=task --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
 # Chronicle counts
-ALL_CHRON=$(bd list -l ys:chronicle,"$PLAN_LABEL" --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
-OPEN_CHRON=$(bd list -l ys:chronicle,"$PLAN_LABEL" --status=open --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+ALL_CHRON=$(bash "$YFT" list -l ys:chronicle,"$PLAN_LABEL" --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+OPEN_CHRON=$(bash "$YFT" list -l ys:chronicle,"$PLAN_LABEL" --status=open --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
 # Archive counts
-ALL_ARCH=$(bd list -l ys:archive,"$PLAN_LABEL" --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
-OPEN_ARCH=$(bd list -l ys:archive,"$PLAN_LABEL" --status=open --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+ALL_ARCH=$(bash "$YFT" list -l ys:archive,"$PLAN_LABEL" --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
+OPEN_ARCH=$(bash "$YFT" list -l ys:archive,"$PLAN_LABEL" --status=open --limit=0 --json 2>/dev/null | jq 'length' 2>/dev/null || echo "0")
 ```
 
 7. **Report structured completion**: Include tasks completed count, chronicles captured/processed, diary entries generated, archives captured/processed. Omit sections with zero items. Always include the Tasks line.
 
 ## Error Handling
 
-- Subagent failure: bead stays in_progress, pump continues with other ready beads
+- Subagent failure: task stays in_progress, pump continues with other ready tasks
 - Guard error from `plan-exec.sh next`: report state and stop
-- Dispatch state prevents double-dispatch of in-flight beads
+- Dispatch state prevents double-dispatch of in-flight tasks

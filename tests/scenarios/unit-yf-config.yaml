@@ -62,7 +62,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: Malformed config -- fail-open on jq parse but requires beads
+  # Case 4: Malformed config -- fail-open on jq parse (two-condition gate)
   - name: "malformed_failopen"
     run: |
       mkdir -p "$WORK_DIR/.claude"
@@ -70,17 +70,12 @@ steps:
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
       # With malformed JSON: config exists (pass condition 1), jq fails so
-      # val is empty and not "false" (pass condition 2), then checks beads.
-      # If bd is available, this returns enabled (fail-open on parse errors).
-      if command -v bd >/dev/null 2>&1; then
-        if yf_is_enabled; then
-          echo "OK: fail-open on malformed (beads available)"
-        else
-          echo "FAIL: should fail-open when beads available"
-          exit 1
-        fi
+      # val is empty and not "false" (pass condition 2) => enabled (fail-open on parse errors).
+      if yf_is_enabled; then
+        echo "OK: fail-open on malformed config"
       else
-        echo "OK: skipped (bd not available)"
+        echo "FAIL: should fail-open when config exists but is malformed"
+        exit 1
       fi
     assertions:
       - type: exit_code
@@ -202,70 +197,25 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 11: yf_is_enabled — three conditions all met
-  - name: "enabled_three_conditions"
+  # Case 11: yf_is_enabled — two conditions all met (config exists + enabled)
+  - name: "enabled_two_conditions"
     run: |
       echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
-      if command -v bd >/dev/null 2>&1; then
-        if yf_is_enabled; then
-          echo "OK: enabled with all three conditions"
-        else
-          echo "FAIL: should be enabled"
-          exit 1
-        fi
+      if yf_is_enabled; then
+        echo "OK: enabled with both conditions"
       else
-        echo "OK: skipped (bd not available)"
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 12: yf_is_enabled — config exists, enabled, no beads → disabled
-  - name: "enabled_no_beads_disabled"
-    run: |
-      echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      export CLAUDE_PROJECT_DIR="$WORK_DIR"
-      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
-      # Override HOME and PATH to hide beads
-      if HOME="$WORK_DIR/fakehome" PATH="/usr/bin:/bin" yf_is_enabled; then
-        echo "FAIL: should be disabled without beads"
+        echo "FAIL: should be enabled"
         exit 1
       fi
-      echo "OK: disabled without beads"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 13: yf_bd_available function and alias
-  - name: "bd_available_function"
-    run: |
-      export CLAUDE_PROJECT_DIR="$WORK_DIR"
-      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
-      # Test yf_bd_available with bd in PATH
-      if command -v bd >/dev/null 2>&1; then
-        if yf_bd_available; then
-          echo "OK: yf_bd_available found bd"
-        else
-          echo "FAIL: should find bd"
-          exit 1
-        fi
-        # yf_bd_available already verified above
-      else
-        echo "OK: skipped (bd not in test env)"
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 14: yf_merged_config returns base config when no local file
+  # Case 12: yf_merged_config returns base config when no local file (was Case 14)
   - name: "merged_config_base_only"
     run: |
       echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"

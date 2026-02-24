@@ -27,7 +27,7 @@ ACTION="${1:-}"
 shift || true
 
 # --- setup <worktree-path> ---
-# Run beads-setup in worktree context to establish .beads/redirect
+# Run plugin-preflight in worktree context to establish .yoshiko-flow
 do_setup() {
   local wt_path="${1:-}"
 
@@ -41,15 +41,23 @@ do_setup() {
     exit 1
   fi
 
-  # Run beads-setup with worktree as project dir
-  local setup_out
-  setup_out=$(CLAUDE_PROJECT_DIR="$wt_path" bash "$SCRIPT_DIR/beads-setup.sh" 2>&1) || true
+  # Create .yoshiko-flow directories in worktree
+  mkdir -p "$wt_path/.yoshiko-flow/tasks" \
+           "$wt_path/.yoshiko-flow/chronicler" \
+           "$wt_path/.yoshiko-flow/archivist" \
+           "$wt_path/.yoshiko-flow/issues" \
+           "$wt_path/.yoshiko-flow/todos" \
+           "$wt_path/.yoshiko-flow/molecules" 2>/dev/null || true
 
-  # Check if redirect was created
-  if [ -f "$wt_path/.beads/redirect" ]; then
-    echo '{"status":"ok","beads_redirect":true}'
+  # Run plugin-preflight with worktree as project dir
+  local setup_out
+  setup_out=$(CLAUDE_PROJECT_DIR="$wt_path" bash "$SCRIPT_DIR/plugin-preflight.sh" 2>&1) || true
+
+  # Check if .yoshiko-flow was created
+  if [ -d "$wt_path/.yoshiko-flow" ]; then
+    echo '{"status":"ok","yf_setup":true}'
   else
-    echo "{\"status\":\"ok\",\"beads_redirect\":false,\"setup_output\":\"$setup_out\"}"
+    echo "{\"status\":\"ok\",\"yf_setup\":false,\"setup_output\":\"$setup_out\"}"
   fi
 }
 

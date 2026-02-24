@@ -1,27 +1,21 @@
 name: "Unit: code-gate.sh chronicle safety net"
 
 setup:
-  - "mkdir -p .claude .yoshiko-flow docs/plans"
+  - "mkdir -p .claude .yoshiko-flow/tasks docs/plans"
   - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/plan-intake-ok .yoshiko-flow/plan-chronicle-ok"
   - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
-  # Case 1: Plan with beads but no chronicle -> warning
-  - name: "plan_beads_no_chronicle_warns"
+  # Case 1: Plan with tasks but no chronicle -> warning
+  - name: "plan_tasks_no_chronicle_warns"
     run: |
       rm -f .yoshiko-flow/plan-chronicle-ok .yoshiko-flow/plan-intake-ok
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
-      mkdir -p "$WORK_DIR/mock_bin"
-      {
-        echo '#!/bin/bash'
-        echo 'case "$*" in'
-        echo '*ys:chronicle*) echo "[]";;'
-        echo '*plan:*) echo "[{\"id\":\"beads-001\"}]";;'
-        echo '*) echo "[]";;'
-        echo 'esac'
-      } > "$WORK_DIR/mock_bin/bd"
-      chmod +x "$WORK_DIR/mock_bin/bd"
-      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      # Create an epic task for plan:99 (simulates tasks exist)
+      cat > "$WORK_DIR/.yoshiko-flow/tasks/task-chron-001.json" << 'TASKJSON'
+      {"id":"task-chron-001","type":"epic","title":"Test Epic","status":"open","labels":["plan:99"],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
       echo "$OUTPUT"
       if echo "$OUTPUT" | grep -q "chronicle_capture"; then
         echo "OK: warning mentions chronicle_capture"
@@ -37,21 +31,21 @@ steps:
       - type: output_contains
         value: "chronicle_capture"
 
-  # Case 2: Plan with beads AND chronicle -> no warning
-  - name: "plan_beads_with_chronicle_no_warning"
+  # Case 2: Plan with tasks AND chronicle -> no warning
+  - name: "plan_tasks_with_chronicle_no_warning"
     run: |
       rm -f .yoshiko-flow/plan-chronicle-ok
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
-      mkdir -p "$WORK_DIR/mock_bin"
-      {
-        echo '#!/bin/bash'
-        echo 'case "$*" in'
-        echo '*ys:chronicle*|*plan:*) echo "[{\"id\":\"beads-001\"}]";;'
-        echo '*) echo "[]";;'
-        echo 'esac'
-      } > "$WORK_DIR/mock_bin/bd"
-      chmod +x "$WORK_DIR/mock_bin/bd"
-      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      # Epic task for plan:99
+      cat > "$WORK_DIR/.yoshiko-flow/tasks/task-chron-001.json" << 'TASKJSON'
+      {"id":"task-chron-001","type":"epic","title":"Test Epic","status":"open","labels":["plan:99"],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
+      # Chronicle task for plan:99
+      mkdir -p "$WORK_DIR/.yoshiko-flow/chronicler"
+      cat > "$WORK_DIR/.yoshiko-flow/chronicler/chron-001.json" << 'TASKJSON'
+      {"id":"chron-001","type":"chronicle","title":"Chronicle: test","status":"open","labels":["ys:chronicle","plan:99"],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
       echo "$OUTPUT"
       if echo "$OUTPUT" | grep -q "chronicle_capture"; then
         echo "FAIL: unexpected chronicle warning"
@@ -69,17 +63,12 @@ steps:
     run: |
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
       touch .yoshiko-flow/plan-chronicle-ok
-      mkdir -p "$WORK_DIR/mock_bin"
-      {
-        echo '#!/bin/bash'
-        echo 'case "$*" in'
-        echo '*ys:chronicle*) echo "[]";;'
-        echo '*plan:*) echo "[{\"id\":\"beads-001\"}]";;'
-        echo '*) echo "[]";;'
-        echo 'esac'
-      } > "$WORK_DIR/mock_bin/bd"
-      chmod +x "$WORK_DIR/mock_bin/bd"
-      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      # Epic task for plan:99 (no chronicle)
+      cat > "$WORK_DIR/.yoshiko-flow/tasks/task-chron-001.json" << 'TASKJSON'
+      {"id":"task-chron-001","type":"epic","title":"Test Epic","status":"open","labels":["plan:99"],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/chron-001.json"
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
       echo "$OUTPUT"
       if echo "$OUTPUT" | grep -q "chronicle_capture"; then
         echo "FAIL: marker did not suppress chronicle warning"
@@ -92,21 +81,21 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: No beads -> no chronicle warning (intake warning fires instead)
-  - name: "no_beads_no_chronicle_warning"
+  # Case 4: No tasks -> no chronicle warning (intake warning fires instead)
+  - name: "no_tasks_no_chronicle_warning"
     run: |
       rm -f .yoshiko-flow/plan-chronicle-ok .yoshiko-flow/plan-intake-ok
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
-      mkdir -p "$WORK_DIR/mock_bin"
-      printf '#!/bin/bash\necho '\''[]'\''  \n' > "$WORK_DIR/mock_bin/bd"
-      chmod +x "$WORK_DIR/mock_bin/bd"
-      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      # Remove all task files so no epic exists for plan:99
+      rm -f "$WORK_DIR/.yoshiko-flow/tasks/task-chron-"*
+      rm -f "$WORK_DIR/.yoshiko-flow/chronicler/chron-"*
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
       echo "$OUTPUT"
       if echo "$OUTPUT" | grep -q "chronicle_capture"; then
-        echo "FAIL: chronicle warning should not fire when no beads exist"
+        echo "FAIL: chronicle warning should not fire when no tasks exist"
         exit 1
       fi
-      echo "OK: no chronicle warning without beads"
+      echo "OK: no chronicle warning without tasks"
     assertions:
       - type: exit_code
         value: "0"
@@ -133,4 +122,4 @@ steps:
 
 teardown:
   - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/plan-intake-ok .yoshiko-flow/plan-chronicle-ok docs/plans/plan-99.md"
-  - "rm -rf mock_bin"
+  - "rm -f .yoshiko-flow/tasks/task-chron-* .yoshiko-flow/chronicler/chron-*"

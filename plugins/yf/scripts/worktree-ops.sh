@@ -63,17 +63,12 @@ do_create() {
     json_err "Failed to create worktree"
   }
 
-  # Set up .beads/redirect if main repo has .beads/
-  if [ -d "$PROJECT_DIR/.beads" ]; then
-    mkdir -p "$wt_dir/.beads"
-    local rel_path
-    rel_path=$(python3 -c "import os; print(os.path.relpath('$PROJECT_DIR/.beads', '$wt_dir/.beads'))" 2>/dev/null) || rel_path=""
-    if [ -n "$rel_path" ]; then
-      echo "$rel_path" > "$wt_dir/.beads/redirect"
-    fi
+  # Ensure .yoshiko-flow/ exists in worktree if yf is active in main repo
+  if [ -d "$PROJECT_DIR/.yoshiko-flow" ]; then
+    mkdir -p "$wt_dir/.yoshiko-flow"
   fi
 
-  json_ok ",\"branch\":\"$branch\",\"worktree\":\"$wt_dir\",\"beads_redirect\":$([ -f "$wt_dir/.beads/redirect" ] && echo 'true' || echo 'false')"
+  json_ok ",\"branch\":\"$branch\",\"worktree\":\"$wt_dir\""
 }
 
 # --- validate <worktree-path> ---

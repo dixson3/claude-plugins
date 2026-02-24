@@ -1,4 +1,4 @@
-name: "Unit: yf-activation-check.sh — three-condition gate"
+name: "Unit: yf-activation-check.sh — two-condition gate"
 
 setup:
   - "mkdir -p .claude/rules .yoshiko-flow docs/plans docs/diary"
@@ -44,20 +44,15 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: enabled:true + bd CLI available → active
-  - name: "enabled_with_beads_active"
+  # Case 3: enabled:true → active (two-condition gate: config exists + enabled)
+  - name: "enabled_active"
     run: |
       echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
-      # Ensure bd is available (it should be since beads-cli is a project dependency)
-      if ! command -v bd >/dev/null 2>&1; then
-        echo "SKIP: bd not available in test environment"
-        exit 0
-      fi
       OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/yf-activation-check.sh")
       ACTIVE=$(echo "$OUTPUT" | jq -r '.active')
       if [ "$ACTIVE" = "true" ]; then
-        echo "OK: enabled + beads → active"
+        echo "OK: enabled → active"
       else
         echo "FAIL: active=$ACTIVE"
         exit 1
@@ -68,28 +63,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: enabled:true + beads NOT installed → inactive
-  - name: "enabled_no_beads_inactive"
-    run: |
-      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > "$WORK_DIR/.yoshiko-flow/config.json"
-      export CLAUDE_PROJECT_DIR="$WORK_DIR"
-      # Override HOME to hide installed_plugins.json and PATH to hide bd
-      OUTPUT=$(HOME="$WORK_DIR/fakehome" PATH="/usr/bin:/bin" bash "$PLUGIN_DIR/plugins/yf/scripts/yf-activation-check.sh")
-      ACTIVE=$(echo "$OUTPUT" | jq -r '.active')
-      REASON=$(echo "$OUTPUT" | jq -r '.reason // empty')
-      if [ "$ACTIVE" = "false" ] && echo "$REASON" | grep -qi "bd CLI"; then
-        echo "OK: no beads → inactive"
-      else
-        echo "FAIL: active=$ACTIVE reason=$REASON"
-        exit 1
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 5: Script always exits 0
+  # Case 4: Script always exits 0
   - name: "always_exits_zero"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -102,7 +76,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 6: Output is valid JSON
+  # Case 5: Output is valid JSON
   - name: "output_is_valid_json"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -120,43 +94,5 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 7: yf_bd_available with bd in PATH
-  - name: "bd_available_in_path"
-    run: |
-      export CLAUDE_PROJECT_DIR="$WORK_DIR"
-      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
-      if command -v bd >/dev/null 2>&1; then
-        if yf_bd_available; then
-          echo "OK: bd found in PATH"
-        else
-          echo "FAIL: bd should be found"
-          exit 1
-        fi
-      else
-        echo "OK: skipped (bd not in test env)"
-      fi
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
-  # Case 8: yf_bd_available with bd NOT in PATH
-  - name: "bd_not_available"
-    run: |
-      export CLAUDE_PROJECT_DIR="$WORK_DIR"
-      . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
-      if PATH="/usr/bin:/bin" yf_bd_available; then
-        echo "FAIL: should not find bd"
-        exit 1
-      fi
-      echo "OK: bd not found"
-    assertions:
-      - type: exit_code
-        value: "0"
-      - type: output_contains
-        value: "OK"
-
 teardown:
   - "rm -f .yoshiko-flow/config.json"
-  - "rm -rf fakehome"

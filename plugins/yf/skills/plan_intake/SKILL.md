@@ -1,6 +1,6 @@
 ---
 name: yf:plan_intake
-description: Run plan intake checklist — save plan, create beads, start execution
+description: Run plan intake checklist — save plan, create tasks, start execution
 user_invocable: true
 arguments:
   - name: plan
@@ -23,6 +23,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Plan Intake Checklist
 
@@ -76,7 +81,7 @@ ls docs/plans/plan-*.md
 ### Step 1.5: Specification Integrity Gate
 
 If specifications exist (`<artifact_dir>/specifications/`), run this checklist
-before creating beads. All spec changes require explicit operator approval.
+before creating tasks. All spec changes require explicit operator approval.
 
 **1.5a. Contradiction check:**
 Read the plan file and compare against PRD requirements (REQ-xxx),
@@ -127,18 +132,18 @@ Then run spec reconciliation:
 This closes the gap where manual intake previously had no spec checks at all.
 
 **1.5g. Chronicle reconciliation verdict:**
-If reconciliation ran in 1.5f, create a chronicle bead with labels `ys:chronicle,ys:chronicle:auto,ys:topic:planning,plan:<idx>` capturing the verdict (PASS/NEEDS-RECONCILIATION), structural consistency result, and any spec changes from 1.5a-d.
+If reconciliation ran in 1.5f, create a chronicle task with labels `ys:chronicle,ys:chronicle:auto,ys:topic:planning,plan:<idx>` capturing the verdict (PASS/NEEDS-RECONCILIATION), structural consistency result, and any spec changes from 1.5a-d.
 
-### Step 2: Ensure Beads Exist
+### Step 2: Ensure Tasks Exist
 
-Check if beads have been created for this plan:
+Check if tasks have been created for this plan:
 
 ```bash
-bd list -l plan:<idx> --type=epic
+bash "$YFT" list -l plan:<idx> --type=epic
 ```
 
-- **If no beads exist**: Invoke `/yf:plan_create_beads docs/plans/plan-<idx>.md` to create the structured hierarchy (epic, tasks, gates, dependencies).
-- **If beads already exist**: Skip this step.
+- **If no tasks exist**: Invoke `/yf:plan_create_tasks docs/plans/plan-<idx>.md` to create the structured hierarchy (epic, tasks, gates, dependencies).
+- **If tasks already exist**: Skip this step.
 
 ### Step 3: Ensure Plan is Executing
 
@@ -150,7 +155,7 @@ test -f .yoshiko-flow/plan-gate && echo "gate exists" || echo "no gate"
 
 - **If gate exists** (plan is Draft/Ready, not yet Executing):
   ```bash
-  ROOT_EPIC=$(bd list -l plan:<idx> --type=epic --status=open --limit=1 --json 2>/dev/null \
+  ROOT_EPIC=$(bash "$YFT" list -l plan:<idx> --type=epic --status=open --limit=1 --json 2>/dev/null \
     | jq -r '.[0].id // empty')
   bash plugins/yf/scripts/plan-exec.sh start "$ROOT_EPIC"
   ```
@@ -164,7 +169,7 @@ test -f .yoshiko-flow/plan-gate && echo "gate exists" || echo "no gate"
 bash plugins/yf/scripts/plan-chronicle.sh intake "plan:<idx>" "docs/plans/plan-<idx>.md"
 ```
 
-This creates a stub chronicle bead with the plan excerpt. It is deduped (safe to re-run) and fail-open.
+This creates a stub chronicle task with the plan excerpt. It is deduped (safe to re-run) and fail-open.
 
 **Step 4b (OPTIONAL):** If the planning discussion had significant design rationale beyond what the plan file captures (e.g., alternatives considered, architecture debates), invoke `/yf:chronicle_capture topic:planning` to create a richer chronicle. Skip if the plan file already contains all relevant context.
 

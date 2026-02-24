@@ -15,8 +15,8 @@ steps:
       - type: exit_code
         value: "0"
 
-  # Case 2: Multiple beads tracked independently
-  - name: "multiple_beads_independent"
+  # Case 2: Multiple tasks tracked independently
+  - name: "multiple_tasks_independent"
     run: |
       rm -f .yoshiko-flow/task-pump.json
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" pump mark-dispatched marketplace-abc

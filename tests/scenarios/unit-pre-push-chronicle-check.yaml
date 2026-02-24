@@ -1,14 +1,14 @@
 name: "Unit: pre-push-diary.sh — chronicle-check integration"
 
 setup:
-  - "mkdir -p .yoshiko-flow .beads"
+  - "mkdir -p .yoshiko-flow"
 
 steps:
   # Case 1: Chronicle-check runs before advisory
   - name: "chronicle_check_runs"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
-      # The hook should call chronicle-check.sh and not fail even if bd is missing
+      # The hook should call chronicle-check.sh and not fail even with no tasks
       OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-diary.sh" 2>&1)
       EXIT_CODE=$?
       if [ "$EXIT_CODE" -eq 0 ]; then

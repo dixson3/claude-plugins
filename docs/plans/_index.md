@@ -57,3 +57,4 @@
 | 0055 | plan-0053-szgh2 | Resolve Three Open Issue Beads: Gate Bypass, Version Staleness, Targeted Testing | 2026-02-22 | James Dixson | Completed |
 | 0056 | plan-0054-gs93u | Plan: Operator Attribution and Narrative Diary Style | 2026-02-22 | James Dixson | Completed |
 | 0055 | plan-0055-57c3s | Fix Truncated Plan ID in Bead Creation | 2026-02-22 | James Dixson | Completed |
+| 0056 | plan-0056-584rz | Plan: Remove beads-cli dependency — replace with file-based task system | 2026-02-23 | James Dixson | Active |

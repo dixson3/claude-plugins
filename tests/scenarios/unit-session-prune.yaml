@@ -5,7 +5,7 @@ setup:
   - "mkdir -p .yoshiko-flow"
   - "echo '# test' > CLAUDE.md"
   - "git add -A && git commit -m 'init'"
-  - "bd init 2>/dev/null || true"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}' > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: Yesterday's date-stamped files removed, today's preserved
@@ -47,13 +47,13 @@ steps:
   # Case 2: All 5 session sentinels removed
   - name: "ephemeral_removes_sentinels"
     run: |
-      for f in .chronicle-nudge .beads-check-cache plan-chronicle-ok plan-intake-ok plan-intake-skip; do
+      for f in .chronicle-nudge .tasks-check-cache plan-chronicle-ok plan-intake-ok plan-intake-skip; do
         touch "$WORK_DIR/.yoshiko-flow/$f"
       done
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" ephemeral 2>&1
       REMAINING=0
-      for f in .chronicle-nudge .beads-check-cache plan-chronicle-ok plan-intake-ok plan-intake-skip; do
+      for f in .chronicle-nudge .tasks-check-cache plan-chronicle-ok plan-intake-ok plan-intake-skip; do
         [ -f "$WORK_DIR/.yoshiko-flow/$f" ] && REMAINING=$((REMAINING + 1))
       done
       if [ "$REMAINING" -eq 0 ]; then
@@ -165,7 +165,7 @@ steps:
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
-      bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" beads 2>&1
+      bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" tasks 2>&1
       RC1=$?
       bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" ephemeral 2>&1
       RC2=$?
@@ -187,15 +187,15 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 8: beads subcommand emits expected output with configurable threshold
-  - name: "beads_runs_cleanup"
+  # Case 8: tasks subcommand emits expected output with configurable threshold
+  - name: "tasks_runs_cleanup"
     run: |
       echo '{"enabled":true,"config":{"auto_prune":{"older_than_days":14}}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
-      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" beads 2>&1)
+      OUTPUT=$(bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" tasks 2>&1)
       echo "$OUTPUT"
-      if echo "$OUTPUT" | grep -q "session-prune beads:" && echo "$OUTPUT" | grep -q "14d"; then
-        echo "OK: beads cleanup ran with configured threshold"
+      if echo "$OUTPUT" | grep -q "session-prune tasks:" && echo "$OUTPUT" | grep -q "14d"; then
+        echo "OK: tasks cleanup ran with configured threshold"
       else
         echo "FAIL: unexpected output: $OUTPUT"
         exit 1
@@ -206,7 +206,7 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 9: drafts subcommand runs (no stale path since beads are fresh)
+  # Case 9: drafts subcommand runs (no stale path since tasks are fresh)
   - name: "drafts_closes_stale"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
@@ -247,4 +247,4 @@ steps:
 teardown:
   - "rm -f .yoshiko-flow/config.json"
   - "rm -f .yoshiko-flow/.chronicle-drafted-* .yoshiko-flow/.chronicle-staleness-* .yoshiko-flow/.chronicle-transition-* .yoshiko-flow/.chronicle-plan-*"
-  - "rm -f .yoshiko-flow/.chronicle-nudge .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-chronicle-ok .yoshiko-flow/plan-intake-ok .yoshiko-flow/plan-intake-skip"
+  - "rm -f .yoshiko-flow/.chronicle-nudge .yoshiko-flow/.tasks-check-cache .yoshiko-flow/plan-chronicle-ok .yoshiko-flow/plan-intake-ok .yoshiko-flow/plan-intake-skip"

@@ -126,10 +126,6 @@ func assertionSummary(a Assertion) string {
 		return fmt.Sprintf("exit_code(%s)%s", a.Value, neg)
 	case "json_field":
 		return fmt.Sprintf("json_field(%s, %q)%s", a.Path, a.Value, neg)
-	case "bd_list_contains":
-		return fmt.Sprintf("bd_list_contains(%q)%s", a.Value, neg)
-	case "bd_count":
-		return fmt.Sprintf("bd_count(%s)%s", a.Value, neg)
 	case "git_log_contains":
 		return fmt.Sprintf("git_log_contains(%q)%s", a.Value, neg)
 	case "git_status_clean":

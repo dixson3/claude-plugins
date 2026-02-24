@@ -5,8 +5,8 @@ arguments:
   - name: mol_id
     description: "Molecule (wisp) ID to dispatch steps for"
     required: true
-  - name: parent_bead
-    description: "Parent bead ID for comment protocol"
+  - name: parent_task
+    description: "Parent task ID for comment protocol"
     required: false
 ---
 
@@ -25,6 +25,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Swarm Dispatch
 
@@ -35,7 +40,7 @@ The core dispatch loop that drives agents through molecule steps. Reads the mole
 ### Step 1: Read Molecule State
 
 ```bash
-bd mol show <mol_id> --json 2>/dev/null
+bash "$YFT" mol show <mol_id> --json 2>/dev/null
 ```
 
 Parse the molecule to get all steps with their:
@@ -92,7 +97,7 @@ For each ready step, determine whether to use worktree isolation:
 
 ### Step 4: Dispatch Ready Steps
 
-For each ready step, launch a Task tool call. Add `isolation: "worktree"` for write-capable agents (determined in Step 3b). For isolated agents, inject beads-setup into the prompt so `.beads/redirect` is established.
+For each ready step, launch a Task tool call. Add `isolation: "worktree"` for write-capable agents (determined in Step 3b).
 
 ```
 Task(
@@ -101,25 +106,19 @@ Task(
   isolation = "worktree",  // only for write-capable agents per Step 3b
   prompt = "You are working on a swarm step.
 
-<if isolation: worktree>
-## Worktree Setup
-Run this first to establish beads access:
-  bash ${CLAUDE_PLUGIN_ROOT}/scripts/beads-setup.sh
-</if>
-
 Molecule: <mol_id>
 Step: <step_id> — <step_title>
-Parent bead: <parent_bead> (post comments here)
+Parent task: <parent_task> (post comments here)
 
 ## Instructions
 <step description (with SUBAGENT: annotation stripped)>
 
 ## Upstream Context
-<Read FINDINGS:/CHANGES: comments from parent bead for context from prior steps>
+<Read FINDINGS:/CHANGES: comments from parent task for context from prior steps>
 
 ## Comment Protocol
-When you finish, post your results as a comment on the parent bead:
-  bd comment <parent_bead> \"<PROTOCOL_PREFIX>: <your structured output>\"
+When you finish, post your results as a comment on the parent task:
+  bash "$YFT" comment <parent_task> \"<PROTOCOL_PREFIX>: <your structured output>\"
 
 Protocol prefixes by role:
 - Research/analysis steps: FINDINGS:
@@ -129,7 +128,7 @@ Protocol prefixes by role:
 
 ## Completion
 After posting your comment, close this step:
-  bd close <step_bead_id>"
+  bash "$YFT" close <step_task_id>"
 )
 ```
 
@@ -139,12 +138,12 @@ Launch **all ready steps in parallel** (multiple Task calls in one message).
 
 Instead of a bare Task call, invoke the nested formula:
 ```
-/yf:swarm_run formula:<compose-value> feature:"<step title>" parent_bead:<parent_bead> depth:<current_depth+1> context:"<upstream FINDINGS from parent formula>"
+/yf:swarm_run formula:<compose-value> feature:"<step title>" parent_task:<parent_task> depth:<current_depth+1> context:"<upstream FINDINGS from parent formula>"
 ```
 
 The nested swarm:
 - Receives upstream FINDINGS from the parent formula's earlier steps as context
-- Posts CHANGES/TESTS/REVIEW comments on the **outermost** parent bead (single audit trail)
+- Posts CHANGES/TESTS/REVIEW comments on the **outermost** parent task (single audit trail)
 - Uses scoped state tracking: `<parent-mol-id>/<step-id>` prefix in dispatch-state.sh
 
 If `depth >= 2`, ignore the `compose` field and dispatch as a normal bare Task call.
@@ -159,9 +158,9 @@ bash plugins/yf/scripts/dispatch-state.sh swarm mark-dispatched <step-id>
 ### Step 6: Wait and Process Returns
 
 When Task calls return:
-1. Verify the agent posted a comment on the parent bead
+1. Verify the agent posted a comment on the parent task
 2. Mark done in swarm state: `bash plugins/yf/scripts/dispatch-state.sh swarm mark-done <step-id>`
-3. Check if the step bead was closed by the agent; if not, close it
+3. Check if the step task was closed by the agent; if not, close it
 
 ### Step 6a: Merge-Back Worktree-Isolated Agents
 
@@ -197,13 +196,13 @@ After each worktree-isolated agent returns, merge its changes back. Process retu
 
 After processing each step's return, check for failure signals in the posted comment:
 
-1. **Read the comment** on the parent bead for this step
+1. **Read the comment** on the parent task for this step
 2. **Check for REVIEW:BLOCK**: If the step posted a `REVIEW:BLOCK` comment, this is a failure
 3. **Check for TESTS with failures**: If the step posted a `TESTS:` comment containing `FAIL:` with a count > 0, this is a failure
 
 If a failure is detected, invoke `/yf:swarm_react`:
 ```
-/yf:swarm_react parent_bead:<parent_bead> verdict:<BLOCK|FAIL> step_id:<step-id> depth:<current_depth>
+/yf:swarm_react parent_task:<parent_task> verdict:<BLOCK|FAIL> step_id:<step-id> depth:<current_depth>
 ```
 
 The reactive skill handles eligibility checks (depth, dedup, config), spawns a bugfix formula if appropriate, and marks the step for retry. The dispatch loop will pick up the retried step on its next iteration (Step 7).
@@ -214,13 +213,13 @@ If no failure is detected, proceed normally.
 
 After a step completes, check two chronicle triggers:
 
-**Trigger 1 — Formula flag**: If the step JSON has `"chronicle": true`, create a chronicle bead with labels `ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto` (plus any `plan:*` label from parent bead) and description containing the step's comment content.
+**Trigger 1 — Formula flag**: If the step JSON has `"chronicle": true`, create a chronicle task with labels `ys:chronicle,ys:topic:swarm,ys:swarm,ys:chronicle:auto` (plus any `plan:*` label from parent task) and description containing the step's comment content.
 
-**Trigger 2 — CHRONICLE-SIGNAL**: If the step's comment contains a `CHRONICLE-SIGNAL:` line (used by read-only agents), extract the signal text and create a chronicle bead with the same label pattern, noting the signaling agent and step.
+**Trigger 2 — CHRONICLE-SIGNAL**: If the step's comment contains a `CHRONICLE-SIGNAL:` line (used by read-only agents), extract the signal text and create a chronicle task with the same label pattern, noting the signaling agent and step.
 
 ### Step 6d: Archive Findings (Opt-In)
 
-If the step JSON has `"archive_findings": true` and the step's `FINDINGS:` comment contains external sources (URLs, doc references), create an archive bead with labels `ys:archive,ys:archive:research,ys:swarm` (plus any `plan:*` label) and the FINDINGS content as description.
+If the step JSON has `"archive_findings": true` and the step's `FINDINGS:` comment contains external sources (URLs, doc references), create an archive task with labels `ys:archive,ys:archive:research,ys:swarm` (plus any `plan:*` label) and the FINDINGS content as description.
 
 ### Step 7: Re-dispatch Loop
 
@@ -230,7 +229,7 @@ After processing returns, loop back to Step 1:
 
 ### Step 8: Return Summary
 
-When all steps are closed, collect all comments from the parent bead and return a summary:
+When all steps are closed, collect all comments from the parent task and return a summary:
 
 ```
 Swarm Dispatch Complete
@@ -257,5 +256,5 @@ All steps closed.
 
 - Parse `SUBAGENT:` from step descriptions — this determines which agent type handles each step
 - Strip `SUBAGENT:` annotations from the prompt sent to agents (they don't need to see routing metadata)
-- Read upstream comments from the parent bead to provide context to downstream steps
+- Read upstream comments from the parent task to provide context to downstream steps
 - The dispatch loop is synchronous within each wave but parallel within a wave (steps with satisfied deps run concurrently)

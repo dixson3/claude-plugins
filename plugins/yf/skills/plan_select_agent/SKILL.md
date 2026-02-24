@@ -3,7 +3,7 @@ name: yf:plan_select_agent
 description: Match a task to the best available agent based on capabilities and assign an agent label
 arguments:
   - name: task_id
-    description: "Bead ID to evaluate for agent assignment"
+    description: "Task ID to evaluate for agent assignment"
     required: true
   - name: dry_run
     description: "If true, show match without applying label"
@@ -25,6 +25,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Select Agent Skill
 
@@ -56,7 +61,7 @@ For each discovered agent, extract:
 
 | Agent | Plugin | Specialization |
 |---|---|---|
-| `yf_chronicle_recall` | yf | Context recovery from beads |
+| `yf_chronicle_recall` | yf | Context recovery from tasks |
 | `yf_chronicle_diary` | yf | Diary generation from chronicles |
 | `yf_code_researcher` | yf | Read-only; researches technology standards and coding patterns |
 | `yf_code_writer` | yf | Full-capability; implements code following standards |
@@ -66,7 +71,7 @@ For each discovered agent, extract:
 ### Step 3: Read Task Context
 
 ```bash
-bd show <task_id>
+bash "$YFT" show <task_id>
 ```
 
 Extract the task's title, description, notes, and labels.
@@ -90,7 +95,7 @@ Compare task content against each agent's capabilities:
 If a clear match is found:
 
 ```bash
-bd label add <task_id> agent:<agent-name>
+bash "$YFT" label add <task_id> agent:<agent-name>
 ```
 
 If `dry_run`, just report the match without applying.

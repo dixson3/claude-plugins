@@ -1,7 +1,7 @@
 #!/bin/bash
 # chronicle-validate.sh — Verify chronicle coverage for a plan
 #
-# Checks that all plan lifecycle boundaries have chronicle beads.
+# Checks that all plan lifecycle boundaries have chronicle entries.
 # Creates fallback stubs for any missing boundaries.
 #
 # Usage:
@@ -23,11 +23,12 @@ if [[ -z "$PLAN_LABEL" ]]; then
     exit 0  # fail-open
 fi
 
-# Guard: bd must be available
-command -v bd >/dev/null 2>&1 || exit 0
+# --- Source task library ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/yf-tasks.sh"
 
 # --- Query all chronicles for this plan ---
-ALL_CHRONICLES=$(bd list -l "ys:chronicle,${PLAN_LABEL}" --limit=0 --json 2>/dev/null || echo "[]")
+ALL_CHRONICLES=$(yft_list -l "ys:chronicle,${PLAN_LABEL}" --limit=0 --json 2>/dev/null || echo "[]")
 
 # --- Check each boundary ---
 TOTAL=3
@@ -54,8 +55,8 @@ if check_boundary "save" "plan-save" || check_boundary "intake" "plan-intake"; t
     : # covered
 else
     # Create fallback
-    bd create --type task --priority 3 \
-        --labels "ys:chronicle,ys:chronicle:auto,ys:chronicle:fallback,ys:topic:planning,${PLAN_LABEL}" \
+    yft_create --type=chronicle --priority=3 \
+        -l "ys:chronicle,ys:chronicle:auto,ys:chronicle:fallback,ys:topic:planning,${PLAN_LABEL}" \
         --title "Chronicle (Fallback): Plan ${PLAN_LABEL} — save/intake" \
         --description "## Fallback Chronicle
 
@@ -73,8 +74,8 @@ fi
 if check_boundary "start" "start"; then
     : # covered
 else
-    bd create --type task --priority 3 \
-        --labels "ys:chronicle,ys:chronicle:auto,ys:chronicle:fallback,ys:topic:planning,${PLAN_LABEL}" \
+    yft_create --type=chronicle --priority=3 \
+        -l "ys:chronicle,ys:chronicle:auto,ys:chronicle:fallback,ys:topic:planning,${PLAN_LABEL}" \
         --title "Chronicle (Fallback): Plan ${PLAN_LABEL} — start" \
         --description "## Fallback Chronicle
 
@@ -91,8 +92,8 @@ fi
 if check_boundary "complete" "complete"; then
     : # covered
 else
-    bd create --type task --priority 3 \
-        --labels "ys:chronicle,ys:chronicle:auto,ys:chronicle:fallback,ys:topic:planning,${PLAN_LABEL}" \
+    yft_create --type=chronicle --priority=3 \
+        -l "ys:chronicle,ys:chronicle:auto,ys:chronicle:fallback,ys:topic:planning,${PLAN_LABEL}" \
         --title "Chronicle (Fallback): Plan ${PLAN_LABEL} — complete" \
         --description "## Fallback Chronicle
 

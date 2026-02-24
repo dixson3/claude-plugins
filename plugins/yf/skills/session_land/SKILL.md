@@ -20,6 +20,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Session Landing Skill
 
@@ -40,15 +45,15 @@ Report changed files to the operator. If clean, note it and continue.
 ### Step 2: File Remaining Work
 
 ```bash
-bd list --status=in_progress --json 2>/dev/null
+bash "$YFT" list --status=in_progress --json 2>/dev/null
 ```
 
-If in-progress beads exist, present each to the operator via AskUserQuestion:
+If in-progress tasks exist, present each to the operator via AskUserQuestion:
 - "Close (work is done)"
 - "Leave open (still in progress)"
-- "Create followup bead"
+- "Create followup task"
 
-Close or update beads based on operator response.
+Close or update tasks based on operator response.
 
 ### Step 3: Capture Context (conditional)
 
@@ -61,7 +66,7 @@ Skip if no meaningful context would be lost (routine completions, minor changes)
 Check for open chronicles:
 
 ```bash
-bd list --label=ys:chronicle --status=open --json 2>/dev/null
+bash "$YFT" list --label=ys:chronicle --status=open --json 2>/dev/null
 ```
 
 If open chronicles exist, invoke `/yf:chronicle_diary`.
@@ -89,13 +94,13 @@ If specs exist, invoke `/yf:memory_reconcile mode:check`.
 
 ### Step 7: Update Issue Status
 
-Close any beads that were completed during this session but not yet closed:
+Close any tasks that were completed during this session but not yet closed:
 
 ```bash
-bd list --status=in_progress --json 2>/dev/null
+bash "$YFT" list --status=in_progress --json 2>/dev/null
 ```
 
-For each remaining in-progress bead, confirm with operator before closing.
+For each remaining in-progress task, confirm with operator before closing.
 
 ### Step 8: Session Prune
 
@@ -128,5 +133,5 @@ If yes: `git push`. If no: note that unpushed changes remain for next session.
 
 Summarize:
 - What was done this session
-- What remains (open beads, unpushed commits)
+- What remains (open tasks, unpushed commits)
 - Key context for the next session

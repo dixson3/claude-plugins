@@ -3,7 +3,7 @@
 #
 # Fires when Claude exits plan mode. Saves the plan to docs/plans/ and
 # creates a gate file. Outputs auto-chain signal so the auto-chain-plan
-# rule drives the full lifecycle (plan_to_beads → execute) automatically.
+# rule drives the full lifecycle (plan_to_tasks → execute) automatically.
 #
 # If engage_plan already created the gate, this hook exits silently
 # (idempotent) and the auto-chain rule does NOT fire.

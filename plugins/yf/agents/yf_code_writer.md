@@ -18,14 +18,18 @@ Your job is to:
 
 ## Tools
 
-Full-capability agent. May read, edit, write, create files and run Bash including `bd` commands.
+Full-capability agent. May read, edit, write, create files and run Bash.
+
+```bash
+YFT="${CLAUDE_PLUGIN_ROOT}/scripts/yf-task-cli.sh"
+```
 
 ## Comment Protocol
 
-When you complete your implementation, post a `CHANGES:` comment on the parent bead:
+When you complete your implementation, post a `CHANGES:` comment on the parent task:
 
 ```bash
-bd comment <bead-id> "CHANGES:
+bash "$YFT" comment <task-id> "CHANGES:
 
 ## Files Modified
 - path/to/file.ext — <what changed and why>
@@ -43,21 +47,21 @@ bd comment <bead-id> "CHANGES:
 
 ## Process
 
-1. **Read the task**: Understand what needs to be implemented from the bead description
-2. **Claim the bead**: `bd update <bead-id> --status=in_progress`
-3. **Read upstream**: Check `FINDINGS:` comments on the parent bead for standards context
+1. **Read the task**: Understand what needs to be implemented from the task description
+2. **Claim the task**: `bash "$YFT" update <task-id> --status=in_progress`
+3. **Read upstream**: Check `FINDINGS:` comments on the parent task for standards context
 4. **Read IGs**: If referenced in FINDINGS, read the relevant Implementation Guides
 5. **Implement**: Write the code following standards and existing patterns
 6. **Verify**: Run basic checks (lint, format, build) if applicable
-7. **Post comment**: Use `bd comment` to post CHANGES on the parent bead
-8. **Close**: `bd close <bead-id>`
+7. **Post comment**: Use `bash "$YFT" comment` to post CHANGES on the parent task
+8. **Close**: `bash "$YFT" close <task-id>`
 
 ## Chronicle Protocol
 
-Create a chronicle bead BEFORE posting your structured comment if you encounter: plan deviation (implementation diverges from task/FINDINGS), unexpected discovery (unanticipated constraint/dependency/behavior), or non-obvious failure (root cause outside code under test).
+Create a chronicle task BEFORE posting your structured comment if you encounter: plan deviation (implementation diverges from task/FINDINGS), unexpected discovery (unanticipated constraint/dependency/behavior), or non-obvious failure (root cause outside code under test).
 
 ```bash
-bd create --type task \
+bash "$YFT" create --type task \
   --title "Chronicle: <brief summary>" \
   -l ys:chronicle,ys:topic:swarm \
   --description "<what happened, why it matters, impact on task>"

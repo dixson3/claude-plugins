@@ -20,10 +20,10 @@ steps:
       - type: output_contains
         value: "yf:swarm_qualify"
 
-  # Case 3: plan_create_beads has Step 9c
-  - name: "plan_create_beads_has_step_9c"
+  # Case 3: plan_create_tasks has Step 9c
+  - name: "plan_create_tasks_has_step_9c"
     run: |
-      grep "Step 9c" "$PLUGIN_DIR/plugins/yf/skills/plan_create_beads/SKILL.md"
+      grep "Step 9c" "$PLUGIN_DIR/plugins/yf/skills/plan_create_tasks/SKILL.md"
     assertions:
       - type: output_contains
         value: "Qualification"
@@ -126,18 +126,21 @@ steps:
   # Case 12: plan-exec.sh start records start-sha in labels (verify content)
   - name: "start_sha_content_verified"
     run: |
-      # Setup: git repo + beads
       cd "$WORK_DIR"
       git init 2>/dev/null || true
-      mkdir -p .claude .yoshiko-flow
+      mkdir -p .claude .yoshiko-flow/tasks
       echo '# test' > CLAUDE.md
+      echo '{"enabled":true,"config":{"artifact_dir":"docs"}}' > .yoshiko-flow/config.json
       git add -A && git commit -m 'qualify-test' 2>/dev/null
-      bd init 2>/dev/null || true
-      ROOT=$(bd create --title="Qualify SHA Test" --type=epic --priority=2 -l ys:plan,plan:98 --silent)
+      # Create epic task file
+      ROOT="task-qual-001"
+      cat > ".yoshiko-flow/tasks/${ROOT}.json" << TASKJSON
+      {"id":"${ROOT}","type":"epic","title":"Qualify SHA Test","status":"open","labels":["ys:plan","plan:98"],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
       EXPECTED_SHA=$(git rev-parse HEAD)
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT" 2>&1
-      # Read the label back
-      SHA_LABEL=$(bd label list "$ROOT" --json 2>/dev/null | jq -r '.[] | select(startswith("start-sha:"))' | head -1)
+      # Read the label back from task file
+      SHA_LABEL=$(jq -r '.labels[] | select(startswith("start-sha:"))' ".yoshiko-flow/tasks/${ROOT}.json" 2>/dev/null | head -1)
       RECORDED="${SHA_LABEL#start-sha:}"
       echo "expected=$EXPECTED_SHA"
       echo "recorded=$RECORDED"
@@ -148,19 +151,19 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 13: plan-exec.sh start sets exec:executing label (state file verification)
+  # Case 13: plan-exec.sh start sets exec:executing label (task file verification)
   - name: "start_sets_executing_label"
     run: |
       cd "$WORK_DIR"
-      ROOT=$(bd list -l plan:98 --type=epic --limit=1 --json 2>/dev/null | jq -r '.[0].id // empty')
-      if [ -z "$ROOT" ]; then
+      ROOT="task-qual-001"
+      if [ ! -f ".yoshiko-flow/tasks/${ROOT}.json" ]; then
         echo "SKIP: no test epic available"
         exit 0
       fi
-      LABELS=$(bd label list "$ROOT" --json 2>/dev/null)
-      HAS_EXECUTING=$(echo "$LABELS" | jq -r '.[] | select(. == "exec:executing")' | head -1)
+      LABELS=$(jq -r '.labels[]' ".yoshiko-flow/tasks/${ROOT}.json" 2>/dev/null)
+      HAS_EXECUTING=$(echo "$LABELS" | grep -c "exec:executing" || echo "0")
       echo "has_executing=$HAS_EXECUTING"
-      [ "$HAS_EXECUTING" = "exec:executing" ] && echo "OK: executing label present"
+      [ "$HAS_EXECUTING" -gt 0 ] && echo "OK: executing label present"
     assertions:
       - type: exit_code
         value: "0"

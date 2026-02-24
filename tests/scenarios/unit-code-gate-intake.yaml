@@ -1,15 +1,15 @@
-name: "Unit: code-gate.sh beads safety net"
+name: "Unit: code-gate.sh tasks safety net"
 
 setup:
-  - "mkdir -p .claude .yoshiko-flow docs/plans"
-  - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/plan-intake-skip .yoshiko-flow/.beads-check-cache"
+  - "mkdir -p .claude .yoshiko-flow/tasks docs/plans"
+  - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/plan-intake-skip .yoshiko-flow/.tasks-check-cache"
   - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
   # Case 1: No plan files → no block, exits 0
   - name: "no_plans_no_block"
     run: |
-      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip
+      rm -f .yoshiko-flow/.tasks-check-cache .yoshiko-flow/plan-intake-skip
       rm -f docs/plans/plan-*.md
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
         CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
@@ -26,16 +26,17 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 2: Plan file with beads → no block
-  - name: "plan_with_beads_no_block"
+  # Case 2: Plan file with tasks → no block
+  - name: "plan_with_tasks_no_block"
     run: |
-      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip
+      rm -f .yoshiko-flow/.tasks-check-cache .yoshiko-flow/plan-intake-skip
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
-      mkdir -p "$WORK_DIR/mock_bin"
-      printf '#!/bin/bash\necho '\''[{"id":"beads-001"}]'\''' > "$WORK_DIR/mock_bin/bd"
-      chmod +x "$WORK_DIR/mock_bin/bd"
+      # Create an epic task for plan:99
+      cat > "$WORK_DIR/.yoshiko-flow/tasks/task-gate-001.json" << 'TASKJSON'
+      {"id":"task-gate-001","type":"epic","title":"Test Epic","status":"open","labels":["plan:99"],"created":"2026-01-01T00:00:00Z"}
+      TASKJSON
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
-        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
       EXIT=$?
       echo "$OUTPUT"
       if [ "$EXIT" -ne 0 ]; then
@@ -49,16 +50,15 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: Plan file without beads → BLOCKED (exit 2)
-  - name: "plan_without_beads_blocks"
+  # Case 3: Plan file without tasks → BLOCKED (exit 2)
+  - name: "plan_without_tasks_blocks"
     run: |
-      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip
+      rm -f .yoshiko-flow/.tasks-check-cache .yoshiko-flow/plan-intake-skip
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
-      mkdir -p "$WORK_DIR/mock_bin"
-      printf '#!/bin/bash\necho '\''[]'\''' > "$WORK_DIR/mock_bin/bd"
-      chmod +x "$WORK_DIR/mock_bin/bd"
+      # Remove all task files for plan:99
+      rm -f "$WORK_DIR/.yoshiko-flow/tasks/task-gate-"*
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
-        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1 || true)
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1 || true)
       echo "$OUTPUT"
       if echo "$OUTPUT" | grep -q "BLOCKED"; then
         echo "OK: blocked as expected"
@@ -75,7 +75,7 @@ steps:
   # Case 4: Completed plan → no block
   - name: "completed_plan_no_block"
     run: |
-      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip
+      rm -f .yoshiko-flow/.tasks-check-cache .yoshiko-flow/plan-intake-skip
       printf '# Plan 99\n**Status: Completed**' > docs/plans/plan-99.md
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
         CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
@@ -95,14 +95,13 @@ steps:
   # Case 5: Escape hatch (plan-intake-skip) bypasses block
   - name: "escape_hatch_bypasses_block"
     run: |
-      rm -f .yoshiko-flow/.beads-check-cache
+      rm -f .yoshiko-flow/.tasks-check-cache
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
       touch .yoshiko-flow/plan-intake-skip
-      mkdir -p "$WORK_DIR/mock_bin"
-      printf '#!/bin/bash\necho '\''[]'\''' > "$WORK_DIR/mock_bin/bd"
-      chmod +x "$WORK_DIR/mock_bin/bd"
+      # No task files for plan:99
+      rm -f "$WORK_DIR/.yoshiko-flow/tasks/task-gate-"*
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
-        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
       EXIT=$?
       echo "$OUTPUT"
       if [ "$EXIT" -ne 0 ]; then
@@ -119,7 +118,7 @@ steps:
   # Case 6: Gate active takes priority over intake check (gate blocks, no intake check)
   - name: "gate_takes_priority"
     run: |
-      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip
+      rm -f .yoshiko-flow/.tasks-check-cache .yoshiko-flow/plan-intake-skip
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
       echo "99" > .yoshiko-flow/plan-gate
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
@@ -135,16 +134,15 @@ steps:
       - type: output_contains
         value: "BLOCKED"
 
-  # Case 7: Exempt file (docs/plans/*) allowed even when plan has no beads
+  # Case 7: Exempt file (docs/plans/*) allowed even when plan has no tasks
   - name: "exempt_file_allowed"
     run: |
-      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip
+      rm -f .yoshiko-flow/.tasks-check-cache .yoshiko-flow/plan-intake-skip
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
-      mkdir -p "$WORK_DIR/mock_bin"
-      printf '#!/bin/bash\necho '\''[]'\''' > "$WORK_DIR/mock_bin/bd"
-      chmod +x "$WORK_DIR/mock_bin/bd"
+      # No task files for plan:99
+      rm -f "$WORK_DIR/.yoshiko-flow/tasks/task-gate-"*
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/docs/plans/plan-99.md"}}' | \
-        PATH="$WORK_DIR/mock_bin:$PATH" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
       EXIT=$?
       echo "$OUTPUT"
       if [ "$EXIT" -ne 0 ]; then
@@ -161,13 +159,13 @@ steps:
   # Case 8: Cache TTL — second check within 60s uses cached result
   - name: "cache_ttl_respected"
     run: |
-      rm -f .yoshiko-flow/.beads-check-cache .yoshiko-flow/plan-intake-skip .yoshiko-flow/plan-gate
+      rm -f .yoshiko-flow/.tasks-check-cache .yoshiko-flow/plan-intake-skip .yoshiko-flow/plan-gate
       printf '# Plan 99\n**Status:** Draft' > docs/plans/plan-99.md
       # Prime the cache with a "skip" result
-      printf '%s\nskip\n' "$(date '+%s')" > .yoshiko-flow/.beads-check-cache
-      # Even with no bd in PATH, should use cache and not block
+      printf '%s\nskip\n' "$(date '+%s')" > .yoshiko-flow/.tasks-check-cache
+      # Even with no task files, should use cache and not block
       OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
-        PATH="/usr/bin:/bin" CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
       EXIT=$?
       echo "$OUTPUT"
       if [ "$EXIT" -ne 0 ]; then
@@ -182,5 +180,5 @@ steps:
         value: "OK"
 
 teardown:
-  - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/plan-intake-skip .yoshiko-flow/.beads-check-cache docs/plans/plan-99.md"
-  - "rm -rf mock_bin"
+  - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/plan-intake-skip .yoshiko-flow/.tasks-check-cache docs/plans/plan-99.md"
+  - "rm -f .yoshiko-flow/tasks/task-gate-*"

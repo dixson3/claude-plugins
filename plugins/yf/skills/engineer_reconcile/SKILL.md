@@ -28,6 +28,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Engineer: Reconcile Plan Against Specifications
 
@@ -115,16 +120,16 @@ Combine individual verdicts:
 
 ### Step 7.5: Chronicle on NEEDS-RECONCILIATION
 
-If the overall verdict from Step 6 is `NEEDS-RECONCILIATION`, create a chronicle bead capturing the reconciliation context. Skip on `PASS` (routine compliance is not chronicle-worthy).
+If the overall verdict from Step 6 is `NEEDS-RECONCILIATION`, create a chronicle task capturing the reconciliation context. Skip on `PASS` (routine compliance is not chronicle-worthy).
 
 ```bash
 # Only chronicle on conflict — routine PASS is not chronicle-worthy
 if [ "$VERDICT" = "NEEDS-RECONCILIATION" ]; then
-  PLAN_LABEL=$(bd label list <epic-id> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
+  PLAN_LABEL=$(bash "$YFT" label list <epic-id> --json 2>/dev/null | jq -r '.[] | select(startswith("plan:"))' | head -1)
   LABELS="ys:chronicle,ys:chronicle:auto,ys:topic:engineer"
   [ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
 
-  bd create --type task \
+  bash "$YFT" create --type task \
     --title "Chronicle: engineer_reconcile — NEEDS-RECONCILIATION" \
     -l "$LABELS" \
     --description "Reconciliation verdict: NEEDS-RECONCILIATION
@@ -178,7 +183,7 @@ Report includes: plan reference, per-spec verdicts (PRD/EDD/IG with COMPLIANT or
 
 When reconciliation runs during plan execution, create a label on the plan epic:
 ```bash
-bd label add <epic-id> ys:engineer:reconciliation
+bash "$YFT" label add <epic-id> ys:engineer:reconciliation
 ```
 
 ## Error Handling

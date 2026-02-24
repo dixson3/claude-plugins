@@ -25,6 +25,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Swarm Qualification Gate
 
@@ -36,7 +41,7 @@ Runs a `code-review` formula as a mandatory qualification step before a plan is 
 
 If `root_epic` provided, use it directly. Otherwise, find the root epic from `plan_idx`:
 ```bash
-ROOT_EPIC=$(bd list -l plan:<idx> --type=epic --status=open --limit=1 --json 2>/dev/null | jq -r '.[0].id // empty')
+ROOT_EPIC=$(bash "$YFT" list -l plan:<idx> --type=epic --status=open --limit=1 --json 2>/dev/null | jq -r '.[0].id // empty')
 ```
 
 Also determine `plan_idx` from the root epic's labels if not provided.
@@ -53,15 +58,15 @@ Read `qualification_gate` from `.yoshiko-flow/config.json` (default: `"blocking"
 
 If `disabled`, report "Qualification gate disabled" and return success.
 
-### Step 3: Find Qualification Gate Bead
+### Step 3: Find Qualification Gate Task
 
 ```bash
-GATE_ID=$(bd list -l ys:qualification-gate,plan:<idx> --status=open --limit=1 --json 2>/dev/null | jq -r '.[0].id // empty')
+GATE_ID=$(bash "$YFT" list -l ys:qualification-gate,plan:<idx> --status=open --limit=1 --json 2>/dev/null | jq -r '.[0].id // empty')
 ```
 
-If no gate bead exists, create one:
+If no gate task exists, create one:
 ```bash
-GATE_ID=$(bd create --type=task \
+GATE_ID=$(bash "$YFT" create --type=task \
   --title="Qualification review for plan-<idx>" \
   --parent=<root-epic-id> \
   --description="Code review qualification gate. Must pass before plan completion." \
@@ -73,7 +78,7 @@ GATE_ID=$(bd create --type=task \
 
 Get the starting commit SHA from the root epic:
 ```bash
-START_SHA=$(bd label list <root-epic-id> --json 2>/dev/null | jq -r '.[] | select(startswith("start-sha:")) | sub("start-sha:";"")' )
+START_SHA=$(bash "$YFT" label list <root-epic-id> --json 2>/dev/null | jq -r '.[] | select(startswith("start-sha:")) | sub("start-sha:";"")' )
 ```
 
 If no start SHA is recorded, use the diff against the base branch:
@@ -86,56 +91,56 @@ The review scope is `git diff $START_SHA..HEAD`.
 ### Step 5: Run Code Review Formula
 
 ```bash
-/yf:swarm_run formula:code-review feature:"Plan <idx> qualification review" parent_bead:<gate-id> context:"Review scope: git diff $START_SHA..HEAD. Focus on correctness, style, and edge cases across all plan changes."
+/yf:swarm_run formula:code-review feature:"Plan <idx> qualification review" parent_task:<gate-id> context:"Review scope: git diff $START_SHA..HEAD. Focus on correctness, style, and edge cases across all plan changes."
 ```
 
 ### Step 6: Process Verdict
 
-Read the REVIEW comment from the gate bead:
+Read the REVIEW comment from the gate task:
 ```bash
-bd show <gate-id> --comments
+bash "$YFT" show <gate-id> --comments
 ```
 
 **REVIEW:PASS**:
-- Close the qualification gate bead
+- Close the qualification gate task
 - Return success — plan completion proceeds
 
 **REVIEW:BLOCK** (blocking mode):
-- Leave gate bead open
+- Leave gate task open
 - Report the block with details
 - Return failure — plan completion is halted
 
 **REVIEW:BLOCK** (advisory mode):
-- Close the qualification gate bead with a note
+- Close the qualification gate task with a note
 - Report the advisory block in the completion report
 - Return success — plan completion proceeds with warning
 
 ### Step 6.5: Chronicle Qualification Verdict
 
-After processing the verdict (PASS or BLOCK), create a chronicle bead. Both verdicts are chronicle-worthy — PASS captures the quality checkpoint, BLOCK captures what needs fixing.
+After processing the verdict (PASS or BLOCK), create a chronicle task. Both verdicts are chronicle-worthy — PASS captures the quality checkpoint, BLOCK captures what needs fixing.
 
 ```bash
 LABELS="ys:chronicle,ys:chronicle:auto,ys:topic:qualification"
 [ -n "$PLAN_LABEL" ] && LABELS="$LABELS,plan:$PLAN_IDX"
 
-bd create --type task \
+bash "$YFT" create --type task \
   --title "Chronicle: swarm_qualify — REVIEW:$VERDICT for plan-$PLAN_IDX" \
   -l "$LABELS" \
   --description "Qualification verdict: REVIEW:$VERDICT
 Config mode: $QUAL_MODE
 Review scope: $START_SHA..HEAD
-Gate bead: $GATE_ID
+Gate task: $GATE_ID
 Issues found: <summary of issues or 'none'>" \
   --silent
 ```
 
 ## Output
 
-Report includes: plan index, config mode, gate bead ID, review scope (SHA range), verdict (REVIEW:PASS or REVIEW:BLOCK), and result (completion proceeds or manual intervention required).
+Report includes: plan index, config mode, gate task ID, review scope (SHA range), verdict (REVIEW:PASS or REVIEW:BLOCK), and result (completion proceeds or manual intervention required).
 
 ## Important
 
-- The gate bead is created during `plan_create_beads` Step 9c and stays open until qualification passes
+- The gate task is created during `plan_create_tasks` Step 9c and stays open until qualification passes
 - Start SHA is recorded by `plan-exec.sh start` as a `start-sha:<hash>` label on the root epic
 - The code-review formula runs as a standard swarm (analyze → report) with the diff scope as context
 - In `advisory` mode, the block is noted in the plan completion report but doesn't prevent closing

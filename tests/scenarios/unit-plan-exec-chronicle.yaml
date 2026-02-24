@@ -2,14 +2,16 @@ name: "Unit: plan-exec.sh — transition chronicles"
 
 setup:
   - "git init"
-  - "mkdir -p .claude .yoshiko-flow .beads docs/plans"
+  - "mkdir -p .claude .yoshiko-flow/tasks docs/plans"
   - "echo '# test' > CLAUDE.md"
   - "git add -A && git commit -m 'init'"
-  - "bd init 2>/dev/null || true"
+  - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}' > .yoshiko-flow/config.json"
   - |
-    ROOT=$(bd create --title="Test Epic" --type=epic --priority=2 -l plan:99 --silent)
+    ROOT="task-pec-001"
+    cat > .yoshiko-flow/tasks/${ROOT}.json << TASKJSON
+    {"id":"${ROOT}","type":"epic","title":"Test Epic","status":"open","labels":["plan:99","exec:executing"],"created":"2026-01-01T00:00:00Z"}
+    TASKJSON
     echo "$ROOT" > .test-epic-id
-    bd label add "$ROOT" exec:executing 2>/dev/null || true
 
 steps:
   # Case 1: Start command creates transition chronicle dedup entry
@@ -80,18 +82,24 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 4: create_transition_chronicle function creates bead with correct labels
+  # Case 4: create_transition_chronicle function creates task with correct labels
   - name: "chronicle_has_correct_labels"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       rm -f "$WORK_DIR/.yoshiko-flow/.chronicle-transition-"*
       ROOT=$(cat .test-epic-id)
       CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/plan-exec.sh" start "$ROOT" 2>&1
-      # Check that a chronicle bead was created with the right labels
-      CHRONICLES=$(bd list --label=ys:chronicle:auto --status=open --limit=1 --json 2>/dev/null || echo "[]")
-      COUNT=$(echo "$CHRONICLES" | jq 'length' 2>/dev/null || echo "0")
-      if [ "$COUNT" -gt 0 ]; then
-        echo "OK: chronicle bead created with ys:chronicle:auto label"
+      # Check that a chronicle task was created with the right labels
+      FOUND=false
+      for f in "$WORK_DIR/.yoshiko-flow/tasks/"*.json; do
+        [ -f "$f" ] || continue
+        if jq -r '.labels[]' "$f" 2>/dev/null | grep -q "ys:chronicle:auto"; then
+          FOUND=true
+          break
+        fi
+      done
+      if $FOUND; then
+        echo "OK: chronicle task created with ys:chronicle:auto label"
       else
         echo "OK: chronicle created (verified via dedup file)"
       fi
@@ -105,4 +113,4 @@ teardown:
   - "rm -f .yoshiko-flow/config.json"
   - "rm -rf .yoshiko-flow/.chronicle-transition-*"
   - "rm -f .test-epic-id"
-  - "chmod 755 .beads 2>/dev/null || true"
+  - "rm -f .yoshiko-flow/tasks/*.json"

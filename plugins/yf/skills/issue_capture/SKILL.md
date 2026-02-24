@@ -1,6 +1,6 @@
 ---
 name: yf:issue_capture
-description: Stage a project issue as a ys:issue bead for deferred submission
+description: Stage a project issue as a ys:issue task for deferred submission
 arguments:
   - name: type
     description: "Issue type: bug, enhancement, task, debt (default: task)"
@@ -28,10 +28,15 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Issue Capture
 
-Stage a project issue as a `ys:issue` bead for deferred submission to the project tracker. Mirrors the chronicle capture pattern — issues are staged first, then batch-processed via `/yf:issue_process`.
+Stage a project issue as a `ys:issue` task for deferred submission to the project tracker. Mirrors the chronicle capture pattern — issues are staged first, then batch-processed via `/yf:issue_process`.
 
 ## Behavior
 
@@ -39,7 +44,7 @@ Stage a project issue as a `ys:issue` bead for deferred submission to the projec
 
 Verify the issue is about the user's project, not the yf plugin.
 
-If the title or context references yf, beads-cli, plugin internals, or `.yoshiko-flow/` configuration:
+If the title or context references yf, yf-task-cli, plugin internals, or `.yoshiko-flow/` configuration:
 
 > This looks like a plugin issue, not a project issue. Use `/yf:plugin_issue` instead.
 
@@ -63,17 +68,17 @@ Build label list:
 
 Auto-detect executing plan for `plan:<idx>` label:
 ```bash
-PLAN_EPIC=$(bd list -l exec:executing --type=epic --status=open --limit=1 --json 2>/dev/null)
+PLAN_EPIC=$(bash "$YFT" list -l exec:executing --type=epic --status=open --limit=1 --json 2>/dev/null)
 PLAN_LABEL=$(echo "$PLAN_EPIC" | jq -r '.[0].labels[]? | select(startswith("plan:"))' 2>/dev/null | head -1)
 ```
 
-### Step 4: Create Bead
+### Step 4: Create Task
 
 ```bash
 LABELS="ys:issue,ys:issue:<type>"
 [ -n "$PLAN_LABEL" ] && LABELS="$LABELS,$PLAN_LABEL"
 
-bd create --type task \
+bash "$YFT" create --type task \
   --title "Issue: <summary>" \
   -l "$LABELS" \
   --description "<issue details template>" \
@@ -101,7 +106,7 @@ Issue description template:
 ### Step 5: Report
 
 ```
-Issue captured as bead: <bead-id>
+Issue captured as task: <task-id>
 Type: <type> | Priority: <priority>
 Labels: <labels>
 
@@ -119,6 +124,6 @@ Capture issues when:
 
 ## NOT Issue-Worthy
 
-- Work that is part of the current plan's scope (already tracked as beads)
+- Work that is part of the current plan's scope (already tracked as tasks)
 - Routine completions, formatting, config tweaks
 - Issues already captured in this session

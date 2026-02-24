@@ -1,9 +1,9 @@
 ---
 name: yf:swarm_select_formula
-description: Auto-assign formula labels to beads based on task semantics
+description: Auto-assign formula labels to tasks based on task semantics
 arguments:
   - name: task_id
-    description: "Bead ID to evaluate for formula assignment"
+    description: "Task ID to evaluate for formula assignment"
     required: true
 ---
 
@@ -22,17 +22,22 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Swarm Formula Selection
 
-Evaluates a task bead's title, description, and type to determine the best swarm formula, then applies a `formula:<name>` label. Designed to be called during `plan_create_beads` Step 8b after agent selection.
+Evaluates a task's title, description, and type to determine the best swarm formula, then applies a `formula:<name>` label. Designed to be called during `plan_create_tasks` Step 8b after agent selection.
 
 ## Behavior
 
 ### Step 1: Read Task
 
 ```bash
-bd show <task_id> --json 2>/dev/null
+bash "$YFT" show <task_id> --json 2>/dev/null
 ```
 
 Extract: title, description, type, and existing labels.
@@ -40,7 +45,7 @@ Extract: title, description, type, and existing labels.
 ### Step 2: Check for Existing Formula Label
 
 ```bash
-bd label list <task_id> --json 2>/dev/null | jq -r '.[] | select(startswith("formula:"))'
+bash "$YFT" label-list <task_id> --json 2>/dev/null | jq -r '.[] | select(startswith("formula:"))'
 ```
 
 If a `formula:*` label already exists, skip this task (author override). Report and exit.
@@ -78,7 +83,7 @@ Match task title and description against keyword patterns (case-insensitive):
 ### Step 5: Apply Label
 
 ```bash
-bd label add <task_id> formula:<selected-formula>
+bash "$YFT" label-add <task_id> formula:<selected-formula>
 ```
 
 Report the assignment.
@@ -97,4 +102,4 @@ Formula Selection: <task_id>
 - This skill is **idempotent** — existing `formula:*` labels are never overwritten
 - Atomic tasks should NOT get formulas — the overhead of a multi-agent swarm is not justified for single-file changes
 - The heuristic is intentionally conservative — when in doubt, skip (bare dispatch works fine)
-- The `swarm-formula-dispatch` rule in the plan pump already handles dispatching tasks with `formula:<name>` labels
+- The plan pump already handles dispatching tasks with `formula:<name>` labels

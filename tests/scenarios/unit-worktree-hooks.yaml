@@ -52,31 +52,20 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 3: creates beads redirect when yf active (requires bd)
-  - name: "creates_beads_redirect_when_active"
+  # Case 3: creates .yoshiko-flow dirs when yf active
+  - name: "creates_yf_dirs_when_active"
     run: |
-      if ! command -v bd >/dev/null 2>&1; then
-        echo "OK: skipped (bd not available)"
-        exit 0
-      fi
       TMPDIR=$(mktemp -d)
       cd "$TMPDIR" && git init -q && git commit --allow-empty -m "init" -q
       # Set up yf active state
       mkdir -p "$TMPDIR/.yoshiko-flow"
       echo '{"enabled":true}' > "$TMPDIR/.yoshiko-flow/config.json"
-      # Initialize beads in main repo
-      (cd "$TMPDIR" && bd init --skip-hooks -q 2>/dev/null) || true
-      if [ ! -d "$TMPDIR/.beads" ]; then
-        echo "OK: skipped (bd init failed)"
-        rm -rf "$TMPDIR"
-        exit 0
-      fi
-      OUTPUT=$(echo '{"name":"beads-test","cwd":"'"$TMPDIR"'"}' | bash "$PLUGIN_DIR/plugins/yf/hooks/worktree-create.sh" 2>/dev/null)
-      WT_DIR="$TMPDIR/.claude/worktrees/beads-test"
-      if [ -f "$WT_DIR/.beads/redirect" ]; then
-        echo "OK: beads redirect created in worktree"
+      OUTPUT=$(echo '{"name":"yf-test","cwd":"'"$TMPDIR"'"}' | bash "$PLUGIN_DIR/plugins/yf/hooks/worktree-create.sh" 2>/dev/null)
+      WT_DIR="$TMPDIR/.claude/worktrees/yf-test"
+      if [ -d "$WT_DIR/.yoshiko-flow/tasks" ]; then
+        echo "OK: .yoshiko-flow/tasks created in worktree"
       else
-        echo "FAIL: no .beads/redirect in worktree"
+        echo "FAIL: no .yoshiko-flow/tasks in worktree"
         rm -rf "$TMPDIR"
         exit 1
       fi
@@ -95,8 +84,8 @@ steps:
       # No .yoshiko-flow/config.json = yf inactive
       OUTPUT=$(echo '{"name":"no-yf","cwd":"'"$TMPDIR"'"}' | bash "$PLUGIN_DIR/plugins/yf/hooks/worktree-create.sh" 2>/dev/null)
       WT_DIR="$TMPDIR/.claude/worktrees/no-yf"
-      if [ -d "$WT_DIR" ] && [ ! -f "$WT_DIR/.beads/redirect" ]; then
-        echo "OK: worktree created, no beads redirect (yf inactive)"
+      if [ -d "$WT_DIR" ] && [ ! -d "$WT_DIR/.yoshiko-flow/tasks" ]; then
+        echo "OK: worktree created, no .yoshiko-flow/tasks (yf inactive)"
       else
         echo "FAIL: unexpected state"
         rm -rf "$TMPDIR"

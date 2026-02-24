@@ -3,7 +3,7 @@
 #
 # Replaces Claude Code's default git worktree creation. Reads JSON from stdin
 # (name, cwd fields), creates the worktree, and prints the absolute path to
-# stdout. When yf is active, also sets up beads redirect and rule symlinks.
+# stdout. When yf is active, also sets up .yoshiko-flow directories.
 #
 # Fail-hard for git worktree creation (Claude Code expects a valid path).
 # Fail-open for yf setup (worktree still usable without yf artifacts).
@@ -49,8 +49,8 @@ if [ -f "$SCRIPT_DIR/yf-config.sh" ]; then
   (
     CLAUDE_PROJECT_DIR="$CWD" . "$SCRIPT_DIR/yf-config.sh"
     if yf_is_enabled; then
-      echo "worktree-create: yf active, running beads-setup and preflight" >&2
-      CLAUDE_PROJECT_DIR="$WT_DIR" bash "$SCRIPT_DIR/beads-setup.sh" >&2 2>&1 || true
+      echo "worktree-create: yf active, initializing .yoshiko-flow and preflight" >&2
+      mkdir -p "$WT_DIR/.yoshiko-flow"/{tasks,chronicler,archivist,issues,todos,molecules} 2>/dev/null || true
       CLAUDE_PROJECT_DIR="$WT_DIR" bash "$SCRIPT_DIR/plugin-preflight.sh" >&2 2>&1 || true
     else
       echo "worktree-create: yf inactive, skipping yf setup" >&2

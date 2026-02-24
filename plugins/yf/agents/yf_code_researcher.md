@@ -18,14 +18,18 @@ Your job is to:
 
 ## Tools
 
-Read-only agent. May read files, search (Glob/Grep), run non-destructive Bash (`bd show`, `bd comment`, `git log`), and search the web. No edits/writes.
+Read-only agent. May read files, search (Glob/Grep), run non-destructive Bash (`git log`), and search the web. No edits/writes.
+
+```bash
+YFT="${CLAUDE_PLUGIN_ROOT}/scripts/yf-task-cli.sh"
+```
 
 ## Comment Protocol
 
-When you complete your research, post a `FINDINGS:` comment on the parent bead:
+When you complete your research, post a `FINDINGS:` comment on the parent task:
 
 ```bash
-bd comment <bead-id> "FINDINGS:
+bash "$YFT" comment <task-id> "FINDINGS:
 
 ## Purpose
 <Technology/language standards investigation for the implementation task>
@@ -57,18 +61,18 @@ bd comment <bead-id> "FINDINGS:
 
 ## Process
 
-1. **Read the task**: Understand what technology/language is involved from the bead description
-2. **Claim the bead**: `bd update <bead-id> --status=in_progress`
+1. **Read the task**: Understand what technology/language is involved from the task description
+2. **Claim the task**: `bash "$YFT" update <task-id> --status=in_progress`
 3. **Check for existing IGs**: Look in `docs/specifications/IG/` for relevant Implementation Guides
 4. **Check for existing patterns**: Scan the codebase for the technology's existing patterns
 5. **Research if needed**: If no IG or patterns exist, research best practices
 6. **Synthesize**: Organize findings into concrete, actionable standards
-7. **Post comment**: Use `bd comment` to post FINDINGS on the parent bead
-8. **Close**: `bd close <bead-id>`
+7. **Post comment**: Use `bash "$YFT" comment` to post FINDINGS on the parent task
+8. **Close**: `bash "$YFT" close <task-id>`
 
 ## Chronicle Signal
 
-For significant discoveries (unexpected constraints, approach-changing findings, design-impacting blocks), append `CHRONICLE-SIGNAL: <one-line summary>` to your structured comment. Dispatch loop auto-creates a chronicle bead. Skip for routine findings.
+For significant discoveries (unexpected constraints, approach-changing findings, design-impacting blocks), append `CHRONICLE-SIGNAL: <one-line summary>` to your structured comment. Dispatch loop auto-creates a chronicle task. Skip for routine findings.
 
 ## Guidelines
 

@@ -25,6 +25,11 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 
 Then stop. Do not execute the remaining steps.
 
+## Tools
+
+```bash
+YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
+```
 
 # Engineer: Suggest Specification Updates
 
@@ -36,18 +41,18 @@ Analyze completed plan work and suggest updates to specification documents. Advi
 
 If `plan_idx` not specified, find the most recently completed plan:
 ```bash
-bd list -l ys:plan --type=epic --status=closed --sort=created --reverse --limit=1 --json 2>/dev/null
+bash "$YFT" list -l ys:plan --type=epic --status=closed --sort=created --reverse --limit=1 --json 2>/dev/null
 ```
 
 ### Step 2: Gather Completed Work
 
-Read plan beads and their comments:
+Read plan tasks and their comments:
 ```bash
 # List all closed tasks for the plan
-bd list -l plan:<idx> --type=task --status=closed --limit=0 --json 2>/dev/null
+bash "$YFT" list -l plan:<idx> --type=task --status=closed --limit=0 --json 2>/dev/null
 
 # For each task, read CHANGES/FINDINGS/REVIEW comments
-bd show <task-id> --comments 2>/dev/null
+bash "$YFT" show <task-id> --comments 2>/dev/null
 ```
 
 ### Step 3: Read Current Specs
