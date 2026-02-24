@@ -62,3 +62,4 @@
 | 0058 | plan-0058-mx760 | Fix stale beads-cli references in v3.0.0 plugin | 2026-02-23 | James Dixson | Active |
 | 0059 | plan-0059-0re8r | Plan: Review yf Test Cases Against v3.0.0 Specs | 2026-02-23 | James Dixson | Active |
 | 0060 | plan-0060-vst80 | Plan: Add Stale State Cleanup to session_land and plan_intake | 2026-02-23 | James Dixson | Active |
+| 0061 | plan-0061-k62y7 | Plan: Fix mol wisp bug, correct diary inaccuracies, add fact-check to diary creation | 2026-02-23 | James Dixson | Active |
