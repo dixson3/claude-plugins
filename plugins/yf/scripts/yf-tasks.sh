@@ -416,42 +416,49 @@ yft_update() {
   now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   local tmp
   tmp=$(mktemp)
-  local content
-  content=$(cat "$file")
+
+  # Build a single jq filter + args array for all mutations
+  local jq_filter=". "
+  local jq_args=()
 
   if [[ -n "$status" ]]; then
-    content=$(echo "$content" | jq --arg s "$status" '.status = $s')
+    jq_args+=(--arg s "$status")
+    jq_filter+='| .status = $s '
   fi
 
   if [[ "$claim" == "true" ]]; then
-    content=$(echo "$content" | jq '.status = "in_progress"')
+    jq_filter+='| .status = "in_progress" '
   fi
 
   if [[ -n "$defer" ]]; then
     if [[ "$defer" == "" || "$defer" == "false" || "$defer" == "null" ]]; then
-      content=$(echo "$content" | jq '.deferred = false | .status = "open"')
+      jq_filter+='| .deferred = false | .status = "open" '
     else
-      content=$(echo "$content" | jq '.deferred = true | .status = "deferred"')
+      jq_filter+='| .deferred = true | .status = "deferred" '
     fi
   fi
 
   if [[ -n "$labels" ]]; then
     local labels_json
     labels_json=$(echo "$labels" | tr ',' '\n' | jq -R -s 'split("\n") | map(select(length > 0))')
-    content=$(echo "$content" | jq --argjson l "$labels_json" '.labels = $l')
+    jq_args+=(--argjson l "$labels_json")
+    jq_filter+='| .labels = $l '
   fi
 
   if [[ -n "$title" ]]; then
-    content=$(echo "$content" | jq --arg t "$title" '.title = $t')
+    jq_args+=(--arg t "$title")
+    jq_filter+='| .title = $t '
   fi
 
   if [[ -n "$description" ]]; then
-    content=$(echo "$content" | jq --arg d "$description" '.description = $d')
+    jq_args+=(--arg d "$description")
+    jq_filter+='| .description = $d '
   fi
 
-  content=$(echo "$content" | jq --arg now "$now" '.updated = $now')
+  jq_args+=(--arg now "$now")
+  jq_filter+='| .updated = $now'
 
-  echo "$content" > "$tmp" && mv "$tmp" "$file"
+  jq "${jq_args[@]}" "$jq_filter" "$file" > "$tmp" && mv "$tmp" "$file"
 }
 
 # --- yft_close ---
@@ -741,8 +748,8 @@ yft_comment() {
 
   # Parse protocol and content from "PROTOCOL: content"
   local protocol content
-  protocol=$(echo "$raw_comment" | sed 's/:.*//')
-  content=$(echo "$raw_comment" | sed 's/^[^:]*: *//')
+  protocol="${raw_comment%%:*}"
+  content="${raw_comment#*: }"
 
   local now
   now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -840,13 +847,21 @@ yft_mol_wisp() {
     fi
   fi
 
-  # Build vars object
+  # Build vars object — single jq call with indexed args
   local vars_json="{}"
-  for v in "${vars[@]}"; do
-    local key="${v%%=*}"
-    local val="${v#*=}"
-    vars_json=$(echo "$vars_json" | jq --arg k "$key" --arg v "$val" '. + {($k): $v}')
-  done
+  if [[ ${#vars[@]} -gt 0 ]]; then
+    local var_args=()
+    local var_filter=". "
+    local i=0
+    for v in "${vars[@]}"; do
+      local key="${v%%=*}"
+      local val="${v#*=}"
+      var_args+=(--arg "k${i}" "$key" --arg "v${i}" "$val")
+      var_filter+="| . + {(\$k${i}): \$v${i}} "
+      i=$((i + 1))
+    done
+    vars_json=$(echo '{}' | jq "${var_args[@]}" "$var_filter")
+  fi
 
   # Build molecule JSON with steps from formula
   local steps_json
@@ -876,11 +891,6 @@ yft_mol_wisp() {
 
   _yft_atomic_write "$mol_dir/${id}.json" "$json"
   echo "$id"
-}
-
-# --- yft_mol_show ---
-yft_mol_show() {
-  yft_show "$@"
 }
 
 # --- yft_mol_step_close ---

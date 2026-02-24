@@ -69,7 +69,7 @@ case "$COMMAND" in
     shift 2>/dev/null || true
     case "$local_cmd" in
       wisp)       yft_mol_wisp "$@" ;;
-      show)       yft_mol_show "$@" ;;
+      show)       yft_show "$@" ;;
       step-close) yft_mol_step_close "$@" ;;
       squash)     yft_mol_squash "$@" ;;
       *)          echo "Usage: yf-task-cli.sh mol <wisp|show|step-close|squash> [args]" >&2; exit 1 ;;

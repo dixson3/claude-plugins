@@ -289,5 +289,88 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 13: yft_comment — content with colons preserved (Fix 1)
+  - name: "comment_with_colons"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      rm -rf "$WORK_DIR/.yoshiko-flow/tasks/"*
+      ID=$(yft_create --type=task --title="Colon test")
+      yft_comment "$ID" "FINDINGS: URL is http://example.com:8080/api and status: ok"
+      PROTOCOL=$(yft_show "$ID" --json | jq -r '.comments[0].protocol')
+      CONTENT=$(yft_show "$ID" --json | jq -r '.comments[0].content')
+      if [ "$PROTOCOL" = "FINDINGS" ] && [ "$CONTENT" = "URL is http://example.com:8080/api and status: ok" ]; then
+        echo "OK: colons preserved protocol=$PROTOCOL"
+      else
+        echo "FAIL: protocol=$PROTOCOL content=$CONTENT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 14: yft_update — combined multi-field update (Fix 3)
+  - name: "update_multi_field"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      rm -rf "$WORK_DIR/.yoshiko-flow/tasks/"*
+      ID=$(yft_create --type=task --title="Multi update")
+      yft_update "$ID" --status=in_progress --title="Updated title" -l "alpha,beta" --description="New desc"
+      JSON=$(yft_show "$ID" --json)
+      STATUS=$(echo "$JSON" | jq -r '.status')
+      TITLE=$(echo "$JSON" | jq -r '.title')
+      LABELS=$(echo "$JSON" | jq -r '.labels | join(",")')
+      DESC=$(echo "$JSON" | jq -r '.description')
+      if [ "$STATUS" = "in_progress" ] && [ "$TITLE" = "Updated title" ] && [ "$LABELS" = "alpha,beta" ] && [ "$DESC" = "New desc" ]; then
+        echo "OK: multi-field update status=$STATUS title=$TITLE labels=$LABELS"
+      else
+        echo "FAIL: status=$STATUS title=$TITLE labels=$LABELS desc=$DESC"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 15: yft_mol_wisp — multiple --var args (Fix 4)
+  - name: "mol_wisp_multi_var"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      rm -rf "$WORK_DIR/.yoshiko-flow/molecules/"*
+      mkdir -p "$WORK_DIR/.yoshiko-flow/molecules"
+      # Create minimal formula
+      FORMULA_DIR="$WORK_DIR/.yoshiko-flow/formulas"
+      mkdir -p "$FORMULA_DIR"
+      echo '{"name":"test-formula","steps":[{"name":"step1","agent":"general-purpose"}]}' > "$FORMULA_DIR/test-formula.json"
+      ID=$(yft_mol_wisp --formula="$FORMULA_DIR/test-formula.json" --var foo=bar --var baz=qux --var key=val)
+      if [ -z "$ID" ]; then
+        echo "FAIL: no molecule ID returned"
+        exit 1
+      fi
+      MOL_FILE="$WORK_DIR/.yoshiko-flow/molecules/${ID}.json"
+      if [ ! -f "$MOL_FILE" ]; then
+        echo "FAIL: molecule file not found"
+        exit 1
+      fi
+      FOO=$(jq -r '.vars.foo' "$MOL_FILE")
+      BAZ=$(jq -r '.vars.baz' "$MOL_FILE")
+      KEY=$(jq -r '.vars.key' "$MOL_FILE")
+      if [ "$FOO" = "bar" ] && [ "$BAZ" = "qux" ] && [ "$KEY" = "val" ]; then
+        echo "OK: multi-var foo=$FOO baz=$BAZ key=$KEY"
+      else
+        echo "FAIL: foo=$FOO baz=$BAZ key=$KEY"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
 teardown:
   - "rm -rf .yoshiko-flow/tasks/*"

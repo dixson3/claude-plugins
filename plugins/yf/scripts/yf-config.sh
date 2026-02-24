@@ -108,14 +108,12 @@ yf_is_enabled() {
   return 0
 }
 
-# yf_is_prune_on_complete — returns 0 if plan-completion pruning enabled
-yf_is_prune_on_complete() { _yf_check_flag '.config.auto_prune.on_plan_complete'; }
+# yf_is_prune — generic prune flag checker
+yf_is_prune() { _yf_check_flag ".config.auto_prune.$1"; }
 
-# yf_is_prune_on_push — returns 0 if post-push pruning enabled
-yf_is_prune_on_push() { _yf_check_flag '.config.auto_prune.on_push'; }
-
-# yf_is_prune_on_session_close — returns 0 if session-close pruning enabled
-yf_is_prune_on_session_close() { _yf_check_flag '.config.auto_prune.on_session_close'; }
+yf_is_prune_on_complete()      { yf_is_prune on_plan_complete; }
+yf_is_prune_on_push()          { yf_is_prune on_push; }
+yf_is_prune_on_session_close() { yf_is_prune on_session_close; }
 
 # yf_sanity_check_mode — returns sanity check mode (blocking|advisory|disabled)
 yf_sanity_check_mode() {

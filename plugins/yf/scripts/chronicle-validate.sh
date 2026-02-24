@@ -50,61 +50,40 @@ check_boundary() {
     return 1
 }
 
-# Boundary 1: save or intake
-if check_boundary "save" "plan-save" || check_boundary "intake" "plan-intake"; then
-    : # covered
-else
-    # Create fallback
-    yft_create --type=chronicle --priority=3 \
-        -l "ys:chronicle,ys:chronicle:auto,ys:chronicle:fallback,ys:topic:planning,${PLAN_LABEL}" \
-        --title "Chronicle (Fallback): Plan ${PLAN_LABEL} — save/intake" \
-        --description "## Fallback Chronicle
+# Boundary checks — loop over specs: "search_terms display_name"
+BOUNDARY_SPECS=("save|intake save/intake" "start start" "complete complete")
+for spec in "${BOUNDARY_SPECS[@]}"; do
+    local_search="${spec%% *}"
+    local_display="${spec#* }"
+
+    # Split search terms on pipe for multi-keyword boundaries
+    covered=false
+    IFS='|' read -ra search_keys <<< "$local_search"
+    for sk in "${search_keys[@]}"; do
+        # check_boundary increments COVERED on match, so just check once per key
+        if check_boundary "$sk" "${sk}"; then
+            covered=true
+            break
+        fi
+    done
+
+    if [[ "$covered" == "true" ]]; then
+        : # boundary covered
+    else
+        yft_create --type=chronicle --priority=3 \
+            -l "ys:chronicle,ys:chronicle:auto,ys:chronicle:fallback,ys:topic:planning,${PLAN_LABEL}" \
+            --title "Chronicle (Fallback): Plan ${PLAN_LABEL} — ${local_display}" \
+            --description "## Fallback Chronicle
 
 **Plan**: ${PLAN_LABEL}
-**Boundary**: save/intake (missing — created by chronicle-validate.sh)
+**Boundary**: ${local_display} (missing — created by chronicle-validate.sh)
 **Date**: $(date '+%Y-%m-%d %H:%M')
 
-This fallback was created because no save or intake chronicle was found for this plan.
-The original planning context may have been lost." >/dev/null 2>&1 || true
-    CREATED=$((CREATED + 1))
-    COVERED=$((COVERED + 1))
-fi
-
-# Boundary 2: start transition
-if check_boundary "start" "start"; then
-    : # covered
-else
-    yft_create --type=chronicle --priority=3 \
-        -l "ys:chronicle,ys:chronicle:auto,ys:chronicle:fallback,ys:topic:planning,${PLAN_LABEL}" \
-        --title "Chronicle (Fallback): Plan ${PLAN_LABEL} — start" \
-        --description "## Fallback Chronicle
-
-**Plan**: ${PLAN_LABEL}
-**Boundary**: start (missing — created by chronicle-validate.sh)
-**Date**: $(date '+%Y-%m-%d %H:%M')
-
-This fallback was created because no start transition chronicle was found for this plan." >/dev/null 2>&1 || true
-    CREATED=$((CREATED + 1))
-    COVERED=$((COVERED + 1))
-fi
-
-# Boundary 3: complete transition
-if check_boundary "complete" "complete"; then
-    : # covered
-else
-    yft_create --type=chronicle --priority=3 \
-        -l "ys:chronicle,ys:chronicle:auto,ys:chronicle:fallback,ys:topic:planning,${PLAN_LABEL}" \
-        --title "Chronicle (Fallback): Plan ${PLAN_LABEL} — complete" \
-        --description "## Fallback Chronicle
-
-**Plan**: ${PLAN_LABEL}
-**Boundary**: complete (missing — created by chronicle-validate.sh)
-**Date**: $(date '+%Y-%m-%d %H:%M')
-
-This fallback was created because no completion chronicle was found for this plan." >/dev/null 2>&1 || true
-    CREATED=$((CREATED + 1))
-    COVERED=$((COVERED + 1))
-fi
+This fallback was created because no ${local_display} chronicle was found for this plan." >/dev/null 2>&1 || true
+        CREATED=$((CREATED + 1))
+        COVERED=$((COVERED + 1))
+    fi
+done
 
 if [[ "$CREATED" -gt 0 ]]; then
     echo "${COVERED}/${TOTAL} boundaries covered, created ${CREATED} fallback(s)"
