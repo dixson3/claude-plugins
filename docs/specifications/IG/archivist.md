@@ -15,14 +15,14 @@ The archivist captures research findings and design decisions as permanent, inde
 **Flow**:
 1. `watch-for-archive-worthiness` rule suggests archiving
 2. Operator invokes `/yf:archive_capture type:research area:<area>`
-3. Skill creates archive bead with structured template:
+3. Skill creates archive entry with structured template:
    - Topic/question investigated
    - Sources consulted (URLs, docs, repos)
    - Key findings
    - Recommendations
-4. Bead labeled: `ys:archive,ys:archive:research,ys:area:<slug>[,plan:<idx>]`
+4. Entry labeled: `ys:archive,ys:archive:research,ys:area:<slug>[,plan:<idx>]`
 
-**Postconditions**: Archive bead exists with research content.
+**Postconditions**: Archive entry exists with research content.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/archive_capture/SKILL.md`
@@ -37,16 +37,16 @@ The archivist captures research findings and design decisions as permanent, inde
 **Flow**:
 1. `watch-for-archive-worthiness` rule suggests archiving
 2. Operator invokes `/yf:archive_capture type:decision area:<area>`
-3. Skill creates archive bead with structured template:
+3. Skill creates archive entry with structured template:
    - Context (what prompted the decision)
    - Alternatives considered
    - Decision made
    - Reasoning/rationale
    - Consequences/trade-offs
-4. Bead labeled: `ys:archive,ys:archive:decision,ys:area:<slug>[,plan:<idx>]`
+4. Entry labeled: `ys:archive,ys:archive:decision,ys:area:<slug>[,plan:<idx>]`
 5. Decision gets sequential DEC-NNN ID
 
-**Postconditions**: Archive bead exists with decision context.
+**Postconditions**: Archive entry exists with decision context.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/archive_capture/SKILL.md`
@@ -55,18 +55,18 @@ The archivist captures research findings and design decisions as permanent, inde
 
 **Actor**: System or Operator
 
-**Preconditions**: Open archive beads exist.
+**Preconditions**: Open archive entries exist.
 
 **Flow**:
 1. `/yf:archive_process` invoked (optionally with `plan_idx`)
 2. Skill launches `yf_archive_process` agent
-3. Agent reads open archive beads
-4. For research beads: generates `docs/research/<topic>/SUMMARY.md`
-5. For decision beads: generates `docs/decisions/DEC-NNN-<slug>/SUMMARY.md`
+3. Agent reads open archive entries
+4. For research entries: generates `docs/research/<topic>/SUMMARY.md`
+5. For decision entries: generates `docs/decisions/DEC-NNN-<slug>/SUMMARY.md`
 6. Agent updates `_index.md` files for cross-referencing
-7. Agent closes processed archive beads
+7. Agent closes processed archive entries
 
-**Postconditions**: SUMMARY.md files written. Index updated. Beads closed.
+**Postconditions**: SUMMARY.md files written. Index updated. Entries closed.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/archive_process/SKILL.md`
@@ -83,9 +83,9 @@ The archivist captures research findings and design decisions as permanent, inde
 2. Skill runs `archive-suggest.sh` to scan commits
 3. Script detects research keywords (evaluated, compared, investigated, API, library) and decision keywords (decided, chose, approved, rejected, architecture)
 4. Script outputs candidate list with commit references
-5. If `--draft`: creates draft archive beads for each candidate
+5. If `--draft`: creates draft archive entries for each candidate
 
-**Postconditions**: Archive candidates identified. Optional draft beads created.
+**Postconditions**: Archive candidates identified. Optional draft entries created.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/archive-suggest.sh`

@@ -58,3 +58,4 @@
 | 0056 | plan-0054-gs93u | Plan: Operator Attribution and Narrative Diary Style | 2026-02-22 | James Dixson | Completed |
 | 0055 | plan-0055-57c3s | Fix Truncated Plan ID in Bead Creation | 2026-02-22 | James Dixson | Completed |
 | 0056 | plan-0056-584rz | Plan: Remove beads-cli dependency — replace with file-based task system | 2026-02-23 | James Dixson | Active |
+| 0057 | plan-0057-1dpqp | Plan: Update specifications for v3.0.0 (beads-cli removal) | 2026-02-23 | James Dixson | Active |

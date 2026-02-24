@@ -83,7 +83,7 @@ The engineer capability synthesizes and maintains specification documents -- PRD
 **Flow**:
 1. `engineer-suggest-on-completion` rule fires after plan completion
 2. Rule invokes `/yf:engineer_suggest_updates plan_idx:<idx>`
-3. Skill reads completed plan beads, CHANGES/FINDINGS/REVIEW comments
+3. Skill reads completed plan tasks, CHANGES/FINDINGS/REVIEW comments
 4. Skill compares completed work against current specs
 5. Skill outputs advisory suggestions (new REQs, updated DDs, new UCs)
 6. Operator reviews and manually applies via `/yf:engineer_update`

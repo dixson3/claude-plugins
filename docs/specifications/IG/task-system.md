@@ -1,73 +1,71 @@
-# Implementation Guide: Beads Integration
+# Implementation Guide: Task System Integration
 
 ## Overview
 
-Beads-cli is the external persistence layer that provides git-backed issue tracking for plan work. The yf plugin integrates with beads for task tracking, dependency ordering, label-based routing, and state management.
+The yf plugin uses a file-based task system for plan work tracking. Tasks are stored as JSON files under `.yoshiko-flow/tasks/`, providing dependency ordering, label-based routing, and state management with no external CLI dependency.
 
 ## Use Cases
 
-### UC-025: Beads Setup and Git Workflow
+### UC-025: Task System Setup
 
 **Actor**: System (preflight setup)
 
-**Preconditions**: beads-cli >= 0.50.0 installed. Git repository initialized.
+**Preconditions**: Git repository initialized.
 
 **Flow**:
-1. Preflight checks `test -d .beads` (setup command guard)
-2. If `.beads/` does not exist: runs `bd init` (uses `dolt` backend by default since 0.50.0; writes persist immediately)
-3. No AGENTS.md is created — the plugin provides beads workflow context via its own rule file (`yf-rules.md`)
-4. All task operations (create, update, close, list) use `bd` CLI directly.
-5. `.beads/.gitignore` uses allowlist pattern (`*`, `!.gitignore`, `!config.yaml`). `beads-setup.sh` enforces this on every run, overwriting any blocklist from `bd init`.
-6. Remove `bd prime` Claude Code hooks if present: beads-cli can install its own `SessionStart`/`PreCompact` hooks via `bd setup claude`, but yf supersedes these with plugin-level hooks (`session-recall.sh`, `pre-compact.sh`). `beads-setup.sh` (Step 2) detects `bd prime` in `.claude/settings.local.json` and runs `bd setup claude --remove --project` to prevent duplicate context injection (~3k chars wasted per session).
-7. In git worktrees, `beads-setup.sh` detects the worktree and creates a `.beads/redirect` file pointing to the main repo's `.beads/` directory. Phase 2 repair is skipped — config lives in the main repo.
+1. Preflight checks `test -d .yoshiko-flow` (setup command guard)
+2. If `.yoshiko-flow/` does not exist: creates the directory structure with subdirectories (`tasks/`, `chronicler/`, `archivist/`, `issues/`, `todos/`, `molecules/`)
+3. All task operations (create, update, close, list) use `yft_*` shell functions directly
+4. `.yoshiko-flow/.gitignore` uses allowlist pattern (`*`, `!.gitignore`, `!config.json`)
+5. In git worktrees, preflight detects the worktree and creates a `.yoshiko-flow/redirect` file pointing to the main repo's `.yoshiko-flow/` directory
 
-**Postconditions**: Beads initialized with `dolt` backend. Writes persist immediately. No AGENTS.md. No hooks installed. No sync branch configured. No `bd prime` Claude Code hooks.
+**Postconditions**: Task system initialized with file-based storage. No external CLI dependency. No hooks installed. No sync branch configured.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/.claude-plugin/preflight.json`
 
-### UC-026: Bead Lifecycle During Plan Execution
+### UC-026: Task Lifecycle During Plan Execution
 
 **Actor**: System and Agents
 
-**Preconditions**: Plan beads hierarchy created via `plan_create_beads`.
+**Preconditions**: Plan task hierarchy created via `plan_create_tasks`.
 
 **Flow**:
-1. `plan_create_beads` creates root epic, phase epics, task beads, gates (note: `bd create --type=gate` may fail in some beads-cli versions — gates are created as tasks with `ys:gate` labels as workaround; see TODO-015)
-2. Dependencies wired via `bd dep add`
+1. `plan_create_tasks` creates root epic, phase epics, task entries, gates (gates are created as tasks with `ys:gate` labels)
+2. Dependencies wired via `yft_dep_add`
 3. Agent labels assigned via `/yf:plan_select_agent`
 4. Formula labels assigned via `/yf:swarm_select_formula` (Step 8b)
 5. All tasks deferred initially
 6. `plan-exec.sh start` resolves gate, undefers tasks
-7. Task pump reads `bd ready`, dispatches via Task tool
-8. Agents claim: `bd update <id> --status=in_progress`
-9. Agents complete: `bd close <id>`
+7. Task pump reads `yft_list --ready`, dispatches via Task tool
+8. Agents claim: `yft_update <id> --status=in_progress`
+9. Agents complete: `yft_close <id>`
 10. Newly unblocked tasks become ready for next pump cycle
 
 **Postconditions**: All tasks closed. Plan transitions to Completed.
 
 **Key Files**:
-- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/plan_create_beads/SKILL.md`
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/plan_create_tasks/SKILL.md`
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/plan-exec.sh`
 
-### UC-027: Automatic Bead Pruning
+### UC-027: Automatic Task Pruning
 
 **Actor**: System
 
-**Preconditions**: Closed beads exist. Pruning is enabled in config.
+**Preconditions**: Closed tasks exist. Pruning is enabled in config.
 
 **Flow**:
 1. **Plan-scoped**: When `plan-exec.sh status` returns `completed`:
    a. Script checks `yf_is_prune_on_complete()`
    b. Runs `plan-prune.sh plan <label>` in fail-open subshell
-   c. Script soft-deletes closed tasks, epics, gates for the plan
+   c. Script removes closed tasks, epics, gates for the plan via `rm -rf .yoshiko-flow/tasks/<epic-dir>/`
 2. **Global**: After `git push` via `post-push-prune.sh` PostToolUse hook:
    a. Hook checks `yf_is_prune_on_push()`
    b. Runs `plan-prune.sh global`
-   c. Script runs `bd admin cleanup --older-than <days> --force` (default 7 days)
-   d. Script runs `bd admin cleanup --ephemeral --force` for closed wisps
+   c. Script runs `yft_cleanup --older-than <days> --force` (default 7 days)
+   d. Script runs `yft_cleanup --ephemeral --force` for closed wisps
 
-**Postconditions**: Closed beads soft-deleted (tombstones, 30-day recovery).
+**Postconditions**: Closed tasks removed from `.yoshiko-flow/tasks/`.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/plan-prune.sh`
@@ -81,12 +79,12 @@ Beads-cli is the external persistence layer that provides git-backed issue track
 
 **Flow**:
 1. Check dirty tree: `git status --porcelain`. Report changed files.
-2. File remaining work: `bd list --status=in_progress`. Ask operator to close, leave open, or create followup.
+2. File remaining work: `yft_list --status=in_progress`. Ask operator to close, leave open, or create followup.
 3. Capture context (conditional): invoke `/yf:chronicle_capture topic:session-close`
 4. Generate diary (conditional): invoke `/yf:chronicle_diary` to process open chronicles
 5. Run quality gates (conditional, if code changed)
 6. Memory reconciliation (conditional, if specs exist): invoke `/yf:memory_reconcile mode:check`
-7. Update issue status: close finished beads
+7. Update issue status: close finished entries
 8. Session prune: `bash plugins/yf/scripts/session-prune.sh all`
 9. Commit: stage changes, present diff summary, commit
 10. Push with operator confirmation: AskUserQuestion "Push to remote?" If yes, `git push`.
@@ -107,11 +105,11 @@ Beads-cli is the external persistence layer that provides git-backed issue track
 **Flow**:
 1. `pre-push-land.sh` fires as PreToolUse hook on `Bash(git push*)`
 2. Check uncommitted changes: `git status --porcelain`
-3. Check in-progress beads: `bd list --status=in_progress --json`
+3. Check in-progress tasks: `yft_list --status=in_progress --json`
 4. If either condition fails: exit 2 (block) with structured checklist output
 5. If both pass: exit 0 (allow). Existing `pre-push-diary.sh` fires after.
 
-**Postconditions**: Push proceeds only when working tree is clean and no beads are in-progress.
+**Postconditions**: Push proceeds only when working tree is clean and no tasks are in-progress.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/hooks/pre-push-land.sh`
@@ -124,8 +122,8 @@ Beads-cli is the external persistence layer that provides git-backed issue track
 **Preconditions**: Session ending with uncommitted changes, or new session starting after previous dirty session.
 
 **Flow**:
-1. **Session end**: `session-end.sh` checks `git status --porcelain`. If dirty, writes `.beads/.dirty-tree` marker with timestamp and file count.
-2. **Session start**: `session-recall.sh` reads `.beads/.dirty-tree`. If found, sets `HAS_DIRTY=true` and `DIRTY_FILE_COUNT`, removes marker, includes warning in session recall output.
+1. **Session end**: `session-end.sh` checks `git status --porcelain`. If dirty, writes `.yoshiko-flow/.dirty-tree` marker with timestamp and file count.
+2. **Session start**: `session-recall.sh` reads `.yoshiko-flow/.dirty-tree`. If found, sets `HAS_DIRTY=true` and `DIRTY_FILE_COUNT`, removes marker, includes warning in session recall output.
 
 **Postconditions**: Next session is warned about left-behind uncommitted changes.
 

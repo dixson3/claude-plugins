@@ -10,17 +10,17 @@ The chronicler captures observations and context as work progresses, then compos
 
 **Actor**: Operator
 
-**Preconditions**: yf is enabled. `bd` is available.
+**Preconditions**: yf is enabled.
 
 **Flow**:
 1. Operator invokes `/yf:chronicle_capture topic:<topic>`
 2. Skill snapshots current context: recent conversation highlights, decisions made, progress achieved
 3. Skill checks for active plan: looks for `exec:executing` label on any open epic
-4. If plan active: auto-tags chronicle bead with `plan:<idx>` label
-5. Skill creates bead: `bd create --type=task --title="Chronicle: <topic>" -l ys:chronicle,ys:topic:<topic>[,plan:<idx>]`
-6. Skill adds context as bead note
+4. If plan active: auto-tags chronicle entry with `plan:<idx>` label
+5. Skill creates entry: `yft_create --type=chronicle --title="Chronicle: <topic>" -l ys:chronicle,ys:topic:<topic>[,plan:<idx>]`
+6. Skill adds context as entry note
 
-**Postconditions**: Chronicle bead exists with context snapshot. Tagged to active plan if applicable.
+**Postconditions**: Chronicle entry exists with context snapshot. Tagged to active plan if applicable.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/chronicle_capture/SKILL.md`
@@ -29,12 +29,12 @@ The chronicler captures observations and context as work progresses, then compos
 
 **Actor**: System (session-recall.sh)
 
-**Preconditions**: yf is enabled. Open chronicle beads exist from a previous session.
+**Preconditions**: yf is enabled. Open chronicle entries exist from a previous session.
 
 **Flow**:
 1. SessionStart hook triggers `session-recall.sh`
-2. Script queries `bd list --label=ys:chronicle --status=open --format=json`
-3. Script checks for `.beads/.pending-diary` marker from previous session
+2. Script queries `yft_list -l ys:chronicle --status=open --json`
+3. Script checks for `.yoshiko-flow/.pending-diary` marker from previous session
 4. If marker found: outputs "DEFERRED DIARY" header, deletes marker
 5. Script formats chronicle summaries: ID, title, age
 6. Output injected into agent context via SessionStart stdout
@@ -56,13 +56,13 @@ The chronicler captures observations and context as work progresses, then compos
 2. Script analyzes recent commits for keywords (decided, chose, architecture, new skill, etc.)
 3. Script detects significant file changes (plugins/, skills/, agents/, docs/plans/, etc.)
 4. Script detects high activity volume (5+ commits)
-5. Script detects in-progress beads
-6. Script checks daily dedup marker (`.beads/.chronicle-drafted-YYYYMMDD`)
-7. If candidate reasons found and not deduped: creates draft chronicle bead
-8. Bead labeled: `ys:chronicle,ys:chronicle:draft[,plan:<idx>]`
-9. SessionEnd hook additionally writes `.beads/.pending-diary` marker
+5. Script detects in-progress tasks
+6. Script checks daily dedup marker (`.yoshiko-flow/.chronicle-drafted-YYYYMMDD`)
+7. If candidate reasons found and not deduped: creates draft chronicle entry
+8. Entry labeled: `ys:chronicle,ys:chronicle:draft[,plan:<idx>]`
+9. SessionEnd hook additionally writes `.yoshiko-flow/.pending-diary` marker
 
-**Postconditions**: Draft chronicle bead created. Marker bridges to next session.
+**Postconditions**: Draft chronicle entry created. Marker bridges to next session.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/scripts/chronicle-check.sh`
@@ -73,20 +73,20 @@ The chronicler captures observations and context as work progresses, then compos
 
 **Actor**: System or Operator
 
-**Preconditions**: Open chronicle beads exist. (If plan-scoped: chronicle gate is closed.)
+**Preconditions**: Open chronicle entries exist. (If plan-scoped: plan execution has completed.)
 
 **Flow**:
 1. `/yf:chronicle_diary` invoked (optionally with `plan_idx`)
 2. Skill checks for open chronicle gates (warns if plan still executing)
 3. Skill launches `yf_chronicle_diary` agent
-4. Agent reads all open chronicle beads (filtered by plan if specified)
-5. Agent triages draft beads: enriches worthy ones, closes unworthy ones, consolidates duplicates
-6. For swarm-tagged chronicles: reads FINDINGS/CHANGES/REVIEW/TESTS comments from parent bead
+4. Agent reads all open chronicle entries (filtered by plan if specified)
+5. Agent triages draft entries: enriches worthy ones, closes unworthy ones, consolidates duplicates
+6. For swarm-tagged chronicles: reads FINDINGS/CHANGES/REVIEW/TESTS comments from parent task
 7. Agent composes diary entry: Summary, Decisions, Next Steps sections
 8. Agent writes entry to `docs/diary/YY-MM-DD.HH-MM.<topic>.md`
-9. Agent closes processed chronicle beads
+9. Agent closes processed chronicle entries
 
-**Postconditions**: Diary entry written. Chronicle beads closed.
+**Postconditions**: Diary entry written. Chronicle entries closed.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/chronicle_diary/SKILL.md`
@@ -118,17 +118,17 @@ The chronicler captures observations and context as work progresses, then compos
 
 **Actor**: System (skill auto-capture)
 
-**Preconditions**: yf is enabled. `bd` is available. A skill that produces a decision point (verdict, spec mutation, scope change, qualification outcome) is executing.
+**Preconditions**: yf is enabled. A skill that produces a decision point (verdict, spec mutation, scope change, qualification outcome) is executing.
 
 **Flow**:
 1. Skill reaches a decision point (e.g., reconciliation verdict, spec update, qualification result, task decomposition)
-2. Skill evaluates the chronicle trigger condition (e.g., NEEDS-RECONCILIATION verdict, any spec mutation, 3+ child beads)
-3. If triggered: skill creates a chronicle bead via `bd create --type task --title "Chronicle: <skill> — <outcome>" -l ys:chronicle,ys:chronicle:auto,ys:topic:<topic>[,plan:<idx>]`
-4. Bead description captures structured context: verdict details, conflicts, operator choices, rationale
-5. For formula-flagged steps: `swarm_dispatch` Step 6c creates the chronicle bead when the step has `"chronicle": true`
+2. Skill evaluates the chronicle trigger condition (e.g., NEEDS-RECONCILIATION verdict, any spec mutation, 3+ child tasks)
+3. If triggered: skill creates a chronicle entry via `yft_create --type=chronicle --title="Chronicle: <skill> — <outcome>" -l ys:chronicle,ys:chronicle:auto,ys:topic:<topic>[,plan:<idx>]`
+4. Entry description captures structured context: verdict details, conflicts, operator choices, rationale
+5. For formula-flagged steps: `swarm_dispatch` Step 6c creates the chronicle entry when the step has `"chronicle": true`
 6. For read-only agents: `CHRONICLE-SIGNAL:` line in structured comments triggers chronicle creation by the dispatch loop
 
-**Postconditions**: Chronicle bead exists with decision context. Tagged to active plan if applicable. Auto-chronicles labeled `ys:chronicle:auto` for diary triage.
+**Postconditions**: Chronicle entry exists with decision context. Tagged to active plan if applicable. Auto-chronicles labeled `ys:chronicle:auto` for diary triage.
 
 **Key Files**:
 - `plugins/yf/rules/yf-rules.md` (Rule 5.3)

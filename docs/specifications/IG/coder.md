@@ -13,8 +13,8 @@ The coder capability provides standards-driven code generation through the `code
 **Preconditions**: Task with `formula:code-implement` label exists. Task involves creating or modifying code with technology/language context.
 
 **Flow**:
-1. Plan pump detects `formula:code-implement` label on a ready bead
-2. Pump invokes `/yf:swarm_run formula:code-implement feature:"<title>" parent_bead:<id>`
+1. Plan pump detects `formula:code-implement` label on a ready task
+2. Pump invokes `/yf:swarm_run formula:code-implement feature:"<title>" parent_task:<id>`
 3. Swarm instantiates formula as wisp with 4 steps:
    - `research-standards` (yf_code_researcher) -- read-only
    - `implement` (code-writer) -- full-capability
@@ -24,10 +24,10 @@ The coder capability provides standards-driven code generation through the `code
 5. Implement step reads FINDINGS, follows standards, posts CHANGES with Standards Applied section
 6. Test step reads CHANGES, writes tests, runs them, posts TESTS with pass/fail results
 7. Review step reads all upstream comments, reviews against IGs and standards, posts REVIEW:PASS or REVIEW:BLOCK
-8. On REVIEW:PASS: wisp squashed, parent bead closed, chronicle captured
+8. On REVIEW:PASS: wisp squashed, parent task closed, chronicle captured
 9. On REVIEW:BLOCK or TESTS failure: reactive bugfix triggers via `swarm_react`
 
-**Postconditions**: Code implemented following standards, tests passing, review passed. Structured comments on parent bead document the full workflow.
+**Postconditions**: Code implemented following standards, tests passing, review passed. Structured comments on parent task document the full workflow.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/formulas/code-implement.formula.json`
@@ -38,9 +38,9 @@ The coder capability provides standards-driven code generation through the `code
 
 ### UC-030: Code-Implement Formula Selection
 
-**Actor**: System (plan_create_beads Step 8b)
+**Actor**: System (plan_create_tasks Step 8b)
 
-**Preconditions**: Task bead created during plan-to-beads conversion.
+**Preconditions**: Task created during plan-to-task conversion.
 
 **Flow**:
 1. `/yf:swarm_select_formula` evaluates task title and description
@@ -62,7 +62,7 @@ The coder capability provides standards-driven code generation through the `code
 **Preconditions**: Research-standards step dispatched within code-implement formula.
 
 **Flow**:
-1. Agent receives task context (title, description, parent bead comments)
+1. Agent receives task context (title, description, parent task comments)
 2. Checks `docs/specifications/IG/` for existing guides relevant to the target technology
 3. If relevant IG exists: extracts coding standards and patterns from it
 4. If no relevant IG: researches best practices for the target technology
@@ -72,7 +72,7 @@ The coder capability provides standards-driven code generation through the `code
    - Standards section (coding standards to follow)
    - Recommendations (suggested approach)
 
-**Postconditions**: FINDINGS comment on parent bead with standards for downstream steps.
+**Postconditions**: FINDINGS comment on parent task with standards for downstream steps.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/agents/yf_code_researcher.md`
@@ -97,7 +97,7 @@ The coder capability provides standards-driven code generation through the `code
    - IG Alignment section (divergence from documented guides)
    - Issues list (critical/suggestion/nit level)
 
-**Postconditions**: REVIEW comment on parent bead. REVIEW:BLOCK triggers reactive bugfix if eligible.
+**Postconditions**: REVIEW comment on parent task. REVIEW:BLOCK triggers reactive bugfix if eligible.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/agents/yf_code_reviewer.md`

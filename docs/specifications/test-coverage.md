@@ -8,7 +8,7 @@ Maps each specification item to its test coverage. Status key: **tested** (behav
 |----|---------|-----------|--------|
 | REQ-001 | Namespace isolation | unit-naming-convention.yaml | tested |
 | REQ-002 | Preflight symlinks <50ms | unit-preflight.yaml, unit-preflight-symlinks.yaml | tested |
-| REQ-003 | Plans to beads hierarchy | unit-plan-exec-gate.yaml | existence-only |
+| REQ-003 | Plans to task hierarchy | unit-plan-exec-gate.yaml | existence-only |
 | REQ-004 | Plan state transitions | unit-plan-state-machine.yaml | tested |
 | REQ-005 | Code-gate blocks edits | unit-code-gate.yaml | tested |
 | REQ-006 | ExitPlanMode auto-chain | unit-exit-plan-gate.yaml | existence-only |
@@ -31,16 +31,16 @@ Maps each specification item to its test coverage. Status key: **tested** (behav
 | REQ-023 | Spec synthesis | unit-engineer.yaml | existence-only |
 | REQ-024 | Plan-spec reconciliation | unit-engineer.yaml | tested |
 | REQ-025 | Spec drift watch | unit-engineer.yaml | existence-only |
-| REQ-026 | Bead auto-pruning | unit-plan-prune.yaml | tested |
-| REQ-027 | Beads git-tracked | unit-beads-git.yaml | tested |
+| REQ-026 | Task auto-pruning | unit-plan-prune.yaml | tested |
+| REQ-027 | ~~Beads git-tracked~~ (removed in v3.0.0 — file-based task system supersedes) | — | removed |
 | REQ-028 | Zero-question setup | unit-setup-project.yaml | tested |
 | REQ-029 | Gitignore management | unit-setup-project.yaml | tested |
 | REQ-030 | YAML test scenarios | unit-yf-structure.yaml | existence-only |
 | REQ-031 | Go test harness | unit-yf-structure.yaml | existence-only |
 | REQ-032 | Standards-driven code implementation | unit-code-implement.yaml | tested |
 | REQ-033 | Spec integrity gates at intake/completion | unit-spec-sanity.yaml | tested |
-| REQ-034 | Three-condition activation gate | unit-activation.yaml, unit-yf-config.yaml | tested |
-| REQ-035 | bd CLI dependency enforcement | unit-activation.yaml, unit-preflight.yaml | tested |
+| REQ-034 | Two-condition activation gate | unit-activation.yaml, unit-yf-config.yaml | tested |
+| REQ-035 | Preflight directory management | unit-activation.yaml, unit-preflight.yaml | tested |
 | REQ-036 | User-scope install with per-project activation | unit-activation.yaml, unit-preflight.yaml | tested |
 | REQ-037 | Memory reconciliation | unit-memory-reconcile.yaml | existence-only |
 | REQ-038 | Skill-level chronicle auto-capture | unit-chronicle-worthiness.yaml | existence-only |
@@ -48,7 +48,7 @@ Maps each specification item to its test coverage. Status key: **tested** (behav
 | REQ-040 | Plan foreshadowing at intake | unit-plan-intake.yaml | untested |
 | REQ-041 | Dirty-tree cross-session markers | unit-session-end.yaml, unit-session-recall.yaml | untested |
 | REQ-042 | Plugin issue reporting via gh CLI | unit-issue-disambiguation.yaml | untested |
-| REQ-043 | Project issue staging as ys:issue beads | unit-issue-disambiguation.yaml | untested |
+| REQ-043 | Project issue staging as ys:issue tasks | unit-issue-disambiguation.yaml | untested |
 | REQ-044 | Issue processing with triage agent | unit-issue-disambiguation.yaml | untested |
 | REQ-045 | Tracker auto-detection with file fallback | unit-tracker-detect.yaml | untested |
 | REQ-046 | Plugin/project issue disambiguation | unit-issue-disambiguation.yaml | untested |
@@ -56,13 +56,13 @@ Maps each specification item to its test coverage. Status key: **tested** (behav
 
 ## Design Decisions (DD-xxx)
 
-Aligned to EDD/CORE.md DD-001 through DD-014.
+Aligned to EDD/CORE.md DD-001 through DD-020.
 
 | ID | Summary | Test File | Status |
 |----|---------|-----------|--------|
-| DD-001 | Beads as persistent task store | unit-pump-dispatch.yaml | tested |
+| DD-001 | File-based persistent task store | unit-pump-dispatch.yaml | tested |
 | DD-002 | Symlink-based rule management | unit-preflight-symlinks.yaml | tested |
-| DD-003 | Dolt-native persistence (no sync, no hooks) | unit-beads-git.yaml | tested |
+| DD-003 | ~~Dolt-native persistence~~ (superseded in v3.0.0 — file-based JSON replaces Dolt) | — | removed |
 | DD-004 | Auto-chain lifecycle on ExitPlanMode | unit-exit-plan-gate.yaml | existence-only |
 | DD-005 | Hook + rule mechanism for plan enforcement | unit-code-gate.yaml | tested |
 | DD-006 | Formula-driven swarm with wisps | unit-swarm-lifecycle.yaml | tested |
@@ -70,12 +70,12 @@ Aligned to EDD/CORE.md DD-001 through DD-014.
 | DD-008 | Zero-question setup with always-on capabilities | unit-setup-project.yaml | tested |
 | DD-009 | Blocking specification reconciliation (default) | unit-engineer.yaml | tested |
 | DD-010 | Plugin consolidation (historical) | unit-preflight.yaml | existence-only |
-| DD-011 | Soft-delete bead pruning | unit-plan-prune.yaml | tested |
+| DD-011 | Soft-delete task pruning | unit-plan-prune.yaml | tested |
 | DD-012 | State directory migration (.claude/ -> .yoshiko-flow/) | unit-preflight.yaml | existence-only |
 | DD-013 | Standards-driven code implementation formula | unit-code-implement.yaml | tested |
 | DD-014 | Specifications as anchor documents | unit-spec-sanity.yaml | tested |
-| DD-015 | Three-condition activation model | unit-activation.yaml, unit-yf-config.yaml | tested |
-| DD-016 | Hybrid beads routing (reversed) | — | n/a |
+| DD-015 | Two-condition activation model | unit-activation.yaml, unit-yf-config.yaml | tested |
+| DD-016 | ~~Hybrid beads routing~~ (reversed; removed in v3.0.0) | — | removed |
 | DD-017 | Session close enforcement (hook + skill) | unit-pre-push-land.yaml, unit-session-land.yaml | untested |
 | DD-018 | Core merged into plugin prefix | unit-activation.yaml | tested |
 | DD-019 | Tracker abstraction with file fallback | unit-tracker-detect.yaml, unit-tracker-api.yaml | untested |
@@ -95,7 +95,7 @@ Aligned to EDD/CORE.md DD-001 through DD-014.
 
 ## Use Cases (UC-xxx)
 
-Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–009), chronicler (UC-010–013, UC-037–038), archivist (UC-014–017), engineer (UC-018–021, UC-033–034), marketplace (UC-022–024, UC-035–036, UC-042), beads-integration (UC-025–028), coder (UC-029–032), issue-tracking (UC-043–047).
+Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–009), chronicler (UC-010–013, UC-037–038), archivist (UC-014–017), engineer (UC-018–021, UC-033–034), marketplace (UC-022–024, UC-035–036, UC-042), task-integration (UC-025–028, UC-039, UC-041), coder (UC-029–032), issue-tracking (UC-043–047).
 
 | ID | Summary | IG Source | Test File | Status |
 |----|---------|-----------|-----------|--------|
@@ -123,10 +123,10 @@ Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–00
 | UC-022 | Plugin registration | marketplace | unit-yf-structure.yaml | existence-only |
 | UC-023 | Preflight artifact sync | marketplace | unit-preflight.yaml, unit-preflight-symlinks.yaml | tested |
 | UC-024 | Running tests | marketplace | unit-yf-structure.yaml | existence-only |
-| UC-025 | Beads setup and git workflow | beads-integration | unit-beads-git.yaml, unit-beads-setup.yaml, unit-preflight.yaml | tested |
-| UC-026 | Bead lifecycle during plan execution | beads-integration | unit-plan-exec-gate.yaml | existence-only |
-| UC-027 | Automatic bead pruning | beads-integration | unit-plan-prune.yaml | tested |
-| UC-028 | Session close protocol | beads-integration | unit-pre-push-chronicle-check.yaml | existence-only |
+| UC-025 | Task system setup | task-integration | unit-preflight.yaml, unit-setup-project.yaml | tested |
+| UC-026 | Task lifecycle during plan execution | task-integration | unit-plan-exec-gate.yaml | existence-only |
+| UC-027 | Automatic task pruning | task-integration | unit-plan-prune.yaml | tested |
+| UC-028 | Session close protocol | task-integration | unit-pre-push-land.yaml, unit-session-land.yaml | existence-only |
 | UC-029 | Standards-driven code implementation | coder | unit-code-implement.yaml | tested |
 | UC-030 | Code-implement formula selection | coder | unit-code-implement.yaml | tested |
 | UC-031 | IG-first standards research | coder | unit-code-implement.yaml | tested |
@@ -137,9 +137,9 @@ Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–00
 | UC-036 | Per-project activation via /yf:plugin_setup | marketplace | unit-activation.yaml | tested |
 | UC-037 | Memory reconciliation | chronicler | unit-memory-reconcile.yaml | existence-only |
 | UC-038 | Skill-level auto-chronicle at decision points | chronicler | unit-chronicle-worthiness.yaml | existence-only |
-| UC-039 | Pre-push enforcement | beads-integration | unit-pre-push-land.yaml | untested |
+| UC-039 | Pre-push enforcement | task-integration | unit-pre-push-land.yaml | untested |
 | UC-040 | Plan foreshadowing at intake | plan-lifecycle | unit-plan-intake.yaml | untested |
-| UC-041 | Dirty-tree cross-session awareness | beads-integration | unit-session-end.yaml, unit-session-recall.yaml | untested |
+| UC-041 | Dirty-tree cross-session awareness | task-integration | unit-session-end.yaml, unit-session-recall.yaml | untested |
 | UC-042 | Plugin issue reporting | marketplace | unit-issue-disambiguation.yaml | untested |
 | UC-043 | Project issue capture and staging | issue-tracking | unit-issue-disambiguation.yaml | untested |
 | UC-044 | Issue processing and batch submission | issue-tracking | unit-issue-disambiguation.yaml | untested |
@@ -149,15 +149,15 @@ Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–00
 
 ## Coverage Summary
 
-| Category | Total | Tested | Existence-Only | Untested |
-|----------|-------|--------|----------------|----------|
-| REQ | 47 | 24 | 14 | 9 |
-| DD | 20 | 14 | 2 | 4 |
-| NFR | 7 | 6 | 1 | 0 |
-| UC | 47 | 21 | 16 | 10 |
-| **Total** | **121** | **65** | **33** | **23** |
+| Category | Total | Tested | Existence-Only | Untested | Removed |
+|----------|-------|--------|----------------|----------|---------|
+| REQ | 47 | 23 | 14 | 9 | 1 |
+| DD | 20 | 13 | 2 | 3 | 2 |
+| NFR | 7 | 6 | 1 | 0 | 0 |
+| UC | 47 | 21 | 16 | 10 | 0 |
+| **Total** | **121** | **63** | **33** | **22** | **3** |
 
-Total assertions: **673** (across all unit test scenarios)
+Total assertions: **824** (across all unit test scenarios)
 
 ## Priority Gaps
 
@@ -166,4 +166,4 @@ Remaining items needing behavioral test upgrades or initial coverage:
 1. **UC-016** — Archive processing into docs: untested (requires live agent interaction)
 2. **UC-018, UC-020-021** — Engineer spec synthesis, individual update, and post-completion suggestions (existence-only)
 3. **UC-014-017** — Archivist capture, process, suggestion, and git scan (existence-only)
-4. **REQ-003, REQ-006** — Plans-to-beads hierarchy and auto-chain (existence-only)
+4. **REQ-003, REQ-006** — Plans-to-task hierarchy and auto-chain (existence-only)

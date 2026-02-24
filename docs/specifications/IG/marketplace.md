@@ -35,8 +35,7 @@ The marketplace provides the plugin architecture for Claude Code -- plugin regis
 **Flow**:
 1. `preflight-wrapper.sh` triggers `plugin-preflight.sh`
 2. Script sources `yf-config.sh` for config access
-2.25. If no `.yoshiko-flow/config.json` exists: emit `YF_SETUP_NEEDED`, remove any existing rule symlinks, exit (fail-closed activation)
-2.5. Check bd CLI dependency: `command -v bd`. If missing: emit `YF_DEPENDENCY_MISSING`, remove rule symlinks, exit.
+2.5. If no `.yoshiko-flow/config.json` exists: emit `YF_SETUP_NEEDED`, remove any existing rule symlinks, exit (fail-closed activation)
 3. Script checks fast path: version matches, rule count matches, all symlinks correct
 4. If fast path passes: exit in <50ms
 5. If full sync needed: for each rule in `preflight.json`:
@@ -46,7 +45,7 @@ The marketplace provides the plugin architecture for Claude Code -- plugin regis
    d. If missing: create symlink
 6. Remove dangling symlinks not in current manifest
 7. Create directories listed in `preflight.json`
-8. Run setup commands (e.g., `bd init`)
+8. Run setup commands (e.g., initialize `.yoshiko-flow/` directories)
 9. Run `setup-project.sh` for gitignore management (no AGENTS.md is created — see REQ-027; legacy AGENTS.md files are removed if present)
 10. Write lock state to `.yoshiko-flow/lock.json`
 
@@ -65,7 +64,7 @@ The marketplace provides the plugin architecture for Claude Code -- plugin regis
 
 **Flow**:
 1. Skill runs `yf-activation-check.sh`
-2. Script checks three conditions: config exists, enabled:true, beads installed
+2. Script checks two conditions: config exists, enabled != false
 3. Returns `{"active":true}` or `{"active":false,"reason":"...","action":"..."}`
 4. If inactive: skill reports reason and action to user, stops execution
 5. If active: skill proceeds with normal steps
@@ -79,17 +78,15 @@ The marketplace provides the plugin architecture for Claude Code -- plugin regis
 
 **Actor**: Operator
 
-**Preconditions**: yf plugin installed (user or project scope). bd CLI available.
+**Preconditions**: yf plugin installed (user or project scope).
 
 **Flow**:
 1. Operator runs `/yf:plugin_setup` in a project
-2. Skill checks bd CLI availability (`command -v bd`)
-3. If bd missing: report dependency, provide install instructions, stop
-4. If bd present: write `.yoshiko-flow/config.json` with `{enabled: true, config: {artifact_dir: "docs"}}`
-5. Run `plugin-preflight.sh` to install rules, directories, beads init
-6. Plugin is now active in this project
+2. Skill writes `.yoshiko-flow/config.json` with `{enabled: true, config: {artifact_dir: "docs"}}`
+3. Skill runs `plugin-preflight.sh` to install rules and create directories
+4. Plugin is now active in this project
 
-**Postconditions**: `.yoshiko-flow/config.json` committed. Rules symlinked. Beads initialized.
+**Postconditions**: `.yoshiko-flow/config.json` committed. Rules symlinked. Directories created.
 
 **Key Files**:
 - `plugins/yf/skills/plugin_setup/SKILL.md`

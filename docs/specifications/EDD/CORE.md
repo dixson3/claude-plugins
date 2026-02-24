@@ -2,7 +2,7 @@
 
 ## Overview
 
-D3 Claude Plugins implements a plugin marketplace for Claude Code with the Yoshiko Flow (yf) plugin as its primary offering. The architecture is built on six artifact types (skills, agents, rules, scripts, hooks, preflight), with beads-cli as the external persistence layer and Claude Code's plugin system as the runtime environment.
+D3 Claude Plugins implements a plugin marketplace for Claude Code with the Yoshiko Flow (yf) plugin as its primary offering. The architecture is built on six artifact types (skills, agents, rules, scripts, hooks, preflight), with a file-based JSON task system under `.yoshiko-flow/` and Claude Code's plugin system as the runtime environment.
 
 ## Architecture
 
@@ -17,8 +17,8 @@ D3 Claude Plugins implements a plugin marketplace for Claude Code with the Yoshi
             |
 +-----------v---------------------+
 |  Activation Gate                |
-|  (three-condition check:        |
-|   config + enabled + beads)     |
+|  (two-condition check:          |
+|   config + enabled)             |
 +-----------+---------------------+
             |
 +-----------v---------------------+
@@ -34,9 +34,9 @@ D3 Claude Plugins implements a plugin marketplace for Claude Code with the Yoshi
 +-----------+---------------------+
             |
 +-----------v---------------------+
-|  Beads Persistence Layer        |
-|  (.beads/dolt/, embedded dolt,  |
-|   immediate write persistence)  |
+|  File-Based Task Layer          |
+|  (.yoshiko-flow/{tasks,         |
+|   chronicler,archivist,...})     |
 +-----------+---------------------+
             |
 +-----------v---------------------+
@@ -54,7 +54,7 @@ The system uses a layered enforcement approach:
 1. **Hooks (mechanical)**: PreToolUse/PostToolUse shell scripts that block or warn on operations. Exit code semantics: 0=allow, 2=block. Always fail-open on internal errors.
 2. **Rules (behavioral)**: Markdown files loaded into agent context. The agent reads and follows them. No performance cost, relies on agent compliance.
 3. **Scripts (deterministic)**: Shell scripts for state transitions, config access, and data analysis. Called from hooks, skills, and rules.
-4. **Beads (persistent)**: Git-backed issue tracker providing gates, dependencies, labels, and deferred state.
+4. **File-based tasks (persistent)**: JSON files under `.yoshiko-flow/` providing gates, dependencies, labels, and deferred state.
 5. **Activation gate (skill-level)**: `yf-activation-check.sh` outputs JSON status; skills read and refuse when inactive. Defense-in-depth -- hooks also enforce via `yf_is_enabled`.
 
 ### Data Flow
@@ -62,27 +62,27 @@ The system uses a layered enforcement approach:
 ```
 Plan Mode -> ExitPlanMode hook -> plan-gate created
   -> auto-chain rule -> format plan -> reconcile specs
-  -> plan_create_beads -> beads DAG created
+  -> plan_create_tasks -> task DAG created
   -> plan-exec.sh start -> gate removed, tasks undeferred
   -> plan_execute -> plan_pump -> Task tool dispatch
-  -> agents claim/work/close beads
+  -> agents claim/work/close tasks
   -> chronicle capture at boundaries
-  -> plan complete -> diary generated, beads pruned
+  -> plan complete -> diary generated, tasks pruned
 ```
 
 ## Design Decisions
 
-### DD-001: Beads as Persistent Task Store, Not Claude Native Tasks
+### DD-001: File-Based Persistent Task Store, Not Claude Native Tasks
 
-**Context**: Claude Code offers TaskCreate/TaskList for task management and the Task tool with `subagent_type` for agent dispatch. The system needed persistent, cross-session task tracking with dependencies.
+**Context**: Claude Code offers TaskCreate/TaskList for task management and the Task tool with `subagent_type` for agent dispatch. The system needed persistent, cross-session task tracking with dependencies and zero external tool dependencies.
 
-**Decision**: Use beads-cli as the persistent store for all plan work. The Task tool with `subagent_type` is the execution mechanism. TaskCreate/TaskList is not used.
+**Decision**: Use JSON task files under `.yoshiko-flow/tasks/` as the persistent store for all plan work. Each task is a standalone JSON file with metadata (labels, notes, design, acceptance criteria), dependency references, and state. The Task tool with `subagent_type` is the execution mechanism. TaskCreate/TaskList is not used.
 
-**Rationale**: Beads are git-backed and persist across sessions, machines, and context compaction. They support rich metadata (labels, notes, design, acceptance criteria), querying/filtering, and dependency ordering. Native Tasks are session-scoped and ephemeral.
+**Rationale**: File-based JSON tasks persist across sessions and machines via git, support rich metadata and dependency ordering, and require zero external dependencies. The previous beads-cli dependency (dolt-backed) was removed in v3.0.0 (Plan 56) to simplify the stack. Shell scripts (`yft_*` functions in `yf-task-lib.sh`) provide all CRUD, query, and lifecycle operations directly on JSON files.
 
-**Consequences**: External dependency on beads-cli. All task state management goes through `bd` commands. The task pump bridges beads and Claude's Task tool.
+**Consequences**: Zero external dependencies for task management. All task state is human-readable JSON. The task pump bridges `.yoshiko-flow/tasks/` files and Claude's Task tool.
 
-**Source**: Plan 07 (diary `26-02-07.22-50.architecture.md`)
+**Source**: Plan 07 (original), Plan 56 (beads-cli removal, file-based replacement)
 
 ### DD-002: Symlink-Based Rule Management
 
@@ -96,23 +96,23 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Source**: Plan 17, diary `26-02-08.19-00.symlink-preflight.md`
 
-### DD-003: Dolt-Native Persistence (Reversed from Sync Branch)
+### DD-003: Dolt-Native Persistence — **Superseded**
 
-**Context**: v2.5.0 (Plan 18) made `.beads/` local-only. v2.12.0 (Plan 27) reversed with a `beads-sync` git branch. beads v0.52.0 introduced dolt backend where writes persist immediately, making `bd sync`, JSONL export hooks, and the beads-sync branch all obsolete.
+**Context**: v2.5.0 (Plan 18) made `.beads/` local-only. v2.12.0 (Plan 27) reversed with a `beads-sync` git branch. beads v0.52.0 introduced dolt backend where writes persist immediately. Plan 56 (v3.0.0) removed the beads-cli dependency entirely.
 
-**Decision**: Beads uses an embedded dolt database (`.beads/dolt/beads/`) that persists writes immediately. The dolt database is gitignored. Version control uses `bd vc commit/status/merge`. Setup is just `bd init` -- no hooks, no sync branch.
+**Decision**: **Superseded by DD-001 update (Plan 56).** The dolt backend is no longer used. Persistence is now direct JSON files under `.yoshiko-flow/` with no external database dependency.
 
-**Rationale**: Dolt eliminates the entire sync layer. No merge conflicts on JSONL, no sync branch maintenance, no hooks redirecting core.hooksPath, no `bd sync` in session protocols. All five beads git hooks are no-ops in dolt mode.
+**Rationale**: The entire beads/dolt persistence layer was replaced by plain JSON files to eliminate external dependencies and simplify the architecture. See DD-001 for the current persistence model.
 
-**Consequences**: `bd sync` is a no-op. `core.hooksPath` stays at default. Session close protocol omits sync step. Setup simplified from `bd init && bd config set sync.branch ... && bd hooks install` to `bd init`.
+**Consequences**: No `.beads/` directory. No dolt database. No `bd` CLI dependency. All task persistence is file-based JSON under `.yoshiko-flow/`.
 
-**Source**: Plan 27, Plan 45, beads v0.52.0
+**Source**: Plan 27, Plan 45 (original), Plan 56 (superseded)
 
 ### DD-004: Auto-Chain Lifecycle on ExitPlanMode
 
-**Context**: The plan lifecycle originally required 4 manual steps after designing a plan (save, create beads, start execution, begin dispatch). Users frequently bypassed steps or forgot the sequence.
+**Context**: The plan lifecycle originally required 4 manual steps after designing a plan (save, create tasks, start execution, begin dispatch). Users frequently bypassed steps or forgot the sequence.
 
-**Decision**: ExitPlanMode triggers an automatic chain: hook saves plan and creates gate -> rule drives format -> reconcile specs -> create beads -> start execution -> begin dispatch. No user input between steps.
+**Decision**: ExitPlanMode triggers an automatic chain: hook saves plan and creates gate -> rule drives format -> reconcile specs -> create tasks -> start execution -> begin dispatch. No user input between steps.
 
 **Rationale**: Reduces friction from 4 manual steps to zero. The plan-intake rule serves as a fallback for when auto-chain does not fire (pasted plans, new sessions, bypassed ExitPlanMode).
 
@@ -128,27 +128,27 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Rationale**: Hooks fire on every tool call and add latency. Rules fire based on context with zero performance cost. The combination provides mechanical enforcement where needed and lightweight guidance elsewhere.
 
-**Consequences**: Some behaviors rely on agent compliance (e.g., plan-intake rule). The bd-safety-net hook (Plan 31) was added as a mechanical backstop after a real-world rule bypass.
+**Consequences**: Some behaviors rely on agent compliance (e.g., plan-intake rule). The remaining hook enforcement mechanisms are `code-gate.sh` and `plan-exec-guard.sh`; the bd-safety-net hook was removed in v3.0.0 alongside the beads-cli dependency.
 
-**Source**: Plan 05, Plan 11, diary `26-02-08.12-30.lifecycle-resilience.md`
+**Source**: Plan 05, Plan 11, Plan 56, diary `26-02-08.12-30.lifecycle-resilience.md`
 
-### DD-006: Formula-Driven Swarm Execution with Wisps
+### DD-006: Formula-Driven Swarm Execution with Molecules
 
-**Context**: The plan lifecycle dispatches tasks one-at-a-time to agents. But many tasks have internal structure (research before implementation, review after). Running these as separate beads loses tight coupling.
+**Context**: The plan lifecycle dispatches tasks one-at-a-time to agents. But many tasks have internal structure (research before implementation, review after). Running these as separate tasks loses tight coupling.
 
-**Decision**: Use beads formulas to define reusable multi-agent workflow templates. Formulas are instantiated as wisps (ephemeral molecules). Agents communicate via structured comments on the parent bead. Results survive wisp squashing.
+**Decision**: Use formula JSON files to define reusable multi-agent workflow templates. Formulas are instantiated as molecule files under `.yoshiko-flow/molecules/`. Agents communicate via structured comments on the parent task. Results survive molecule squashing.
 
-**Rationale**: Formulas are reusable templates. Wisps keep orchestration ephemeral (not synced via git). Comments provide a readable audit trail. Six formulas cover common patterns: feature-build, research-spike, code-review, bugfix, build-test, code-implement (see DD-013).
+**Rationale**: Formulas are reusable templates. Molecules keep orchestration ephemeral (gitignored). Comments provide a readable audit trail. Six formulas cover common patterns: feature-build, research-spike, code-review, bugfix, build-test, code-implement (see DD-013).
 
-**Consequences**: Requires beads-cli >= 0.50.0 (see TC-003). SUBAGENT annotations in formula descriptions are parsed by the dispatch skill (not by beads). Formula JSON files live at `plugins/yf/formulas/`.
+**Consequences**: SUBAGENT annotations in formula descriptions are parsed by the dispatch skill. Formula JSON files live at `plugins/yf/formulas/`. No external CLI dependency.
 
-**Source**: Plan 28, diary `26-02-13.22-30.swarm-execution.md`
+**Source**: Plan 28, Plan 56, diary `26-02-13.22-30.swarm-execution.md`
 
 ### DD-007: Heuristic-Based Formula Auto-Selection
 
 **Context**: Swarm formulas initially required manual `formula:<name>` labeling or explicit invocation. This created friction and inconsistency.
 
-**Decision**: Auto-assign formula labels during `plan_create_beads` Step 8b using keyword heuristics (implement->feature-build, fix->bugfix, research->research-spike, etc.). Atomic tasks are skipped.
+**Decision**: Auto-assign formula labels during `plan_create_tasks` Step 8b using keyword heuristics (implement->feature-build, fix->bugfix, research->research-spike, etc.). Atomic tasks are skipped.
 
 **Rationale**: Simpler, more predictable, and easier to debug than ML/embedding approaches. Author overrides via explicit `formula:X` labels are respected.
 
@@ -192,17 +192,17 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Source**: Plan 09, Plan 13, Plan 21
 
-### DD-011: Soft-Delete Bead Pruning with Fail-Open Semantics
+### DD-011: Soft-Delete Task Pruning with Fail-Open Semantics
 
-**Context**: Closed beads accumulate over time (278 found in Plan 30 gap analysis). Manual pruning confirmed all content was duplicated in diary entries, plan docs, and CHANGELOG.
+**Context**: Closed tasks accumulate over time (278 found in Plan 30 gap analysis). Manual pruning confirmed all content was duplicated in diary entries, plan docs, and CHANGELOG.
 
 **Decision**: Automatic pruning at two trigger points: plan-scoped on completion, global on push. Soft-delete only (tombstones with 30-day recovery window). Both operations are fail-open and configurable.
 
 **Rationale**: Tombstones prevent resurrection issues. PostToolUse hook (not PreToolUse) ensures code is safely remote before cleanup.
 
-**Consequences**: Requires `bd admin cleanup` support in beads-cli. Config keys `auto_prune.on_plan_complete` and `auto_prune.on_push` provide escape hatches.
+**Consequences**: Uses `yft_cleanup` for task pruning. Config keys `auto_prune.on_plan_complete` and `auto_prune.on_push` provide escape hatches.
 
-**Source**: Plan 30, Plan 32, diary `26-02-14.12-00.automatic-bead-pruning.md`
+**Source**: Plan 30, Plan 32, Plan 56, diary `26-02-14.12-00.automatic-bead-pruning.md`
 
 ### DD-012: State Directory Migration (.claude/ -> .yoshiko-flow/)
 
@@ -240,41 +240,41 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Source**: Plan 40
 
-### DD-015: Three-Condition Activation Model
+### DD-015: Two-Condition Activation Model
 
-**Context**: yf activated on every project where installed, even without setup. G7 said "fail-open" which conflated hook behavior (always exit 0 on errors) with activation behavior (enabled by default).
+**Context**: yf activated on every project where installed, even without setup. G7 said "fail-open" which conflated hook behavior (always exit 0 on errors) with activation behavior (enabled by default). The original three-condition model (config + enabled + bd CLI) was simplified in v3.0.0 when beads-cli was removed.
 
-**Decision**: Separate hook fail-open (TC-005, unchanged) from activation fail-closed. Three conditions: config exists + enabled:true + bd CLI available. `yf_is_enabled()` enforces all three. `_yf_check_flag` remains fail-open for optional sub-config flags.
+**Decision**: Separate hook fail-open (TC-005, unchanged) from activation fail-closed. Two conditions: config exists + enabled != false. `yf_is_enabled()` enforces both. `_yf_check_flag` remains fail-open for optional sub-config flags.
 
-**Rationale**: User-scope installation should not impose yf on every project. Explicit activation (`/yf:plugin_setup`) is the only entry point. The bd CLI provides the task tracking infrastructure that yf depends on.
+**Rationale**: User-scope installation should not impose yf on every project. Explicit activation (`/yf:plugin_setup`) is the only entry point. The bd CLI condition was removed in Plan 56 since the file-based task system has no external CLI dependency.
 
-**Consequences**: Projects without explicit setup become inactive. `YF_SETUP_NEEDED` signal in preflight guides users. Existing projects with `config.json` and `enabled: true` remain active if bd CLI is available.
+**Consequences**: Projects without explicit setup become inactive. `YF_SETUP_NEEDED` signal in preflight guides users. Existing projects with `config.json` and `enabled: true` are active.
 
-**Source**: Plan 42
+**Source**: Plan 42 (original), Plan 56 (simplified to two conditions)
 
 ### DD-016: Hybrid Beads Routing — **Reversed**
 
-**Context**: yf references `bd` CLI commands in rules, skills, and shell scripts. The beads plugin provided agent-facing skills (`/beads:create`, `/beads:close`, etc.) that offered richer context.
+**Context**: yf originally referenced `bd` CLI commands in rules, skills, and shell scripts. The beads plugin provided agent-facing skills (`/beads:create`, `/beads:close`, etc.) that offered richer context. The routing decision was reversed in Plan 47, and the entire beads-cli dependency was removed in Plan 56 (v3.0.0).
 
-**Decision**: **Reversed.** The beads plugin (`steveyegge/beads`) has been uninstalled. All operations use `bd` CLI directly. yf's own rules provide the authoritative workflow context, and all bd operations are called directly from rules, skills, and shell scripts.
+**Decision**: **Reversed and superseded.** The beads plugin (`steveyegge/beads`) was uninstalled in Plan 47. The `bd` CLI itself was removed in Plan 56, replaced by file-based JSON tasks under `.yoshiko-flow/`. This decision is now fully superseded by DD-001.
 
-**Rationale**: The beads plugin was only providing: (1) an activation gate check against `installed_plugins.json`, (2) a `dependencies` declaration in `preflight.json`, (3) `bd prime` context injection hooks, and (4) thin skill wrappers. None of these are needed since yf's own rules provide the authoritative workflow context and all bd operations are called directly.
+**Rationale**: The beads plugin was only providing thin wrappers. Plan 47 removed the plugin. Plan 56 completed the removal by eliminating the `bd` CLI dependency entirely in favor of a zero-dependency file-based task system.
 
-**Consequences**: No beads plugin dependency. Activation gate checks for `bd` CLI availability instead of plugin registry. `preflight.json` has no `dependencies` array.
+**Consequences**: No beads plugin. No `bd` CLI. No external task management dependencies. `preflight.json` has no `dependencies` array.
 
-**Source**: Plan 42 (original), Plan 47 (reversed)
+**Source**: Plan 42 (original), Plan 47 (reversed), Plan 56 (full beads-cli removal completed)
 
 ### DD-017: Session Close Enforcement via Blocking Hook + Orchestrator Skill
 
-**Context**: The session close protocol (Rule 4.2, UC-028) was a behavioral rule with no mechanical enforcement. Agents could skip commits, forget to push, or start plans with uncommitted changes. The beads `bd prime` SESSION CLOSE PROTOCOL still referenced `bd sync` (a no-op after DD-003).
+**Context**: The session close protocol (Rule 4.2, UC-028) was a behavioral rule with no mechanical enforcement. Agents could skip commits, forget to push, or start plans with uncommitted changes.
 
-**Decision**: Add mechanical enforcement: a blocking pre-push hook (`pre-push-land.sh`) that checks for uncommitted changes and in-progress beads before allowing push, plus an orchestrator skill (`/yf:session_land`) that runs the full close-out checklist. Suppress the beads `bd prime` SESSION CLOSE PROTOCOL via `no-git-ops` beads config since yf manages the git workflow.
+**Decision**: Add mechanical enforcement: a blocking pre-push hook (`pre-push-land.sh`) that checks for uncommitted changes and in-progress tasks before allowing push, plus an orchestrator skill (`/yf:session_land`) that runs the full close-out checklist.
 
-**Rationale**: Behavioral rules alone are insufficient for critical session-boundary operations. The hook provides a mechanical backstop (consistent with DD-005: hook + rule enforcement model). The skill provides an invocable entry point for the full checklist. Suppressing `bd prime` git ops eliminates confusion about which protocol to follow.
+**Rationale**: Behavioral rules alone are insufficient for critical session-boundary operations. The hook provides a mechanical backstop (consistent with DD-005: hook + rule enforcement model). The skill provides an invocable entry point for the full checklist.
 
-**Consequences**: `git push` is blocked until the working tree is clean and all beads are closed or updated. The `bd prime` SESSION CLOSE PROTOCOL no longer includes `bd sync` or `git push` steps. Dirty-tree markers bridge uncommitted state across sessions.
+**Consequences**: `git push` is blocked until the working tree is clean and all in-progress tasks are closed or updated. Dirty-tree markers bridge uncommitted state across sessions.
 
-**Source**: Plan 46
+**Source**: Plan 46, Plan 56
 
 ### DD-018: Core Capability Merged into Plugin Prefix
 
@@ -296,7 +296,7 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Rationale**: File fallback ensures issue tracking is always available — `tracker-detect.sh` never returns "none". The abstraction layer isolates skill/agent code from backend differences.
 
-**Consequences**: Additional backends (Linear, Jira, beads) deferred to follow-up issues. No tracker state caching in v1 — CLI calls are lightweight.
+**Consequences**: Additional backends (Linear, Jira) deferred to follow-up issues. No tracker state caching in v1 — CLI calls are lightweight.
 
 **Source**: Plan 50
 
@@ -304,7 +304,7 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Context**: Two issue destinations exist — the plugin repository (for yf bugs/enhancements) and the project's own tracker (for project issues). Without disambiguation, issues could be mis-routed.
 
-**Decision**: Hard enforcement rule (Rule 1.5) prevents cross-routing. Each skill includes a guard: `plugin_issue` checks if the issue is about the project and redirects to `issue_capture`; `issue_capture` checks if the issue is about yf/beads and redirects to `plugin_issue`. Cross-route guard compares plugin repo slug against project tracker slug — error if they match.
+**Decision**: Hard enforcement rule (Rule 1.5) prevents cross-routing. Each skill includes a guard: `plugin_issue` checks if the issue is about the project and redirects to `issue_capture`; `issue_capture` checks if the issue is about yf plugin internals and redirects to `plugin_issue`. Cross-route guard compares plugin repo slug against project tracker slug — error if they match.
 
 **Rationale**: Mis-routing an issue wastes context and effort. The guards are cheap (string comparison) and provide early feedback. Ambiguous cases ask the user.
 

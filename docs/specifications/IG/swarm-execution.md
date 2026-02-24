@@ -10,24 +10,24 @@ Swarm execution runs structured, parallel agent workflows using formula template
 
 **Actor**: System (plan pump or operator)
 
-**Preconditions**: A formula template exists. A parent bead is available for comment posting.
+**Preconditions**: A formula template exists. A parent task is available for comment posting.
 
 **Flow**:
-1. `/yf:swarm_run` is invoked with formula name, feature description, and parent bead ID
+1. `/yf:swarm_run` is invoked with formula name, feature description, and parent task ID
 2. Skill reads formula JSON from `plugins/yf/formulas/<name>.formula.json`
-3. Skill instantiates formula as a wisp: `bd mol wisp <formula-path> --vars feature="<desc>"`
-4. Skill invokes `/yf:swarm_dispatch` with molecule ID and parent bead ID
+3. Skill instantiates formula as a wisp: `yft_mol_wisp <formula-path> --vars feature="<desc>"`
+4. Skill invokes `/yf:swarm_dispatch` with molecule ID and parent task ID
 5. Dispatch loop identifies ready steps (steps whose `needs` are all completed)
 6. Dispatch parses `SUBAGENT:<type>` annotations from step descriptions
 7. Dispatch launches parallel Task tool calls with appropriate `subagent_type`
-8. Each agent reads upstream comments from parent bead, performs work, posts structured comment
+8. Each agent reads upstream comments from parent task, performs work, posts structured comment
 9. Dispatch marks steps as done via `swarm-state.sh mark-done`
 10. Loop continues until all steps complete
-11. Skill squashes wisp: `bd mol squash <mol-id>`
-12. Skill creates chronicle bead from squash summary
-13. If all steps passed: closes parent bead
+11. Skill squashes wisp: `yft_mol_squash <mol-id>`
+12. Skill creates chronicle entry from squash summary
+13. If all steps passed: closes parent task
 
-**Postconditions**: Wisp squashed. Comments persist on parent bead. Chronicle bead created.
+**Postconditions**: Wisp squashed. Comments persist on parent task. Chronicle entry created.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/swarm_run/SKILL.md`
@@ -36,19 +36,19 @@ Swarm execution runs structured, parallel agent workflows using formula template
 
 ### UC-007: Formula Auto-Selection During Plan Setup
 
-**Actor**: System (plan_create_beads Step 8b)
+**Actor**: System (plan_create_tasks Step 8b)
 
-**Preconditions**: Beads are being created from a plan. No explicit `formula:` label on task.
+**Preconditions**: Tasks are being created from a plan. No explicit `formula:` label on task.
 
 **Flow**:
 1. `/yf:swarm_select_formula` reads task title and description
 2. Skill checks for existing `formula:*` label (respects author override)
 3. Skill matches against heuristic table: implement->feature-build, fix->bugfix, research->research-spike, review->code-review, test->build-test, code/write/program+language->code-implement (see UC-030 in IG/coder.md for the code-implement refinement)
 4. Skill assesses atomicity: single-file, single-concern tasks skip formula assignment
-5. If match found: adds `formula:<name>` label to bead
+5. If match found: adds `formula:<name>` label to task
 6. During plan pump, `swarm-formula-dispatch` rule detects the label and dispatches through swarm
 
-**Postconditions**: Task bead has `formula:<name>` label for swarm dispatch.
+**Postconditions**: Task has `formula:<name>` label for swarm dispatch.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/swarm_select_formula/SKILL.md`
@@ -86,11 +86,11 @@ Swarm execution runs structured, parallel agent workflows using formula template
 1. Dispatch loop encounters a step with `compose: "<formula-name>"`
 2. Instead of launching a bare Task call, dispatch invokes `/yf:swarm_run formula:<name>` at depth+1
 3. Sub-swarm receives upstream FINDINGS from parent formula as `context`
-4. Sub-swarm posts comments on the outermost parent bead (single audit trail)
+4. Sub-swarm posts comments on the outermost parent task (single audit trail)
 5. Sub-swarm uses prefixed state tracking: `<parent-mol-id>/<step-id>`
 6. On completion, dispatch marks the compose step as done
 
-**Postconditions**: Sub-swarm completed. Comments on parent bead. State scoped correctly.
+**Postconditions**: Sub-swarm completed. Comments on parent task. State scoped correctly.
 
 **Key Files**:
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/rules/swarm-nesting.md`

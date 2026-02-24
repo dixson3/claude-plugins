@@ -33,7 +33,7 @@ If `.yoshiko-flow/plan-gate` exists, the plan is gated. Never dismiss the gate t
 
 ### 1.3 Formula-Labeled Tasks Route Through Swarm
 
-When the task pump reads a task with a `formula:<name>` label, dispatch via `/yf:swarm_run formula:<name> feature:"<title>" parent_bead:<task-id>`.
+When the task pump reads a task with a `formula:<name>` label, dispatch via `/yf:swarm_run formula:<name> feature:"<title>" parent_task:<task-id>`.
 Do NOT use bare Task tool dispatch for formula-labeled tasks.
 If no formula label: dispatch via bare Task tool with `subagent_type` from `agent:<name>` label.
 

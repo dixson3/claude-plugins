@@ -6,15 +6,15 @@
 |----|-------------|----------|--------|--------|----|
 | TODO-001 | PostToolUse ambient session log for chronicler -- creates low-overhead context capture during work without explicit invocation | P3 | Plan 22 (Phase 3, deferred) | Deferred | [#4](https://github.com/dixson3/claude-plugins/issues/4) |
 | TODO-002 | Agent Teams integration hooks (TeammateIdle, TaskCompleted) for persistent multi-session coordination | P3 | Plan 07 (Phase 2.2, optional) | Deferred | [#9](https://github.com/dixson3/claude-plugins/issues/9) |
-| TODO-003 | End-to-end validation of auto-formula selection during a real `plan_create_beads` run | P2 | Diary 26-02-13.23-25 (Next Steps) | Open | [#18](https://github.com/dixson3/claude-plugins/issues/18) |
+| TODO-003 | End-to-end validation of auto-formula selection during a real `plan_create_tasks` run | P2 | Diary 26-02-13.23-25 (Next Steps) | Open | [#18](https://github.com/dixson3/claude-plugins/issues/18) |
 | TODO-004 | Test nested composition with feature-build composing build-test end-to-end | P2 | Diary 26-02-13.23-25 (Next Steps) | Open | [#18](https://github.com/dixson3/claude-plugins/issues/18) |
 | TODO-005 | Verify reactive bugfix triggers correctly on REVIEW:BLOCK in a real swarm execution | P2 | Diary 26-02-13.23-25 (Next Steps) | Open | [#18](https://github.com/dixson3/claude-plugins/issues/18) |
-| TODO-006 | Verify formula cooking with `bd cook --dry-run` for all 6 formulas (feature-build, research-spike, code-review, bugfix, build-test, code-implement) | P2 | Diary 26-02-13.22-30 (Next Steps) | Open | [#18](https://github.com/dixson3/claude-plugins/issues/18) |
+| ~~TODO-006~~ | ~~Verify formula cooking with `bd cook --dry-run`~~ — removed in v3.0.0; formulas now instantiated via `yft_mol_wisp` (file-based system) | — | — | Removed | — |
 | TODO-007 | Verify reconciliation behavior on a project with existing specification documents | P2 | Diary 26-02-14.18-00 (Next Steps) | Open | [#30](https://github.com/dixson3/claude-plugins/issues/30) |
-| TODO-009 | Validate automatic migration for legacy local-only beads deployments in external projects | P2 | Diary 26-02-13.17-52 (Next Steps) | Open | [#22](https://github.com/dixson3/claude-plugins/issues/22) |
+| ~~TODO-009~~ | ~~Validate automatic migration for legacy local-only beads deployments~~ — removed in v3.0.0; beads-cli dependency eliminated | — | — | Removed | — |
 | TODO-012 | Monitor symlinks on different platforms or CI environments for compatibility issues | P3 | Diary 26-02-08.19-00 (Next Steps) | Open | [#23](https://github.com/dixson3/claude-plugins/issues/23) |
 | TODO-013 | Consider per-subsystem EDD files for complex projects (currently only CORE.md template) | P3 | Plan 34 (artifact structure) | Deferred | [#24](https://github.com/dixson3/claude-plugins/issues/24) |
-| TODO-015 | `bd create --type=gate` produces validation errors in some beads-cli versions; gates created as tasks with `ys:gate` labels as workaround | P2 | Diary 26-02-08.19-00, Diary 26-02-13.22-30 | Open | [#25](https://github.com/dixson3/claude-plugins/issues/25) |
+| ~~TODO-015~~ | ~~`bd create --type=gate` validation errors~~ — removed in v3.0.0; file-based task system handles gates directly | — | — | Removed | — |
 | TODO-016 | Verify config pruning works on an existing installation with old chronicler/archivist toggle keys | P2 | Diary 26-02-14.14-30 (Next Steps) | Open | [#26](https://github.com/dixson3/claude-plugins/issues/26) |
 | TODO-018 | Confirm chronicle safety net fires appropriately during plan execution without false positives | P2 | Diary 26-02-13.17-52 (Next Steps) | Open | [#27](https://github.com/dixson3/claude-plugins/issues/27) |
 | TODO-019 | UC-008 behavioral test: reactive bugfix eligibility logic (depth check, label dedup, design-BLOCK exclusion) | P2 | Plan 35 Phase 3 (spec-test reconciliation) | Open | [#20](https://github.com/dixson3/claude-plugins/issues/20) |
@@ -34,16 +34,16 @@
 
 | ID | Description | Completed | Source |
 |----|-------------|-----------|--------|
-| TODO-C01 | Make `.beads/` local-only (same pattern as gitignored rules) | v2.5.0 (reversed in v2.12.0) | Plan 18, Diary 26-02-08.19-00 |
+| TODO-C01 | Make `.beads/` local-only (same pattern as gitignored rules) — historical (beads era; superseded by file-based tasks in v3.0.0) | v2.5.0 (reversed in v2.12.0) | Plan 18, Diary 26-02-08.19-00 |
 | TODO-C02 | Implement research-spike formula with auto-archive step | v2.13.0 | Plan 28 |
 | TODO-C03 | Strengthen chronicle watch rule for infrastructure operations | v2.14.1 | Plan 31 |
 | TODO-C04 | Add config pruning for deprecated chronicler/archivist fields | v2.16.0 | Plan 33 |
-| TODO-C05 | Monitor beads-sync branch strategy — moot after dolt-native persistence (DD-003) | v2.22.0 | Plan 45 |
-| TODO-008 | Monitor beads-sync branch strategy in multi-session workflows for sync reliability | v2.22.0 | Diary 26-02-13.17-52 |
+| TODO-C05 | Monitor beads-sync branch strategy — historical (beads era; moot after dolt-native persistence DD-003, fully superseded in v3.0.0) | v2.22.0 | Plan 45 |
+| TODO-008 | Monitor beads-sync branch strategy in multi-session workflows — historical (beads era; superseded by file-based tasks in v3.0.0) | v2.22.0 | Diary 26-02-13.17-52 |
 | TODO-010 | Marketplace version in `marketplace.json` is 2.11.0, behind plugin version 2.17.0 | v2.19.0 | `.claude-plugin/marketplace.json` |
 | TODO-011 | Root README.md plugin table shows version 2.11.0, behind actual version 2.17.0 | v2.19.0 | `README.md` |
 | TODO-014 | Integration tests not maintained since Plan 06 — replaced by 5 new integration scenarios in Plan 48 | v2.25.0 | `tests/scenarios/integ-*.yaml` |
 | TODO-017 | Plan 24 and Plan 26 status still shows "Draft" in plan files but work appears completed | v2.20.0 | `docs/plans/plan-24.md`, `docs/plans/plan-26.md` |
 | TODO-027 | E2E validation of activation gate — covered by `integ-activation-gate.yaml` (Plan 48) | v2.25.0 | Plan 42 (activation gate) |
-| TODO-028 | Validate hybrid beads routing — moot after DD-016 reversal (beads plugin removed) | v2.25.0 | Plan 42 (activation gate) |
-| TODO-033 | Define and use a subagent for plan-to-beads breakdown — `plan_breakdown` skill exists; GH #17 closed | v2.25.0 | GitHub issue #17 |
+| TODO-028 | Validate hybrid beads routing — historical (moot after DD-016 reversal; beads-cli fully removed in v3.0.0) | v2.25.0 | Plan 42 (activation gate) |
+| TODO-033 | Define and use a subagent for plan-to-task breakdown — `plan_breakdown` skill exists; GH #17 closed | v2.25.0 | GitHub issue #17 |
