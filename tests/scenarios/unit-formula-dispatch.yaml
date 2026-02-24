@@ -65,7 +65,7 @@ steps:
   # Case 7: plan_execute formula dispatch invokes swarm_run with correct args
   - name: "execute_formula_dispatch_args"
     run: |
-      grep -q 'formula:<formula-name>.*feature:.*parent_bead:' "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md" && echo "correct_args"
+      grep -q 'formula:<formula-name>.*feature:.*parent_task:' "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md" && echo "correct_args"
     assertions:
       - type: output_contains
         value: "correct_args"

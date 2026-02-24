@@ -3,7 +3,7 @@ setup:
   - "mkdir -p .yoshiko-flow"
 
 steps:
-  # Case 1: No double-dispatch — dispatched bead stays dispatched on re-check
+  # Case 1: No double-dispatch — dispatched task stays dispatched on re-check
   - name: "no_double_dispatch"
     run: |
       rm -f .yoshiko-flow/task-pump.json
@@ -28,7 +28,7 @@ steps:
       - type: output_contains
         value: "dispatched"
 
-  # Case 3: Done bead no longer in pending
+  # Case 3: Done task no longer in pending
   - name: "done_not_in_pending"
     run: |
       rm -f .yoshiko-flow/task-pump.json

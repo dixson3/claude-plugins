@@ -1,0 +1,293 @@
+name: "Unit: yf-tasks.sh — file-based task library"
+
+setup:
+  - "mkdir -p .yoshiko-flow/tasks .yoshiko-flow/chronicler .yoshiko-flow/archivist .yoshiko-flow/issues .yoshiko-flow/todos .yoshiko-flow/molecules"
+  - "export CLAUDE_PROJECT_DIR=$WORK_DIR"
+
+steps:
+  # Case 1: yft_create — basic task creation
+  - name: "create_basic_task"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      ID=$(yft_create --type=task --title="Test task alpha" -l "plan:test")
+      if [ -z "$ID" ]; then
+        echo "FAIL: no ID returned"
+        exit 1
+      fi
+      FILE=$(_yft_find_file "$ID")
+      if [ ! -f "$FILE" ]; then
+        echo "FAIL: task file not created"
+        exit 1
+      fi
+      TYPE=$(jq -r '.type' "$FILE")
+      TITLE=$(jq -r '.title' "$FILE")
+      STATUS=$(jq -r '.status' "$FILE")
+      LABEL=$(jq -r '.labels[0]' "$FILE")
+      if [ "$TYPE" = "task" ] && [ "$TITLE" = "Test task alpha" ] && [ "$STATUS" = "open" ] && [ "$LABEL" = "plan:test" ]; then
+        echo "OK: basic task created id=$ID"
+      else
+        echo "FAIL: type=$TYPE title=$TITLE status=$STATUS label=$LABEL"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: yft_create with --type epic
+  - name: "create_epic"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      ID=$(yft_create --type=epic --title="Epic alpha")
+      EPIC_DIR="$WORK_DIR/.yoshiko-flow/tasks/$ID"
+      if [ -d "$EPIC_DIR" ] && [ -f "$EPIC_DIR/_epic.json" ]; then
+        TYPE=$(jq -r '.type' "$EPIC_DIR/_epic.json")
+        if [ "$TYPE" = "epic" ]; then
+          echo "OK: epic created id=$ID"
+        else
+          echo "FAIL: type=$TYPE"
+          exit 1
+        fi
+      else
+        echo "FAIL: epic directory or _epic.json not created"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 3: yft_create with --parent
+  - name: "create_child_task"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      EPIC_ID=$(yft_create --type=epic --title="Parent epic")
+      CHILD_ID=$(yft_create --type=task --title="Child task" --parent="$EPIC_ID")
+      CHILD_FILE=$(_yft_find_file "$CHILD_ID")
+      if [ ! -f "$CHILD_FILE" ]; then
+        echo "FAIL: child file not found"
+        exit 1
+      fi
+      PARENT=$(jq -r '.parent' "$CHILD_FILE")
+      if [ "$PARENT" = "$EPIC_ID" ]; then
+        echo "OK: child linked to parent=$EPIC_ID child=$CHILD_ID"
+      else
+        echo "FAIL: parent=$PARENT expected=$EPIC_ID"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: yft_create with --type gate
+  - name: "create_gate"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      ID=$(yft_create --type=gate --title="Test gate")
+      FILE=$(_yft_find_file "$ID")
+      TYPE=$(jq -r '.type' "$FILE")
+      RESOLVED=$(jq -r '.resolved' "$FILE")
+      if [ "$TYPE" = "gate" ] && [ "$RESOLVED" = "false" ]; then
+        echo "OK: gate created id=$ID resolved=$RESOLVED"
+      else
+        echo "FAIL: type=$TYPE resolved=$RESOLVED"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: yft_show — plain text and --json
+  - name: "show_task"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      ID=$(yft_create --type=task --title="Show me task" --description="A test description")
+      PLAIN=$(yft_show "$ID")
+      JSON=$(yft_show "$ID" --json)
+      PLAIN_OK=false
+      JSON_OK=false
+      echo "$PLAIN" | grep -q "Show me task" && PLAIN_OK=true
+      echo "$JSON" | jq -e '.id' >/dev/null 2>&1 && JSON_OK=true
+      if $PLAIN_OK && $JSON_OK; then
+        echo "OK: show works in both modes"
+      else
+        echo "FAIL: plain=$PLAIN_OK json=$JSON_OK"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 6: yft_update — status transitions
+  - name: "update_status_transitions"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      ID=$(yft_create --type=task --title="Status test")
+      S1=$(yft_show "$ID" --json | jq -r '.status')
+      yft_update "$ID" --status=in_progress
+      S2=$(yft_show "$ID" --json | jq -r '.status')
+      if [ "$S1" = "open" ] && [ "$S2" = "in_progress" ]; then
+        echo "OK: status open -> in_progress"
+      else
+        echo "FAIL: s1=$S1 s2=$S2"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 7: yft_update — label modification
+  - name: "update_labels"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      ID=$(yft_create --type=task --title="Label test" -l "alpha")
+      yft_update "$ID" -l "beta,gamma"
+      LABELS=$(yft_show "$ID" --json | jq -r '.labels | join(",")')
+      if [ "$LABELS" = "beta,gamma" ]; then
+        echo "OK: labels updated to $LABELS"
+      else
+        echo "FAIL: labels=$LABELS"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 8: yft_close — close with reason
+  - name: "close_with_reason"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      ID=$(yft_create --type=task --title="Close test")
+      yft_close "$ID" --reason="Done testing"
+      STATUS=$(yft_show "$ID" --json | jq -r '.status')
+      REASON=$(yft_show "$ID" --json | jq -r '.close_reason')
+      CLOSED_AT=$(yft_show "$ID" --json | jq -r '.closed_at')
+      if [ "$STATUS" = "closed" ] && [ "$REASON" = "Done testing" ] && [ "$CLOSED_AT" != "null" ]; then
+        echo "OK: closed with reason=$REASON"
+      else
+        echo "FAIL: status=$STATUS reason=$REASON closed_at=$CLOSED_AT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 9: yft_list — filter by type, status, label
+  - name: "list_with_filters"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      # Clear tasks dir
+      rm -rf "$WORK_DIR/.yoshiko-flow/tasks/"*
+      yft_create --type=task --title="Filter A" -l "group:x" --silent
+      yft_create --type=task --title="Filter B" -l "group:y" --silent
+      yft_create --type=task --title="Filter C" -l "group:x" --silent
+      COUNT_ALL=$(yft_list --type=task --json | jq 'length')
+      COUNT_X=$(yft_list --type=task -l "group:x" --json | jq 'length')
+      if [ "$COUNT_ALL" -eq 3 ] && [ "$COUNT_X" -eq 2 ]; then
+        echo "OK: all=$COUNT_ALL group_x=$COUNT_X"
+      else
+        echo "FAIL: all=$COUNT_ALL group_x=$COUNT_X"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: yft_list --ready — only open, non-deferred, unblocked
+  - name: "list_ready_filters"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      rm -rf "$WORK_DIR/.yoshiko-flow/tasks/"*
+      yft_create --type=task --title="Ready task" --silent
+      yft_create --type=task --title="Deferred task" --defer=+100y --silent
+      ID_CLOSED=$(yft_create --type=task --title="Closed task")
+      yft_close "$ID_CLOSED" --reason="done"
+      READY_COUNT=$(yft_list --ready --json | jq 'length')
+      if [ "$READY_COUNT" -eq 1 ]; then
+        echo "OK: ready=$READY_COUNT (deferred and closed excluded)"
+      else
+        echo "FAIL: ready=$READY_COUNT (expected 1)"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 11: yft_dep_add + --ready filtering excludes blocked
+  - name: "dep_blocks_ready"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      rm -rf "$WORK_DIR/.yoshiko-flow/tasks/"*
+      BLOCKER=$(yft_create --type=task --title="Blocker task")
+      BLOCKED=$(yft_create --type=task --title="Blocked task")
+      UNBLOCKED=$(yft_create --type=task --title="Unblocked task")
+      yft_dep_add "$BLOCKED" "$BLOCKER"
+      READY=$(yft_list --ready --json)
+      READY_COUNT=$(echo "$READY" | jq 'length')
+      HAS_BLOCKED=$(echo "$READY" | jq --arg id "$BLOCKED" '[.[] | select(.id == $id)] | length')
+      if [ "$READY_COUNT" -eq 2 ] && [ "$HAS_BLOCKED" -eq 0 ]; then
+        echo "OK: ready=$READY_COUNT blocked_excluded=true"
+      else
+        echo "FAIL: ready=$READY_COUNT has_blocked=$HAS_BLOCKED"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 12: yft_comment — structured comment
+  - name: "add_comment"
+    run: |
+      . "$PLUGIN_DIR/plugins/yf/scripts/yf-tasks.sh"
+      export _YFT_ROOT="$WORK_DIR/.yoshiko-flow"
+      rm -rf "$WORK_DIR/.yoshiko-flow/tasks/"*
+      ID=$(yft_create --type=task --title="Comment test")
+      yft_comment "$ID" "FINDINGS: Research complete with 3 items"
+      COMMENT_COUNT=$(yft_show "$ID" --json | jq '.comments | length')
+      PROTOCOL=$(yft_show "$ID" --json | jq -r '.comments[0].protocol')
+      CONTENT=$(yft_show "$ID" --json | jq -r '.comments[0].content')
+      if [ "$COMMENT_COUNT" -eq 1 ] && [ "$PROTOCOL" = "FINDINGS" ] && echo "$CONTENT" | grep -q "Research complete"; then
+        echo "OK: comment added protocol=$PROTOCOL"
+      else
+        echo "FAIL: count=$COMMENT_COUNT protocol=$PROTOCOL content=$CONTENT"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -rf .yoshiko-flow/tasks/*"
