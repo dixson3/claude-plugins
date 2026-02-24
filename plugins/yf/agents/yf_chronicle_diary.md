@@ -83,6 +83,24 @@ Sections: Title, Date, Operator (resolved name), Topics, Chronicle IDs, Summary 
 
 Include decisions only when actual decisions were made, with rationale. Convert next steps to specific actionable checkboxes. Omit Decisions/Next Steps sections if empty.
 
+### Step 4.5: Fact-Check Entries
+
+Before output, verify all concrete claims in the generated narrative:
+
+1. **Plan references**: For each `plan-NN` or `Plan NN` mentioned, verify the plan file
+   exists (`docs/plans/plan-NN.md` or `docs/plans/plan-00NN-*.md`) and the title matches
+   the narrative's description of what the plan did.
+2. **File paths**: For each file path mentioned in the narrative, verify it exists
+   (or existed) via `git ls-files` or `git log --all -- <path>`.
+3. **CLI commands**: For each shell command referenced (install commands, CLI tools),
+   verify against the codebase — check scripts, hooks, and README for the canonical form.
+4. **Version numbers**: If a version bump is mentioned, verify via `git log --oneline`
+   or `CHANGELOG.md`.
+
+If a claim cannot be verified, rewrite the sentence to remove or qualify it rather than
+leaving a potentially fabricated detail. Flag unverifiable claims with a markdown comment
+`<!-- UNVERIFIED: ... -->` so the operator can review.
+
 ## Handling Draft Chronicle Tasks
 
 Draft chronicle tasks (label `ys:chronicle:draft`) are auto-created by `chronicle-check.sh` from git activity. They contain raw commit data, not curated context.

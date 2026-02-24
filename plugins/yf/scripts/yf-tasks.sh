@@ -834,6 +834,10 @@ yft_mol_wisp() {
   local formula_json="{}"
   if [[ -f "$formula_path" ]]; then
     formula_json=$(cat "$formula_path")
+    if ! echo "$formula_json" | jq empty 2>/dev/null; then
+      echo "Error: invalid formula JSON: $formula_path" >&2
+      formula_json='{}'
+    fi
   fi
 
   # Build vars object
@@ -846,7 +850,10 @@ yft_mol_wisp() {
 
   # Build molecule JSON with steps from formula
   local steps_json
-  steps_json=$(echo "$formula_json" | jq '.steps // []' 2>/dev/null || echo "[]")
+  steps_json=$(echo "$formula_json" | jq -c '.steps // []' 2>/dev/null)
+  if [[ -z "$steps_json" ]]; then
+    steps_json="[]"
+  fi
 
   local json
   json=$(jq -n \
