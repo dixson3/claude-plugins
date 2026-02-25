@@ -83,6 +83,7 @@ Agentic coding generates context faster than humans can catalog it. Each Claude 
 | REQ-045 | Tracker detection must auto-detect project tracker from git remote origin with explicit config override and file-based fallback. Never returns "none" — file backend is always available. | P1 | Issue | Plan 50 | `plugins/yf/scripts/tracker-detect.sh` |
 | REQ-046 | Plugin issues and project issues must be disambiguated — Rule 1.5 hard enforcement prevents cross-routing between plugin repo and project tracker. | P1 | Issue | Plan 50 | `plugins/yf/rules/yf-rules.md` (Rule 1.5) |
 | REQ-047 | Issue worthiness advisory (Rule 5.6) must suggest `/yf:issue_capture` for deferred improvements, incidental bugs, enhancement opportunities, and technical debt discovered during work. Project issues only — never suggests `/yf:plugin_issue`. | P2 | Issue | Plan 50 | `plugins/yf/rules/yf-rules.md` (Rule 5.6) |
+| REQ-048 | Pre-push hook must block `git push` when plugin code has changed without a corresponding version bump. `/yf:session_land` must prompt for version bump (patch/minor/major/skip) before committing when plugin code has changed. | P1 | Session | Plan 63 | `plugins/yf/hooks/pre-push-version.sh`, `plugins/yf/skills/session_land/SKILL.md` |
 
 ## 4. Functional Specifications
 

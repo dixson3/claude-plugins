@@ -288,6 +288,18 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Source**: Plan 50
 
+### DD-021: Semver Enforcement via Pre-Push Version Check
+
+**Context**: The plugin version remained at 3.0.0 across 6 plans (0057-0062) shipping bug fixes, features, and new specs. The existing `bump-version.sh` handles file updates but nothing enforces that a bump happens before push.
+
+**Decision**: Add a blocking pre-push hook (`pre-push-version.sh`) that diffs plugin code paths between HEAD and origin/main. If code changed and version is unchanged, block push (exit 2). Add a session_land step (Step 8c) that prompts for the version bump before commit. Extends the DD-017 pattern (hook + skill enforcement).
+
+**Rationale**: Version drift makes it impossible to track what shipped when. Mechanical enforcement (consistent with DD-005) catches the omission at the latest safe moment — push time. The session_land prompt catches it earlier for a smoother workflow.
+
+**Consequences**: Pushes with plugin code changes require a version bump. Doc-only and test-only changes are excluded. `scripts/bump-version.sh` remains the single tool for performing the bump.
+
+**Source**: Plan 63
+
 ### DD-019: Tracker Abstraction with File-Based Fallback
 
 **Context**: Project issue tracking needs to support multiple backends (GitHub, GitLab) while remaining functional for projects without a remote tracker.

@@ -119,6 +119,44 @@ bash plugins/yf/scripts/session-prune.sh completed-plans 2>/dev/null || true
 This runs after the standard session prune (Step 8) to catch plan lifecycle
 artifacts that the ephemeral/tasks/drafts passes don't cover.
 
+### Step 8c: Version Bump Check (conditional)
+
+If the current project is the plugin repository (check if `plugins/yf/.claude-plugin/plugin.json` exists), check whether plugin code has changed without a version bump:
+
+```bash
+PLUGIN_JSON="plugins/yf/.claude-plugin/plugin.json"
+LOCAL_VERSION=$(jq -r '.version' "$PLUGIN_JSON" 2>/dev/null)
+TRACKING=$(git rev-parse --abbrev-ref '@{upstream}' 2>/dev/null || echo "origin/main")
+REMOTE_VERSION=$(git show "${TRACKING}:${PLUGIN_JSON}" 2>/dev/null | jq -r '.version' 2>/dev/null || echo "")
+```
+
+If `LOCAL_VERSION` equals `REMOTE_VERSION`, check for plugin code changes:
+
+```bash
+git diff --name-only "${TRACKING}...HEAD" -- \
+  plugins/yf/scripts/ plugins/yf/hooks/ plugins/yf/skills/ \
+  plugins/yf/agents/ plugins/yf/rules/ plugins/yf/formulas/ \
+  plugins/yf/.claude-plugin/
+```
+
+Exclude `plugins/yf/README.md` and `plugins/yf/DEVELOPERS.md` from results.
+
+If plugin code changed and version is unchanged, present the changed files and ask the operator via AskUserQuestion:
+- "Patch (X.Y.Z+1)" — bug fixes, refactoring, test additions
+- "Minor (X.Y+1.0)" — new features, new specs, capability additions
+- "Major (X+1.0.0)" — breaking changes
+- "Skip version bump" — escape hatch
+
+If not skipped, compute the new version from the current `LOCAL_VERSION` and the chosen level, then run:
+
+```bash
+bash scripts/bump-version.sh <new-version>
+```
+
+Remind the operator to add a CHANGELOG.md entry for the new version.
+
+If no plugin code changes, or version already bumped, skip this step.
+
 ### Step 9: Commit
 
 Stage all changes and present a diff summary:

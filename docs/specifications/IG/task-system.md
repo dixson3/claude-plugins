@@ -122,6 +122,46 @@ The yf plugin uses a file-based task system for plan work tracking. Tasks are st
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/hooks/pre-push-land.sh`
 - `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/.claude-plugin/plugin.json`
 
+### UC-048: Pre-Push Version Enforcement
+
+**Actor**: System (pre-push-version.sh hook)
+
+**Preconditions**: Agent attempts `git push`. yf is enabled.
+
+**Flow**:
+1. `pre-push-version.sh` fires as PreToolUse hook on `Bash(git push*)`
+2. Read local version from `plugins/yf/.claude-plugin/plugin.json`
+3. Read remote version from `origin/main:plugins/yf/.claude-plugin/plugin.json`
+4. Diff HEAD vs origin/main for plugin code paths (scripts, hooks, skills, agents, rules, formulas, manifest, preflight)
+5. Exclude doc-only and test-only changes (README, DEVELOPERS.md, tests/scenarios, docs/)
+6. If plugin code changed AND version unchanged: exit 2 (block) with message directing to `bump-version.sh`
+7. If no plugin code changed, or version already bumped: exit 0 (allow)
+
+**Postconditions**: Push proceeds only when version has been bumped to reflect plugin code changes.
+
+**Key Files**:
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/hooks/pre-push-version.sh`
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/.claude-plugin/plugin.json`
+
+### UC-049: Session Land Version Bump Prompt
+
+**Actor**: Operator (via `/yf:session_land` Step 8c)
+
+**Preconditions**: Plugin code changed since last push. Version not yet bumped.
+
+**Flow**:
+1. Detect plugin code changes (same diff logic as UC-048)
+2. Present changes summary to operator
+3. Ask operator for bump level via AskUserQuestion: Patch, Minor, Major, or Skip
+4. Run `bash scripts/bump-version.sh <chosen-version>`
+5. Remind operator about CHANGELOG entry
+
+**Postconditions**: Version bumped in all tracked files. CHANGELOG reminder issued.
+
+**Key Files**:
+- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/session_land/SKILL.md`
+- `/Users/james/workspace/dixson3/d3-claude-plugins/scripts/bump-version.sh`
+
 ### UC-041: Dirty-Tree Cross-Session Awareness
 
 **Actor**: System (session-end.sh and session-recall.sh)

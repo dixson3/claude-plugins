@@ -5,6 +5,34 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-02-24
+
+### Added
+
+- `plugins/yf/hooks/pre-push-version.sh` — blocking pre-push hook that prevents `git push` when plugin code has changed without a version bump (Plan 63)
+- Session land Step 8c — interactive version bump prompt (patch/minor/major/skip) before commit (Plan 63)
+- Spec entries: REQ-048, DD-021, UC-048, UC-049 for semver enforcement
+- `tests/scenarios/unit-pre-push-version.yaml` — 5 test cases (11 assertions) for version check hook
+- `IG/script-complexity.md` specification with UC-042 through UC-046 (Plan 62)
+
+### Changed
+
+- `plugins/yf/.claude-plugin/plugin.json` — registered `pre-push-version.sh` in hook chain (land → version → diary)
+- `plugins/yf/skills/session_land/SKILL.md` — added Step 8c for version bump check
+
+### Fixed
+
+- `yft_mol_wisp()` JSON validation bug — was rejecting valid multi-variable substitutions (Plan 61)
+- Diary fact-check inaccuracies — corrected Plan 47→42 references and brew tap path (Plan 61)
+- Batched `jq` calls in `yft_update()` (7 forks → 2) and `yft_mol_wisp()` (Plan 62)
+- Replaced `sed` with parameter expansion in `yft_comment()` (Plan 62)
+- Removed dead `yft_mol_show()` function (Plan 62)
+- Consolidated `chronicle-validate.sh` boundary checks (Plan 62)
+- Parametrized prune checkers in `session-prune.sh` (Plan 62)
+- Stale beads-cli terminology fixes across skills and agents (Plan 58)
+- Test coverage corrections and new task system test scenarios (Plan 59)
+- Added `completed-plans` subcommand to `session-prune.sh` for cleanup of orphaned gates, completed plan epics, and closed chronicle files (Plan 60)
+
 ## [3.0.0] - 2026-02-23
 
 ### BREAKING CHANGE

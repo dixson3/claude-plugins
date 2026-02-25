@@ -1,0 +1,142 @@
+name: "Unit: pre-push-version.sh — PreToolUse blocking hook for version bump"
+
+setup:
+  - "mkdir -p .yoshiko-flow/tasks"
+  - "git init . >/dev/null 2>&1 || true"
+  - "git config user.email 'test@test.com' && git config user.name 'Test'"
+  - "printf '%s' '{\"enabled\":true,\"config\":{}}' > .yoshiko-flow/config.json"
+  # Create plugin.json with version 3.0.0
+  - "mkdir -p plugins/yf/.claude-plugin"
+  - "printf '%s' '{\"version\":\"3.0.0\"}' > plugins/yf/.claude-plugin/plugin.json"
+  # Initial commit
+  - "git add -A >/dev/null 2>&1 && git commit -m 'initial' >/dev/null 2>&1"
+  # Create a bare remote and push to establish tracking
+  - "git clone --bare . \"$WORK_DIR/remote.git\" >/dev/null 2>&1"
+  - "git remote add origin \"$WORK_DIR/remote.git\" >/dev/null 2>&1 || git remote set-url origin \"$WORK_DIR/remote.git\" >/dev/null 2>&1"
+  - "git fetch origin >/dev/null 2>&1"
+  - "git branch --set-upstream-to=origin/main main >/dev/null 2>&1 || git branch --set-upstream-to=origin/master master >/dev/null 2>&1 || true"
+
+steps:
+  # Case 1: No plugin changes → exits 0
+  - name: "exits_zero_no_plugin_changes"
+    run: |
+      cd "$WORK_DIR"
+      # No changes since remote — should allow
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-version.sh" 2>&1
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ]; then
+        echo "OK: exits 0 when no plugin changes"
+      else
+        echo "FAIL: expected exit 0, got $EXIT_CODE"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: Plugin script changed, same version → exits 2 (blocked)
+  - name: "blocks_when_code_changed_no_bump"
+    run: |
+      cd "$WORK_DIR"
+      # Create a plugin script change
+      mkdir -p plugins/yf/scripts
+      echo '#!/bin/bash' > plugins/yf/scripts/new-script.sh
+      git add -A >/dev/null 2>&1
+      git commit -m "add plugin script" >/dev/null 2>&1
+      OUTPUT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-version.sh" 2>&1)
+      EXIT_CODE=$?
+      echo "$OUTPUT"
+      if [ "$EXIT_CODE" -eq 2 ]; then
+        echo "OK: blocks with exit 2"
+      else
+        echo "FAIL: expected exit 2, got $EXIT_CODE"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+      - type: output_contains
+        value: "VERSION-CHECK"
+
+  # Case 3: Plugin script changed, version bumped → exits 0
+  - name: "exits_zero_when_version_bumped"
+    run: |
+      cd "$WORK_DIR"
+      # Bump version in plugin.json (still has the script change from case 2)
+      printf '%s' '{"version":"3.1.0"}' > plugins/yf/.claude-plugin/plugin.json
+      git add -A >/dev/null 2>&1
+      git commit -m "bump version" >/dev/null 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-version.sh" 2>&1
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ]; then
+        echo "OK: exits 0 when version bumped"
+      else
+        echo "FAIL: expected exit 0, got $EXIT_CODE"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 4: Only doc/test changes → exits 0
+  - name: "exits_zero_doc_only_changes"
+    run: |
+      cd "$WORK_DIR"
+      # Reset version back to match remote for a clean slate
+      printf '%s' '{"version":"3.0.0"}' > plugins/yf/.claude-plugin/plugin.json
+      # Remove the script from case 2
+      rm -f plugins/yf/scripts/new-script.sh
+      git add -A >/dev/null 2>&1
+      git commit -m "reset to baseline" >/dev/null 2>&1
+      # Push to sync remote
+      git push origin main >/dev/null 2>&1 || git push origin master >/dev/null 2>&1 || true
+      # Now make doc-only changes
+      echo "# Updated" > plugins/yf/README.md
+      mkdir -p tests/scenarios
+      echo "test: true" > tests/scenarios/unit-foo.yaml
+      git add -A >/dev/null 2>&1
+      git commit -m "doc and test only" >/dev/null 2>&1
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-version.sh" 2>&1
+      EXIT_CODE=$?
+      if [ "$EXIT_CODE" -eq 0 ]; then
+        echo "OK: exits 0 for doc-only changes"
+      else
+        echo "FAIL: expected exit 0, got $EXIT_CODE"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: yf disabled → exits 0
+  - name: "exits_zero_when_disabled"
+    run: |
+      echo '{"enabled":false}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/pre-push-version.sh" 2>&1
+      EXIT_CODE=$?
+      # Restore
+      printf '%s' '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
+      if [ "$EXIT_CODE" -eq 0 ]; then
+        echo "OK: exits 0 when disabled"
+      else
+        echo "FAIL: expected exit 0, got $EXIT_CODE"
+        exit 1
+      fi
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+teardown:
+  - "rm -rf remote.git"
+  - "rm -f .yoshiko-flow/config.json"
+  - "rm -rf plugins tests"

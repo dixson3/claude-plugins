@@ -53,6 +53,7 @@ Maps each specification item to its test coverage. Status key: **tested** (behav
 | REQ-045 | Tracker auto-detection with file fallback | unit-tracker-detect.yaml | tested |
 | REQ-046 | Plugin/project issue disambiguation | unit-issue-disambiguation.yaml | tested |
 | REQ-047 | Issue worthiness advisory (Rule 5.6) | unit-issue-disambiguation.yaml | untested |
+| REQ-048 | Pre-push version enforcement + session_land bump prompt | unit-pre-push-version.yaml | tested |
 
 ## Design Decisions (DD-xxx)
 
@@ -80,6 +81,7 @@ Aligned to EDD/CORE.md DD-001 through DD-020.
 | DD-018 | Core merged into plugin prefix | unit-activation.yaml | tested |
 | DD-019 | Tracker abstraction with file fallback | unit-tracker-detect.yaml, unit-tracker-api.yaml | tested |
 | DD-020 | Plugin vs project issue disambiguation | unit-issue-disambiguation.yaml | tested |
+| DD-021 | Semver enforcement via pre-push version check | unit-pre-push-version.yaml | tested |
 
 ## Non-Functional Requirements (NFR-xxx)
 
@@ -95,7 +97,7 @@ Aligned to EDD/CORE.md DD-001 through DD-020.
 
 ## Use Cases (UC-xxx)
 
-Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–009), chronicler (UC-010–013, UC-037–038), archivist (UC-014–017), engineer (UC-018–021, UC-033–034), marketplace (UC-022–024, UC-035–036, UC-042), task-integration (UC-025–028, UC-039, UC-041), coder (UC-029–032), issue-tracking (UC-043–047).
+Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–009), chronicler (UC-010–013, UC-037–038), archivist (UC-014–017), engineer (UC-018–021, UC-033–034), marketplace (UC-022–024, UC-035–036, UC-042), task-integration (UC-025–028, UC-039, UC-041, UC-048–049), coder (UC-029–032), issue-tracking (UC-043–047).
 
 | ID | Summary | IG Source | Test File | Status |
 |----|---------|-----------|-----------|--------|
@@ -147,18 +149,20 @@ Aligned to IG files: plan-lifecycle (UC-001–005), swarm-execution (UC-006–00
 | UC-045 | Tracker detection and selection | issue-tracking | unit-tracker-detect.yaml | tested |
 | UC-046 | Issue plan import from remote tracker | issue-tracking | — | untested |
 | UC-047 | Issue list (combined remote + staged) | issue-tracking | — | untested |
+| UC-048 | Pre-push version enforcement | task-integration | unit-pre-push-version.yaml | tested |
+| UC-049 | Session land version bump prompt | task-integration | unit-pre-push-version.yaml | existence-only |
 
 ## Coverage Summary
 
 | Category | Total | Tested | Existence-Only | Untested | Removed |
 |----------|-------|--------|----------------|----------|---------|
-| REQ | 47 | 27 | 14 | 5 | 1 |
-| DD | 20 | 16 | 2 | 0 | 2 |
+| REQ | 48 | 28 | 14 | 5 | 1 |
+| DD | 21 | 17 | 2 | 0 | 2 |
 | NFR | 7 | 6 | 1 | 0 | 0 |
-| UC | 47 | 24 | 16 | 7 | 0 |
-| **Total** | **121** | **73** | **33** | **12** | **3** |
+| UC | 49 | 25 | 17 | 7 | 0 |
+| **Total** | **125** | **76** | **34** | **12** | **3** |
 
-Total assertions: **860** (across all unit test scenarios)
+Total assertions: **877** (across all unit test scenarios)
 
 ## Priority Gaps
 

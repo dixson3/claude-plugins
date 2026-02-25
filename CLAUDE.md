@@ -83,4 +83,4 @@ Before committing new or modified rules, skills, or agents, review the text for 
 
 ## Current Plugins
 
-- **yf** (v3.0.0) — Yoshiko Flow — plan lifecycle, swarm execution with worktree isolation, WorktreeCreate hooks, context persistence, diary generation, specification artifacts, standards-driven code generation, hybrid idx-hash IDs, plan index registry, epic worktree lifecycle, specification integrity gates, activation gating, session close enforcement, file-based task management, plugin issue reporting, and project issue tracking
+- **yf** (v3.1.0) — Yoshiko Flow — plan lifecycle, swarm execution with worktree isolation, WorktreeCreate hooks, context persistence, diary generation, specification artifacts, standards-driven code generation, hybrid idx-hash IDs, plan index registry, epic worktree lifecycle, specification integrity gates, activation gating, session close enforcement, file-based task management, plugin issue reporting, and project issue tracking
