@@ -1,6 +1,6 @@
 ---
-name: yf:swarm_list_formulas
-description: List available swarm formulas with their descriptions and step counts
+name: yf:formula_list
+description: List available formulas with their descriptions and step counts
 ---
 
 ## Activation Guard
@@ -19,9 +19,9 @@ If `IS_ACTIVE` is not `true`, read the `reason` and `action` fields from `$ACTIV
 Then stop. Do not execute the remaining steps.
 
 
-# List Swarm Formulas
+# List Formulas
 
-Lists all available swarm formulas shipped with the yf plugin.
+Lists all available formulas shipped with the yf plugin.
 
 ## Behavior
 
@@ -38,8 +38,8 @@ Lists all available swarm formulas shipped with the yf plugin.
 3. **Display results** in a formatted table:
 
    ```
-   Available Swarm Formulas
-   ========================
+   Available Formulas
+   ==================
 
    feature-build    Research -> Implement -> Review           (3 steps)
    research-spike   Investigate -> Synthesize -> Archive      (3 steps)
@@ -56,7 +56,7 @@ Lists all available swarm formulas shipped with the yf plugin.
 ## Usage
 
 ```
-/yf:swarm_list_formulas
+/yf:formula_list
 ```
 
 ## Output Format

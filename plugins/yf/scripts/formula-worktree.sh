@@ -1,15 +1,15 @@
 #!/bin/bash
-# swarm-worktree.sh — Helper for swarm worktree isolation
+# formula-worktree.sh — Helper for formula worktree isolation
 #
 # Manages worktree setup, merge-back, cleanup, and conflict detection
-# for swarm agents running in isolated worktrees via Claude Code's
+# for formula agents running in isolated worktrees via Claude Code's
 # `isolation: "worktree"` Task parameter.
 #
 # Usage:
-#   swarm-worktree.sh setup <worktree-path>
-#   swarm-worktree.sh merge <worktree-path>
-#   swarm-worktree.sh cleanup <worktree-path>
-#   swarm-worktree.sh conflict-files <worktree-path>
+#   formula-worktree.sh setup <worktree-path>
+#   formula-worktree.sh merge <worktree-path>
+#   formula-worktree.sh cleanup <worktree-path>
+#   formula-worktree.sh conflict-files <worktree-path>
 #
 # Exit codes:
 #   0 — success
@@ -32,7 +32,7 @@ do_setup() {
   local wt_path="${1:-}"
 
   if [ -z "$wt_path" ]; then
-    echo '{"status":"error","message":"Usage: swarm-worktree.sh setup <worktree-path>"}'
+    echo '{"status":"error","message":"Usage: formula-worktree.sh setup <worktree-path>"}'
     exit 1
   fi
 
@@ -67,7 +67,7 @@ do_merge() {
   local wt_path="${1:-}"
 
   if [ -z "$wt_path" ]; then
-    echo '{"status":"error","message":"Usage: swarm-worktree.sh merge <worktree-path>"}'
+    echo '{"status":"error","message":"Usage: formula-worktree.sh merge <worktree-path>"}'
     exit 1
   fi
 
@@ -124,7 +124,7 @@ do_cleanup() {
   local wt_path="${1:-}"
 
   if [ -z "$wt_path" ]; then
-    echo '{"status":"error","message":"Usage: swarm-worktree.sh cleanup <worktree-path>"}'
+    echo '{"status":"error","message":"Usage: formula-worktree.sh cleanup <worktree-path>"}'
     exit 1
   fi
 
@@ -150,7 +150,7 @@ do_conflict_files() {
   local wt_path="${1:-}"
 
   if [ -z "$wt_path" ]; then
-    echo '{"status":"error","message":"Usage: swarm-worktree.sh conflict-files <worktree-path>"}'
+    echo '{"status":"error","message":"Usage: formula-worktree.sh conflict-files <worktree-path>"}'
     exit 1
   fi
 
@@ -185,7 +185,7 @@ case "$ACTION" in
   cleanup)        do_cleanup "$@" ;;
   conflict-files) do_conflict_files "$@" ;;
   *)
-    echo "Usage: swarm-worktree.sh <setup|merge|cleanup|conflict-files> [args...]" >&2
+    echo "Usage: formula-worktree.sh <setup|merge|cleanup|conflict-files> [args...]" >&2
     exit 1
     ;;
 esac

@@ -152,7 +152,7 @@ if $VOLUME_HIT; then
   CANDIDATE_REASONS="${CANDIDATE_REASONS}high-volume:${COMMIT_COUNT}-commits "
 fi
 
-# --- Analyze: wisp squashes (swarm activity) ---
+# --- Analyze: wisp squashes (formula activity) ---
 WISP_SQUASH_COUNT=0
 WISP_LIST=$(yft_list --type=molecule --json 2>/dev/null || echo "[]")
 if [ "$WISP_LIST" != "[]" ] && [ -n "$WISP_LIST" ]; then

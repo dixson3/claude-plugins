@@ -1,13 +1,13 @@
-name: "Unit: swarm qualification gate"
+name: "Unit: formula qualification gate"
 setup:
   - "mkdir -p .yoshiko-flow"
   - "printf '%s' '{\"enabled\":true,\"config\":{\"artifact_dir\":\"docs\"}}'  > .yoshiko-flow/config.json"
 
 steps:
-  # Case 1: swarm_qualify skill file exists
+  # Case 1: formula_qualify skill file exists
   - name: "qualify_skill_exists"
     run: |
-      test -f "$PLUGIN_DIR/plugins/yf/skills/swarm_qualify/SKILL.md" && echo "exists"
+      test -f "$PLUGIN_DIR/plugins/yf/skills/formula_qualify/SKILL.md" && echo "exists"
     assertions:
       - type: output_contains
         value: "exists"
@@ -15,10 +15,10 @@ steps:
   # Case 2: Skill has correct name
   - name: "qualify_skill_name"
     run: |
-      head -5 "$PLUGIN_DIR/plugins/yf/skills/swarm_qualify/SKILL.md" | grep "name:"
+      head -5 "$PLUGIN_DIR/plugins/yf/skills/formula_qualify/SKILL.md" | grep "name:"
     assertions:
       - type: output_contains
-        value: "yf:swarm_qualify"
+        value: "yf:formula_qualify"
 
   # Case 3: plan_create_tasks has Step 9c
   - name: "plan_create_tasks_has_step_9c"
@@ -31,7 +31,7 @@ steps:
   # Case 4: plan_execute has qualification check
   - name: "plan_execute_has_qualification"
     run: |
-      grep "swarm_qualify\|qualification\|Step 3e" "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md" | head -3
+      grep "formula_qualify\|qualification\|Step 3e" "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md" | head -3
     assertions:
       - type: output_contains
         value: "Qualification"
@@ -106,14 +106,14 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 11: Default config → qualification mode absent → treated as blocking
+  # Case 11: Default config — qualification mode absent — treated as blocking
   - name: "default_qualification_mode"
     run: |
       rm -f "$WORK_DIR/.yoshiko-flow/config.json"
       echo '{"enabled":true,"config":{}}' > "$WORK_DIR/.yoshiko-flow/config.json"
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       . "$PLUGIN_DIR/plugins/yf/scripts/yf-config.sh"
-      # No config → sanity_check_mode defaults to "blocking"
+      # No config — sanity_check_mode defaults to "blocking"
       MODE=$(yf_sanity_check_mode)
       echo "mode=$MODE"
       [ "$MODE" = "blocking" ] && echo "OK: default is blocking"

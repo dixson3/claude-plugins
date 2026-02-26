@@ -814,7 +814,7 @@ yft_gate_resolve() {
 }
 
 # --- yft_mol_wisp ---
-# Create a molecule (swarm wisp).
+# Create a molecule (formula wisp).
 # Args: <formula_path> --var key=val [--var key=val ...]
 yft_mol_wisp() {
   _yft_ensure_dirs

@@ -5,6 +5,28 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-02-25
+
+### Changed
+
+- **Formula execution replaces swarm orchestration** — collapsed 3-layer stack (`swarm_run` → `swarm_dispatch` → `swarm_react`) into single `formula_execute` skill with inline reactive bugfix
+- Renamed all `swarm_*` skills to `formula_*`: `formula_execute`, `formula_qualify`, `formula_select`, `formula_list`
+- Renamed all `yf_swarm_*` agents to `yf_formula_*`: `yf_formula_researcher`, `yf_formula_tester`, `yf_formula_reviewer`
+- Renamed `swarm-worktree.sh` → `formula-worktree.sh`
+- Renamed `dispatch-state.sh` store from `swarm` to `formula` (state file: `formula-state.json`)
+- Renamed `IG/swarm-execution.md` → `IG/formula-execution.md`
+- Updated `plan_pump`, `plan_execute`, `plan_create_tasks` to dispatch via `/yf:formula_execute`
+- Updated `yf-rules.md` sections: Rule 1.3 "Route Through Formula Execute", Section 3 "Formula Execution", Section 5 bridges
+- Updated formula JSON files: removed `compose` field from `feature-build`, updated SUBAGENT refs in `code-implement`
+- Updated all specification files (PRD REQ-016–022, EDD, all IGs) to reflect formula terminology
+
+### Removed
+
+- `swarm_run`, `swarm_dispatch`, `swarm_react`, `swarm_status`, `swarm_qualify`, `swarm_select_formula`, `swarm_list_formulas` skills
+- `yf_swarm_researcher`, `yf_swarm_tester`, `yf_swarm_reviewer` agents
+- `swarm-worktree.sh` script
+- Formula composition (`compose` field) — nested formula dispatch dropped in favor of flat step sequences
+
 ## [3.1.0] - 2026-02-24
 
 ### Added

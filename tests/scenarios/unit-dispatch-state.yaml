@@ -83,71 +83,71 @@ steps:
       - type: exit_code
         value: "0"
 
-  # === SWARM STORE ===
+  # === FORMULA STORE ===
 
-  # Case 8: Swarm — Missing file, is-dispatched returns not-dispatched
-  - name: "swarm_missing_file_not_dispatched"
+  # Case 8: Formula — Missing file, is-dispatched returns not-dispatched
+  - name: "formula_missing_file_not_dispatched"
     run: |
-      rm -f .yoshiko-flow/swarm-state.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched marketplace-abc 2>/dev/null || true
+      rm -f .yoshiko-flow/formula-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula is-dispatched marketplace-abc 2>/dev/null || true
     assertions:
       - type: output_contains
         value: "not-dispatched"
 
-  # Case 9: Swarm — Mark dispatched then check
-  - name: "swarm_mark_then_check_dispatched"
+  # Case 9: Formula — Mark dispatched then check
+  - name: "formula_mark_then_check_dispatched"
     run: |
-      rm -f .yoshiko-flow/swarm-state.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched marketplace-abc
+      rm -f .yoshiko-flow/formula-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula is-dispatched marketplace-abc
     assertions:
       - type: output_contains
         value: "dispatched"
       - type: exit_code
         value: "0"
 
-  # Case 10: Swarm — Mark done removes from dispatched
-  - name: "swarm_mark_done_removes_dispatched"
+  # Case 10: Formula — Mark done removes from dispatched
+  - name: "formula_mark_done_removes_dispatched"
     run: |
-      rm -f .yoshiko-flow/swarm-state.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-done marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched marketplace-abc 2>/dev/null || true
+      rm -f .yoshiko-flow/formula-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula mark-done marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula is-dispatched marketplace-abc 2>/dev/null || true
     assertions:
       - type: output_contains
         value: "not-dispatched"
 
-  # Case 11: Swarm — Pending lists dispatched but not done
-  - name: "swarm_pending_lists_dispatched"
+  # Case 11: Formula — Pending lists dispatched but not done
+  - name: "formula_pending_lists_dispatched"
     run: |
-      rm -f .yoshiko-flow/swarm-state.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-def
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-done marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm pending
+      rm -f .yoshiko-flow/formula-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula mark-dispatched marketplace-def
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula mark-done marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula pending
     assertions:
       - type: output_contains
         value: "marketplace-def"
 
-  # Case 12: Swarm — Clear resets all state
-  - name: "swarm_clear_resets_all"
+  # Case 12: Formula — Clear resets all state
+  - name: "formula_clear_resets_all"
     run: |
-      rm -f .yoshiko-flow/swarm-state.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm clear
-      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm pending)
+      rm -f .yoshiko-flow/formula-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula clear
+      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula pending)
       if [ -z "$RESULT" ]; then echo "empty"; else echo "not-empty"; fi
     assertions:
       - type: output_contains
         value: "empty"
 
-  # Case 13: Swarm — mark-retrying removes from dispatched
-  - name: "swarm_mark_retrying_works"
+  # Case 13: Formula — mark-retrying removes from dispatched
+  - name: "formula_mark_retrying_works"
     run: |
-      rm -f .yoshiko-flow/swarm-state.json
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-dispatched marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm mark-retrying marketplace-abc
-      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" swarm is-dispatched marketplace-abc 2>/dev/null || true
+      rm -f .yoshiko-flow/formula-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula mark-dispatched marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula mark-retrying marketplace-abc
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula is-dispatched marketplace-abc 2>/dev/null || true
     assertions:
       - type: output_contains
         value: "not-dispatched"
@@ -161,4 +161,4 @@ steps:
         value: "Usage"
 
 teardown:
-  - "rm -f .yoshiko-flow/task-pump.json .yoshiko-flow/swarm-state.json"
+  - "rm -f .yoshiko-flow/task-pump.json .yoshiko-flow/formula-state.json"

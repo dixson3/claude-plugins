@@ -3,7 +3,7 @@ name: yf:worktree_create
 description: Create an epic worktree for isolated development
 arguments:
   - name: epic_name
-    description: "Name for the epic branch and worktree (e.g., hash-ids, swarm-isolation)"
+    description: "Name for the epic branch and worktree (e.g., hash-ids, formula-isolation)"
     required: true
   - name: base
     description: "Base branch to branch from (default: current branch)"

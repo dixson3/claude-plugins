@@ -113,7 +113,7 @@ This assigns `agent:<name>` labels where appropriate.
 
 ### Step 8b: Formula Selection
 
-For each task, invoke `/yf:swarm_select_formula <task-id>` to apply `formula:<name>` labels based on task semantics. Atomic/trivial tasks and tasks with explicit `formula:*` labels from the plan text are skipped.
+For each task, invoke `/yf:formula_select <task-id>` to apply `formula:<name>` labels based on task semantics. Atomic/trivial tasks and tasks with explicit `formula:*` labels from the plan text are skipped.
 
 ### Step 9: Create Execution Gate
 
@@ -156,7 +156,7 @@ bash "$YFT" create --type=task \
   --silent
 ```
 
-This gate stays open until `/yf:swarm_qualify` runs the code-review formula and it passes. If `qualification_gate` is set to `"disabled"` in `.yoshiko-flow/config.json`, skip this step.
+This gate stays open until `/yf:formula_qualify` runs the code-review formula and it passes. If `qualification_gate` is set to `"disabled"` in `.yoshiko-flow/config.json`, skip this step.
 
 ### Step 10: Defer All Tasks
 

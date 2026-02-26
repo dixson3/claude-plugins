@@ -31,10 +31,10 @@ steps:
       - type: output_contains
         value: "found"
 
-  # Case 4: plan_execute documents swarm_run dispatch path
-  - name: "execute_dispatches_via_swarm_run"
+  # Case 4: plan_execute documents formula_execute dispatch path
+  - name: "execute_dispatches_via_formula_execute"
     run: |
-      grep -c 'swarm_run' "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md"
+      grep -c 'formula_execute' "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md"
     assertions:
       - type: exit_code
         value: "0"
@@ -52,7 +52,7 @@ steps:
       - type: output_contains
         value: "both_tracks_present"
 
-  # Case 6: swarm-formula-dispatch rule references the pump
+  # Case 6: formula-dispatch rule references the pump
   - name: "formula_dispatch_rule_references_pump"
     run: |
       grep -c 'pump\|plan_pump\|plan_execute' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
@@ -62,10 +62,10 @@ steps:
       - type: output_not_contains
         value: "0"
 
-  # Case 7: plan_execute formula dispatch invokes swarm_run with correct args
+  # Case 7: plan_execute formula dispatch invokes formula_execute with correct args
   - name: "execute_formula_dispatch_args"
     run: |
-      grep -q 'formula:<formula-name>.*feature:.*parent_task:' "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md" && echo "correct_args"
+      grep -q 'formula_execute.*task_id:.*formula:' "$PLUGIN_DIR/plugins/yf/skills/plan_execute/SKILL.md" && echo "correct_args"
     assertions:
       - type: output_contains
         value: "correct_args"

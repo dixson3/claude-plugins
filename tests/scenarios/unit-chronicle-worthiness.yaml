@@ -68,14 +68,14 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 5: swarm_qualify/SKILL.md references ys:chronicle (Step 6.5)
-  - name: "swarm_qualify_has_chronicle_step"
+  # Case 5: formula_qualify/SKILL.md references ys:chronicle (Step 6.5)
+  - name: "formula_qualify_has_chronicle_step"
     run: |
-      SKILL="$PLUGIN_DIR/plugins/yf/skills/swarm_qualify/SKILL.md"
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/formula_qualify/SKILL.md"
       if grep -q 'ys:chronicle' "$SKILL" && grep -q 'Step 6.5' "$SKILL"; then
-        echo "OK: swarm_qualify has chronicle step 6.5"
+        echo "OK: formula_qualify has chronicle step 6.5"
       else
-        echo "FAIL: swarm_qualify missing chronicle step"
+        echo "FAIL: formula_qualify missing chronicle step"
         exit 1
       fi
     assertions:
@@ -180,14 +180,14 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 12: yf_swarm_reviewer.md contains "CHRONICLE-SIGNAL"
-  - name: "swarm_reviewer_has_chronicle_signal"
+  # Case 12: yf_formula_reviewer.md contains "CHRONICLE-SIGNAL"
+  - name: "formula_reviewer_has_chronicle_signal"
     run: |
-      AGENT="$PLUGIN_DIR/plugins/yf/agents/yf_swarm_reviewer.md"
+      AGENT="$PLUGIN_DIR/plugins/yf/agents/yf_formula_reviewer.md"
       if grep -q 'CHRONICLE-SIGNAL' "$AGENT"; then
-        echo "OK: yf_swarm_reviewer has CHRONICLE-SIGNAL"
+        echo "OK: yf_formula_reviewer has CHRONICLE-SIGNAL"
       else
-        echo "FAIL: yf_swarm_reviewer missing CHRONICLE-SIGNAL"
+        echo "FAIL: yf_formula_reviewer missing CHRONICLE-SIGNAL"
         exit 1
       fi
     assertions:
@@ -196,14 +196,14 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 13: swarm_dispatch/SKILL.md references "CHRONICLE-SIGNAL"
-  - name: "swarm_dispatch_has_chronicle_signal"
+  # Case 13: formula_execute/SKILL.md references "CHRONICLE-SIGNAL"
+  - name: "formula_execute_has_chronicle_signal"
     run: |
-      SKILL="$PLUGIN_DIR/plugins/yf/skills/swarm_dispatch/SKILL.md"
+      SKILL="$PLUGIN_DIR/plugins/yf/skills/formula_execute/SKILL.md"
       if grep -q 'CHRONICLE-SIGNAL' "$SKILL"; then
-        echo "OK: swarm_dispatch references CHRONICLE-SIGNAL"
+        echo "OK: formula_execute references CHRONICLE-SIGNAL"
       else
-        echo "FAIL: swarm_dispatch missing CHRONICLE-SIGNAL reference"
+        echo "FAIL: formula_execute missing CHRONICLE-SIGNAL reference"
         exit 1
       fi
     assertions:

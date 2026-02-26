@@ -1,5 +1,5 @@
 ---
-name: yf:swarm_qualify
+name: yf:formula_qualify
 description: Run code-review qualification gate before plan completion
 arguments:
   - name: plan_idx
@@ -31,7 +31,7 @@ Then stop. Do not execute the remaining steps.
 YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
 ```
 
-# Swarm Qualification Gate
+# Qualification Gate
 
 Runs a `code-review` formula as a mandatory qualification step before a plan is marked complete. Blocks completion on REVIEW:BLOCK.
 
@@ -91,7 +91,7 @@ The review scope is `git diff $START_SHA..HEAD`.
 ### Step 5: Run Code Review Formula
 
 ```bash
-/yf:swarm_run formula:code-review feature:"Plan <idx> qualification review" parent_task:<gate-id> context:"Review scope: git diff $START_SHA..HEAD. Focus on correctness, style, and edge cases across all plan changes."
+/yf:formula_execute task_id:<gate-id> formula:code-review context:"Review scope: git diff $START_SHA..HEAD. Focus on correctness, style, and edge cases across all plan changes."
 ```
 
 ### Step 6: Process Verdict
@@ -117,14 +117,14 @@ bash "$YFT" show <gate-id> --comments
 
 ### Step 6.5: Chronicle Qualification Verdict
 
-After processing the verdict (PASS or BLOCK), create a chronicle task. Both verdicts are chronicle-worthy — PASS captures the quality checkpoint, BLOCK captures what needs fixing.
+After processing the verdict (PASS or BLOCK), create a chronicle task:
 
 ```bash
 LABELS="ys:chronicle,ys:chronicle:auto,ys:topic:qualification"
 [ -n "$PLAN_LABEL" ] && LABELS="$LABELS,plan:$PLAN_IDX"
 
 bash "$YFT" create --type task \
-  --title "Chronicle: swarm_qualify — REVIEW:$VERDICT for plan-$PLAN_IDX" \
+  --title "Chronicle: formula_qualify — REVIEW:$VERDICT for plan-$PLAN_IDX" \
   -l "$LABELS" \
   --description "Qualification verdict: REVIEW:$VERDICT
 Config mode: $QUAL_MODE
@@ -142,5 +142,5 @@ Report includes: plan index, config mode, gate task ID, review scope (SHA range)
 
 - The gate task is created during `plan_create_tasks` Step 9c and stays open until qualification passes
 - Start SHA is recorded by `plan-exec.sh start` as a `start-sha:<hash>` label on the root epic
-- The code-review formula runs as a standard swarm (analyze → report) with the diff scope as context
+- The code-review formula runs as a standard formula execution (analyze -> report) with the diff scope as context
 - In `advisory` mode, the block is noted in the plan completion report but doesn't prevent closing

@@ -1,0 +1,83 @@
+name: "Unit: formula nesting (compose + depth)"
+setup:
+  - "mkdir -p .yoshiko-flow"
+
+steps:
+  # Case 1: feature-build formula has no compose field (compose dropped per formula refactor)
+  - name: "feature_build_no_compose"
+    run: |
+      COMPOSE=$(jq -r '.steps[] | select(.id == "implement") | .compose // "none"' "$PLUGIN_DIR/plugins/yf/formulas/feature-build.formula.json")
+      [ "$COMPOSE" = "none" ] && echo "OK: compose field absent" || echo "FAIL: compose still present ($COMPOSE)"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 2: formula_execute skill has depth parameter
+  - name: "formula_execute_has_depth"
+    run: |
+      grep "depth" "$PLUGIN_DIR/plugins/yf/skills/formula_execute/SKILL.md" | head -3
+    assertions:
+      - type: output_contains
+        value: "depth"
+
+  # Case 3: formula_execute skill documents compose detection
+  - name: "execute_has_compose_detection"
+    run: |
+      grep "compose" "$PLUGIN_DIR/plugins/yf/skills/formula_execute/SKILL.md" | head -3
+    assertions:
+      - type: output_contains
+        value: "compose"
+
+  # Case 4: consolidated yf-rules.md contains nesting section
+  - name: "rules_has_nesting"
+    run: |
+      grep -q "Nesting Depth" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" && echo "OK: nesting in consolidated rules"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 5: Nesting rule documents max depth 2
+  - name: "nesting_max_depth"
+    run: |
+      grep "depth.*2\|Maximum.*2\|max.*2" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" | head -1
+    assertions:
+      - type: exit_code
+        value: "0"
+
+  # Case 6: dispatch-state.sh formula scoped clear works
+  - name: "scoped_clear"
+    run: |
+      rm -f .yoshiko-flow/formula-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula mark-dispatched "parent-mol/step-a"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula mark-dispatched "other-step"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula clear --scope "parent-mol"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula pending
+    assertions:
+      - type: output_contains
+        value: "other-step"
+
+  # Case 7: Scoped clear removes scoped entries
+  - name: "scoped_clear_removes_scoped"
+    run: |
+      rm -f .yoshiko-flow/formula-state.json
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula mark-dispatched "parent-mol/step-a"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula mark-dispatched "parent-mol/step-b"
+      CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula clear --scope "parent-mol"
+      RESULT=$(CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/scripts/dispatch-state.sh" formula pending)
+      if [ -z "$RESULT" ]; then echo "empty"; else echo "not-empty: $RESULT"; fi
+    assertions:
+      - type: output_contains
+        value: "empty"
+
+  # Case 8: preflight.json includes consolidated rule file
+  - name: "preflight_has_yf_rules"
+    run: |
+      grep "yf-rules" "$PLUGIN_DIR/plugins/yf/.claude-plugin/preflight.json"
+    assertions:
+      - type: output_contains
+        value: "yf-rules.md"
+
+teardown:
+  - "rm -f .yoshiko-flow/formula-state.json"

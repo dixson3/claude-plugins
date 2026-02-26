@@ -34,7 +34,7 @@ The yf plugin uses a file-based task system for plan work tracking. Tasks are st
 1. `plan_create_tasks` creates root epic, phase epics, task entries, gates (gates are created as tasks with `ys:gate` labels)
 2. Dependencies wired via `yft_dep_add`
 3. Agent labels assigned via `/yf:plan_select_agent`
-4. Formula labels assigned via `/yf:swarm_select_formula` (Step 8b)
+4. Formula labels assigned via `/yf:formula_select` (Step 8b)
 5. All tasks deferred initially
 6. `plan-exec.sh start` resolves gate, undefers tasks
 7. Task pump reads `yft_list --ready`, dispatches via Task tool

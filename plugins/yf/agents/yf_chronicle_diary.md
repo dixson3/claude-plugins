@@ -31,9 +31,9 @@ bash "$YFT" list --label=ys:chronicle --status=open --format=json
 
 For each task, extract: ID, Title, Labels (especially topic), Body content, Creation date.
 
-#### Swarm-Aware Enrichment (E2)
+#### Formula-Aware Enrichment (E2)
 
-If a chronicle has the `ys:swarm` label, enrich by reading the parent task's comments:
+If a chronicle has the `ys:formula` label, enrich by reading the parent task's comments:
 
 ```bash
 bash "$YFT" show <parent-task-id> --comments

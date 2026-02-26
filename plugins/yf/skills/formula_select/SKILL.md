@@ -1,5 +1,5 @@
 ---
-name: yf:swarm_select_formula
+name: yf:formula_select
 description: Auto-assign formula labels to tasks based on task semantics
 arguments:
   - name: task_id
@@ -28,9 +28,9 @@ Then stop. Do not execute the remaining steps.
 YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
 ```
 
-# Swarm Formula Selection
+# Formula Selection
 
-Evaluates a task's title, description, and type to determine the best swarm formula, then applies a `formula:<name>` label. Designed to be called during `plan_create_tasks` Step 8b after agent selection.
+Evaluates a task's title, description, and type to determine the best formula, then applies a `formula:<name>` label. Designed to be called during `plan_create_tasks` Step 8b after agent selection.
 
 ## Behavior
 
@@ -67,7 +67,7 @@ Match task title and description against keyword patterns (case-insensitive):
 | Keywords in Title/Description | Formula | Rationale |
 |------|---------|-----------|
 | create, add, build, implement, develop, design | `feature-build` | Multi-step implementation work |
-| fix, resolve, debug, repair, patch, bugfix | `bugfix` | Diagnostic → fix → verify cycle |
+| fix, resolve, debug, repair, patch, bugfix | `bugfix` | Diagnostic -> fix -> verify cycle |
 | research, investigate, evaluate, spike, compare, explore, analyze | `research-spike` | Deep investigation with synthesis |
 | review, audit, inspect, assess | `code-review` | Analysis and reporting |
 | test, spec, coverage, verify (as primary action) | `build-test` | Implementation + test + review |
@@ -93,13 +93,13 @@ Report the assignment.
 ```
 Formula Selection: <task_id>
   Title: <task title>
-  Match: <matched keywords> → formula:<name>
+  Match: <matched keywords> -> formula:<name>
   (or: No match — bare agent dispatch)
 ```
 
 ## Important
 
 - This skill is **idempotent** — existing `formula:*` labels are never overwritten
-- Atomic tasks should NOT get formulas — the overhead of a multi-agent swarm is not justified for single-file changes
+- Atomic tasks should NOT get formulas — the overhead of a multi-agent formula is not justified for single-file changes
 - The heuristic is intentionally conservative — when in doubt, skip (bare dispatch works fine)
 - The plan pump already handles dispatching tasks with `formula:<name>` labels

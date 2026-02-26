@@ -71,13 +71,13 @@ steps:
   # Case 3: Protected files untouched
   - name: "ephemeral_preserves_protected"
     run: |
-      for f in config.json .gitignore lock.json plan-gate task-pump.json swarm-state.json; do
+      for f in config.json .gitignore lock.json plan-gate task-pump.json formula-state.json; do
         echo "protected" > "$WORK_DIR/.yoshiko-flow/$f"
       done
       export CLAUDE_PROJECT_DIR="$WORK_DIR"
       bash "$PLUGIN_DIR/plugins/yf/scripts/session-prune.sh" ephemeral 2>&1
       MISSING=0
-      for f in config.json .gitignore lock.json plan-gate task-pump.json swarm-state.json; do
+      for f in config.json .gitignore lock.json plan-gate task-pump.json formula-state.json; do
         [ -f "$WORK_DIR/.yoshiko-flow/$f" ] || MISSING=$((MISSING + 1))
       done
       if [ "$MISSING" -eq 0 ]; then

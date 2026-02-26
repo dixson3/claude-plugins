@@ -69,9 +69,9 @@ Current capabilities:
 | Plan lifecycle | `plan` | plan_engage, plan_create_tasks, plan_execute, plan_pump, plan_breakdown, plan_select_agent, plan_dismiss_gate, plan_intake | — |
 | Chronicler | `chronicle` | chronicle_capture, chronicle_recall, chronicle_diary, chronicle_disable | yf_chronicle_recall, yf_chronicle_diary |
 | Archivist | `archive` | archive_capture, archive_process, archive_disable, archive_suggest | yf_archive_process |
-| Swarm | `swarm` | swarm_run, swarm_dispatch, swarm_status, swarm_list_formulas, swarm_select_formula, swarm_react, swarm_qualify | yf_swarm_researcher, yf_swarm_reviewer, yf_swarm_tester |
+| Formula | `formula` | formula_execute, formula_list, formula_select, formula_qualify | yf_formula_researcher, yf_formula_reviewer, yf_formula_tester |
 | Engineer | `engineer` | engineer_analyze_project, engineer_reconcile, engineer_update, engineer_suggest_updates | yf_engineer_synthesizer |
-| Coder | `code` | (uses swarm formulas) | yf_code_researcher, yf_code_writer, yf_code_tester, yf_code_reviewer |
+| Coder | `code` | (uses formulas) | yf_code_researcher, yf_code_writer, yf_code_tester, yf_code_reviewer |
 | Memory | `memory` | memory_reconcile | — |
 | Task | `task` | (via yf-task-cli.sh) | — |
 | Session | `session` | session_land | — |

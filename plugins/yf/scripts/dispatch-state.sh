@@ -1,23 +1,23 @@
 #!/bin/bash
 # dispatch-state.sh — Track which tasks/steps have been dispatched to agents
 #
-# Unified dispatch state for both the plan pump and swarm dispatch loop.
+# Unified dispatch state for both the plan pump and formula dispatch loop.
 # Manages ephemeral state in .yoshiko-flow/<store>-state.json files.
 #
 # Usage:
 #   dispatch-state.sh <store> <command> [args]
 #
 # Stores:
-#   pump   — Plan pump dispatch state (.yoshiko-flow/task-pump.json)
-#   swarm  — Swarm dispatch state (.yoshiko-flow/swarm-state.json)
+#   pump    — Plan pump dispatch state (.yoshiko-flow/task-pump.json)
+#   formula — Formula dispatch state (.yoshiko-flow/formula-state.json)
 #
 # Commands:
 #   is-dispatched <id>           Check if id already dispatched (exit 0=yes, 1=no)
 #   mark-dispatched <id>         Record dispatch
 #   mark-done <id>               Remove from dispatched
-#   mark-retrying <id>           Mark for retry (swarm only, no-op for pump)
+#   mark-retrying <id>           Mark for retry (formula only, no-op for pump)
 #   pending                      List dispatched ids
-#   clear [--scope <prefix>]     Reset state (--scope: swarm only, no-op for pump)
+#   clear [--scope <prefix>]     Reset state (--scope: formula only, no-op for pump)
 #
 # Exit codes:
 #   0 — success (for is-dispatched: yes, it is dispatched)
@@ -34,11 +34,11 @@ case "$STORE" in
     pump)
         STATE_FILE="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/task-pump.json"
         ;;
-    swarm)
-        STATE_FILE="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/swarm-state.json"
+    formula)
+        STATE_FILE="${CLAUDE_PROJECT_DIR:-.}/.yoshiko-flow/formula-state.json"
         ;;
     *)
-        echo "Usage: dispatch-state.sh <pump|swarm> <command> [args]" >&2
+        echo "Usage: dispatch-state.sh <pump|formula> <command> [args]" >&2
         exit 1
         ;;
 esac
@@ -80,12 +80,12 @@ case "$COMMAND" in
         ;;
 
     mark-retrying)
-        # Only meaningful for swarm store — no-op for pump
-        if [[ "$STORE" != "swarm" ]]; then
+        # Only meaningful for formula store — no-op for pump
+        if [[ "$STORE" != "formula" ]]; then
             echo "no-op"
             exit 0
         fi
-        [[ -n "$ID" ]] || { echo "Usage: dispatch-state.sh swarm mark-retrying <id>" >&2; exit 1; }
+        [[ -n "$ID" ]] || { echo "Usage: dispatch-state.sh formula mark-retrying <id>" >&2; exit 1; }
         TEMP=$(mktemp)
         jq --arg id "$ID" 'del(.dispatched[$id])' "$STATE_FILE" > "$TEMP" && mv "$TEMP" "$STATE_FILE"
         echo "marked-retrying"
@@ -96,13 +96,13 @@ case "$COMMAND" in
         ;;
 
     clear)
-        # Check for --scope flag (scoped clear for nested swarms, swarm only)
+        # Check for --scope flag (scoped clear for nested formulas, formula only)
         SCOPE=""
         if [[ "${ID:-}" == "--scope" ]]; then
             SCOPE="${4:-}"
         fi
 
-        if [[ -n "$SCOPE" ]] && [[ "$STORE" == "swarm" ]]; then
+        if [[ -n "$SCOPE" ]] && [[ "$STORE" == "formula" ]]; then
             TEMP=$(mktemp)
             jq --arg scope "$SCOPE/" '.dispatched |= with_entries(select(.key | startswith($scope) | not))' "$STATE_FILE" > "$TEMP" && mv "$TEMP" "$STATE_FILE"
             echo "cleared-scope:$SCOPE"
@@ -113,7 +113,7 @@ case "$COMMAND" in
         ;;
 
     *)
-        echo "Usage: dispatch-state.sh <pump|swarm> <is-dispatched|mark-dispatched|mark-done|mark-retrying|pending|clear> [id]" >&2
+        echo "Usage: dispatch-state.sh <pump|formula> <is-dispatched|mark-dispatched|mark-done|mark-retrying|pending|clear> [id]" >&2
         exit 1
         ;;
 esac

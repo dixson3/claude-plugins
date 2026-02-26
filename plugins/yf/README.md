@@ -1,4 +1,4 @@
-# Yoshiko Flow (yf) Plugin — v3.1.0
+# Yoshiko Flow (yf) Plugin — v3.2.0
 
 Yoshiko Flow freezes the context that makes software maintainable — structured plans, captured rationale, and archived research — so knowledge survives beyond the session that produced it.
 
@@ -11,7 +11,7 @@ Traditionally, producing this content is a chore that requires real organization
 It does this through ten capabilities:
 
 1. **Plan Lifecycle** — Breaks plans into a dependency graph of tracked tasks, with automatic decomposition, scheduling, and dispatch
-2. **Swarm Execution** — Runs structured, parallel agent workflows using formula templates, wisps, and a dispatch loop
+2. **Formula Execution** — Runs structured, parallel agent workflows using formula templates, wisps, and a dispatch loop
 3. **Chronicler** — Captures observations and context as work progresses, then composes diary entries that trace how and why changes were made
 4. **Archivist** — Preserves research findings and design decisions as permanent documentation that supports PRDs and ERDs
 5. **Engineer** — Synthesizes and maintains specification artifacts (PRD, EDD, Implementation Guides, TODO register), reconciling plans against specs before execution
@@ -19,7 +19,7 @@ It does this through ten capabilities:
 7. **Session** — Mechanical enforcement of session close-out with pre-push blocking, dirty-tree awareness, and operator-confirmed push
 8. **Plugin** — Plugin-level concerns: per-project activation and issue reporting against the plugin repo
 9. **Issue** — Project issue tracking with deferred staging, agent-driven triage, and multi-backend submission (GitHub, GitLab, file-based)
-10. **Worktree** — Epic worktree lifecycle for isolated development branches, plus swarm agent isolation via Claude Code's worktree mechanism
+10. **Worktree** — Epic worktree lifecycle for isolated development branches, plus formula agent isolation via Claude Code's worktree mechanism
 
 ## Activation
 
@@ -100,11 +100,11 @@ Three layers prevent out-of-state operations:
 | `/yf:plan_select_agent` | Auto-discover agents and match to tasks |
 | `/yf:plan_dismiss_gate` | Escape hatch to abandon the plan gate |
 
-## Swarm Execution
+## Formula Execution
 
 ### Why
 
-The plan lifecycle dispatches tasks one-at-a-time to agents. But many tasks have internal structure — a feature needs research before implementation, and review after. Running these as separate tasks loses the tight coupling between steps. Swarm execution uses formulas to define reusable multi-agent workflows where research feeds implementation feeds review, all within a single tracked unit of work.
+The plan lifecycle dispatches tasks one-at-a-time to agents. But many tasks have internal structure — a feature needs research before implementation, and review after. Running these as separate tasks loses the tight coupling between steps. Formula execution uses formulas to define reusable multi-agent workflows where research feeds implementation feeds review, all within a single tracked unit of work.
 
 ### How It Works
 
@@ -118,7 +118,7 @@ bugfix: diagnose (Explore) → fix → verify
 
 When invoked, the formula is instantiated as a **wisp** (ephemeral molecule). The dispatch loop identifies ready steps, parses agent annotations, and launches parallel Task calls. Agents communicate through structured comments (`FINDINGS:`, `CHANGES:`, `REVIEW:`, `TESTS:`) on the parent task. On completion, the wisp is squashed into a digest and a chronicle is auto-created.
 
-Plan tasks labeled `formula:<name>` are automatically dispatched through the swarm system instead of bare agent dispatch.
+Plan tasks labeled `formula:<name>` are automatically dispatched through formula execution instead of bare agent dispatch.
 
 ### Implicit Triggers
 
@@ -127,33 +127,29 @@ Formulas can fire automatically based on lifecycle events and task semantics —
 | Trigger | Signal | Formula | Phase |
 |---------|--------|---------|-------|
 | **Auto-select** | Task title keywords (implement, fix, research...) | Best match | Plan setup |
-| **Composition** | `compose` field in formula step JSON | Sub-formula | Execution |
 | **Reactive bugfix** | REVIEW:BLOCK or test failures | `bugfix` | Execution |
 | **Qualification** | All plan tasks closed | `code-review` | Completion |
 | **Research spike** | 3+ web searches during planning | `research-spike` (advisory) | Planning |
 
-Auto-selection runs during `plan_create_tasks`, applying `formula:<name>` labels based on task semantics. Atomic tasks (single-file, single-concern) are left for bare agent dispatch. Formulas can nest via `compose` fields (max depth 2). Reactive bugfixes auto-spawn on failure with a retry budget. Qualification gates block plan completion until code review passes.
+Auto-selection runs during `plan_create_tasks`, applying `formula:<name>` labels based on task semantics. Atomic tasks (single-file, single-concern) are left for bare agent dispatch. Reactive bugfixes auto-spawn inline on failure with a retry budget. Qualification gates block plan completion until code review passes.
 
 ### Artifacts
 
-- **Formulas**: `plugins/yf/formulas/*.formula.json` (5 shipped)
-- **Dispatch state**: `.yoshiko-flow/swarm-state.json` (ephemeral)
+- **Formulas**: `plugins/yf/formulas/*.formula.json` (6 shipped)
+- **Dispatch state**: `.yoshiko-flow/formula-state.json` (ephemeral)
 - **Comments**: Structured audit trail on parent tasks (persists after squash)
 
 ### Skills & Agents
 
 | Skill / Agent | Description |
 |---------------|-------------|
-| `/yf:swarm_run` | Full swarm lifecycle — instantiate, dispatch, squash |
-| `/yf:swarm_dispatch` | Core dispatch loop driving agents through molecule steps |
-| `/yf:swarm_status` | Show active swarm state and step progress |
-| `/yf:swarm_list_formulas` | List available formula templates |
-| `/yf:swarm_select_formula` | Auto-assign formula labels based on task semantics |
-| `/yf:swarm_react` | Reactive bugfix from BLOCK/FAIL verdicts |
-| `/yf:swarm_qualify` | Run code-review qualification gate before completion |
-| Agent: `yf_swarm_researcher` | Read-only research agent (posts FINDINGS) |
-| Agent: `yf_swarm_reviewer` | Read-only review agent (posts REVIEW with PASS/BLOCK) |
-| Agent: `yf_swarm_tester` | Test-writing agent (posts TESTS with results) |
+| `/yf:formula_execute` | Full formula lifecycle — instantiate, dispatch, squash |
+| `/yf:formula_list` | List available formula templates |
+| `/yf:formula_select` | Auto-assign formula labels based on task semantics |
+| `/yf:formula_qualify` | Run code-review qualification gate before completion |
+| Agent: `yf_formula_researcher` | Read-only research agent (posts FINDINGS) |
+| Agent: `yf_formula_reviewer` | Read-only review agent (posts REVIEW with PASS/BLOCK) |
+| Agent: `yf_formula_tester` | Test-writing agent (posts TESTS with results) |
 
 ## Chronicler (Context Persistence)
 
@@ -165,8 +161,8 @@ Claude sessions lose context on compaction, clear, or new session start. The ins
 
 - **Manual**: `/yf:chronicle_capture` to snapshot current context
 - **Automatic (skill-level)**: Chronicle entries auto-created at decision points — reconciliation conflicts, spec mutations, qualification verdicts, scope changes, and intake reconciliation. No suggestion needed; skills fire deterministically.
-- **Automatic (formula-level)**: Terminal swarm steps with `"chronicle": true` flag auto-create chronicle entries via the dispatch loop. Enabled on review/verify steps of all 5 non-research formulas.
-- **Automatic (agent-initiated)**: Write-capable swarm agents create chronicle entries on plan deviations, unexpected discoveries, and non-obvious test failures. Read-only agents signal chronicle-worthy findings via `CHRONICLE-SIGNAL:` in structured comments.
+- **Automatic (formula-level)**: Terminal formula steps with `"chronicle": true` flag auto-create chronicle entries via the dispatch loop. Enabled on review/verify steps of all 5 non-research formulas.
+- **Automatic (agent-initiated)**: Write-capable formula agents create chronicle entries on plan deviations, unexpected discoveries, and non-obvious test failures. Read-only agents signal chronicle-worthy findings via `CHRONICLE-SIGNAL:` in structured comments.
 - **Automatic (session boundary)**: SessionStart hook outputs open chronicle summaries for context recovery. SessionEnd and PreCompact hooks create draft chronicles from significant git activity.
 - **Automatic**: Pre-push hook creates draft chronicles and warns about open chronicles
 - **Automatic**: Plan transitions capture planning context
@@ -277,7 +273,7 @@ The formula is selected automatically when task titles include code/write/progra
 
 ### Artifacts
 
-No new file artifacts — the coder capability works through the existing swarm comment protocol (FINDINGS, CHANGES, TESTS, REVIEW on parent tasks) and produces code/test files as its output.
+No new file artifacts — the coder capability works through the existing formula comment protocol (FINDINGS, CHANGES, TESTS, REVIEW on parent tasks) and produces code/test files as its output.
 
 ### Skills & Agents
 
@@ -410,7 +406,7 @@ Plugin issues and project issues are strictly separated (Rule 1.5):
 
 ### Why
 
-Parallel agents writing to the same working tree can clobber each other's changes. Sequential ID generation (`plan-NN`, `TODO-NNN`) creates collision risk when two agents mint the same ID in parallel worktrees. The worktree capability solves both problems: hash-based IDs eliminate sequential collision risk, epic worktrees provide isolated development branches for multi-session features, and swarm agents run in Claude Code-managed worktrees with automatic merge-back.
+Parallel agents writing to the same working tree can clobber each other's changes. Sequential ID generation (`plan-NN`, `TODO-NNN`) creates collision risk when two agents mint the same ID in parallel worktrees. The worktree capability solves both problems: hash-based IDs eliminate sequential collision risk, epic worktrees provide isolated development branches for multi-session features, and formula agents run in Claude Code-managed worktrees with automatic merge-back.
 
 ### How It Works
 
@@ -418,7 +414,7 @@ Parallel agents writing to the same working tree can clobber each other's change
 
 **Epic Worktrees** — `/yf:worktree_create` creates a git worktree with its own branch. `/yf:worktree_land` validates, rebases, and fast-forward merges the worktree back, then cleans up.
 
-**Swarm Isolation** — Write-capable swarm agents (code writers, testers) are dispatched with `isolation: "worktree"` on the Task tool call. Claude Code creates the worktree implicitly. After the agent returns, the dispatch loop rebases and merges changes back sequentially, using `-X theirs` for automatic conflict resolution with escalation to Claude-driven resolution if needed.
+**Formula Isolation** — Write-capable formula agents (code writers, testers) are dispatched with `isolation: "worktree"` on the Task tool call. Claude Code creates the worktree implicitly. After the agent returns, the dispatch loop rebases and merges changes back sequentially, using `-X theirs` for automatic conflict resolution with escalation to Claude-driven resolution if needed.
 
 **WorktreeCreate Hooks** — When Claude Code creates any worktree (`claude --worktree`, `EnterWorktree`, or Task `isolation: "worktree"`), the `worktree-create.sh` hook automatically sets up rule symlinks. This ensures yf is fully functional in worktrees without manual setup. Activation-gated: the hook always creates the git worktree, but only runs yf setup when yf is active. The `worktree-remove.sh` hook cleans up yf artifacts when a worktree is removed.
 
@@ -426,7 +422,7 @@ Parallel agents writing to the same working tree can clobber each other's change
 
 - **Hash ID library**: `plugins/yf/scripts/yf-id.sh`
 - **Worktree operations**: `plugins/yf/scripts/worktree-ops.sh`
-- **Swarm worktree helper**: `plugins/yf/scripts/swarm-worktree.sh`
+- **Formula worktree helper**: `plugins/yf/scripts/formula-worktree.sh`
 
 ### Skills
 
@@ -477,13 +473,13 @@ All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to 
 | `watch-for-archive-worthiness.md` | Monitors for archive-worthy research and decisions |
 | `plan-transition-archive.md` | Archives research and decisions during plan transitions |
 | `plan-completion-report.md` | Enforces structured completion report with chronicle/diary/archive summary |
-| `swarm-comment-protocol.md` | Documents FINDINGS/CHANGES/REVIEW/TESTS comment protocol for swarm agents |
-| `swarm-formula-dispatch.md` | Routes plan tasks with `formula:<name>` label through swarm execution |
-| `swarm-archive-bridge.md` | Suggests archiving swarm output when research or decisions are detected |
-| `swarm-formula-select.md` | Heuristics for automatic formula assignment to plan tasks |
-| `swarm-nesting.md` | Nesting protocol, depth limits, and context flow for composed formulas |
-| `swarm-reactive.md` | Reactive bugfix spawning on REVIEW:BLOCK or test failures |
-| `swarm-planning-research.md` | Advisory: suggests research-spike formula during heavy planning research |
+| `formula-comment-protocol.md` | Documents FINDINGS/CHANGES/REVIEW/TESTS comment protocol for formula agents |
+| `formula-dispatch.md` | Routes plan tasks with `formula:<name>` label through formula execution |
+| `formula-archive-bridge.md` | Suggests archiving formula output when research or decisions are detected |
+| `formula-select.md` | Heuristics for automatic formula assignment to plan tasks |
+| `formula-nesting.md` | Depth limits for reactive bugfix nesting |
+| `formula-reactive.md` | Reactive bugfix on REVIEW:BLOCK or test failures |
+| `formula-planning-research.md` | Advisory: suggests research-spike formula during heavy planning research |
 | `engineer-reconcile-on-plan.md` | Reconciles plans against specs during auto-chain |
 | `watch-for-spec-drift.md` | Advisory: monitors for specification drift during work |
 | `engineer-suggest-on-completion.md` | Suggests spec updates after plan completion |
@@ -498,14 +494,14 @@ All rules are installed into `.claude/rules/yf/` (gitignored, symlinked back to 
 | `yf-tasks.sh` | Sourceable shell library for file-based task CRUD (`yft_*` functions) |
 | `yf-task-cli.sh` | CLI wrapper for `yf-tasks.sh` (agent-facing interface) |
 | `plan-exec.sh` | Deterministic state transitions for plan execution |
-| `dispatch-state.sh` | Unified dispatch state tracking for pump and swarm (prevents double-dispatch) |
+| `dispatch-state.sh` | Unified dispatch state tracking for pump and formula (prevents double-dispatch) |
 | `archive-suggest.sh` | Scans git commits for research/decision archive candidates |
 | `chronicle-check.sh` | Auto-creates draft chronicle entries from significant git activity (detects wisp squashes) |
 | `session-recall.sh` | Outputs open chronicle summaries on SessionStart for context recovery |
 | `setup-project.sh` | Manages `.gitignore` sentinel block |
 | `yf-id.sh` | Sourceable shell library for hash-based ID generation (base36, collision-safe) |
 | `worktree-ops.sh` | Epic worktree lifecycle operations (create, validate, rebase, land) |
-| `swarm-worktree.sh` | Swarm agent worktree isolation helpers (setup, merge, cleanup, conflict detection) |
+| `formula-worktree.sh` | Formula agent worktree isolation helpers (setup, merge, cleanup, conflict detection) |
 
 ### Hooks (9)
 

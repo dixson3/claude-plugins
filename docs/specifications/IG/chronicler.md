@@ -125,7 +125,7 @@ The chronicler captures observations and context as work progresses, then compos
 2. Skill evaluates the chronicle trigger condition (e.g., NEEDS-RECONCILIATION verdict, any spec mutation, 3+ child tasks)
 3. If triggered: skill creates a chronicle entry via `yft_create --type=chronicle --title="Chronicle: <skill> — <outcome>" -l ys:chronicle,ys:chronicle:auto,ys:topic:<topic>[,plan:<idx>]`
 4. Entry description captures structured context: verdict details, conflicts, operator choices, rationale
-5. For formula-flagged steps: `swarm_dispatch` Step 6c creates the chronicle entry when the step has `"chronicle": true`
+5. For formula-flagged steps: `formula_execute` Step 3j creates the chronicle entry when the step has `"chronicle": true`
 6. For read-only agents: `CHRONICLE-SIGNAL:` line in structured comments triggers chronicle creation by the dispatch loop
 
 **Postconditions**: Chronicle entry exists with decision context. Tagged to active plan if applicable. Auto-chronicles labeled `ys:chronicle:auto` for diary triage.
@@ -134,7 +134,7 @@ The chronicler captures observations and context as work progresses, then compos
 - `plugins/yf/rules/yf-rules.md` (Rule 5.3)
 - `plugins/yf/skills/engineer_reconcile/SKILL.md` (Step 7.5)
 - `plugins/yf/skills/engineer_update/SKILL.md` (Step 3.5)
-- `plugins/yf/skills/swarm_qualify/SKILL.md` (Step 6.5)
+- `plugins/yf/skills/formula_qualify/SKILL.md` (Step 6.5)
 - `plugins/yf/skills/plan_breakdown/SKILL.md` (Step 5.5)
 - `plugins/yf/skills/plan_intake/SKILL.md` (Step 1.5g)
-- `plugins/yf/skills/swarm_dispatch/SKILL.md` (Step 6c)
+- `plugins/yf/skills/formula_execute/SKILL.md` (Step 3j)

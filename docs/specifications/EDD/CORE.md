@@ -222,9 +222,9 @@ Plan Mode -> ExitPlanMode hook -> plan-gate created
 
 **Decision**: Create a `code-implement` formula with four specialized agents: code-researcher (read-only, IG + standards research), code-writer (full-capability, standards-following implementation), code-tester (limited-write, test creation and execution), code-reviewer (read-only, IG + standards compliance review). Research step checks for existing IGs before proposing new standards.
 
-**Rationale**: Separating concerns across specialized agents enforces standards compliance at each stage. The IG-first approach ensures new code follows documented patterns. Reactive bugfix is inherited from existing swarm infrastructure (TESTS failures and REVIEW:BLOCK trigger bugfix formula via `swarm_react`).
+**Rationale**: Separating concerns across specialized agents enforces standards compliance at each stage. The IG-first approach ensures new code follows documented patterns. Reactive bugfix is inherited from existing formula infrastructure (TESTS failures and REVIEW:BLOCK trigger bugfix formula inline via `formula_execute`).
 
-**Consequences**: Additional overhead per coding task (4 agent invocations vs 1). Only justified for non-trivial implementation tasks — atomic tasks use bare agent dispatch. The `swarm_select_formula` heuristic distinguishes code-implement from feature-build by technology/language context.
+**Consequences**: Additional overhead per coding task (4 agent invocations vs 1). Only justified for non-trivial implementation tasks — atomic tasks use bare agent dispatch. The `formula_select` heuristic distinguishes code-implement from feature-build by technology/language context.
 
 **Source**: Plan 35, Phase 5
 

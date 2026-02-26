@@ -31,9 +31,9 @@ If (1) AND (2) AND NOT (3): invoke `/yf:plan_intake`.
 Does not apply if auto-chain has already fired.
 If `.yoshiko-flow/plan-gate` exists, the plan is gated. Never dismiss the gate to bypass the lifecycle — if auto-chain failed, diagnose and re-run `/yf:plan_intake`.
 
-### 1.3 Formula-Labeled Tasks Route Through Swarm
+### 1.3 Formula-Labeled Tasks Route Through Formula Execute
 
-When the task pump reads a task with a `formula:<name>` label, dispatch via `/yf:swarm_run formula:<name> feature:"<title>" parent_task:<task-id>`.
+When the task pump reads a task with a `formula:<name>` label, dispatch via `/yf:formula_execute task_id:<task-id> formula:<name>`.
 Do NOT use bare Task tool dispatch for formula-labeled tasks.
 If no formula label: dispatch via bare Task tool with `subagent_type` from `agent:<name>` label.
 
@@ -107,11 +107,11 @@ When `plan-exec.sh status` returns "completed", invoke `/yf:plan_execute` Step 4
 
 ---
 
-## 3. SWARM EXECUTION
+## 3. FORMULA EXECUTION
 
 ### 3.1 Comment Protocol
 
-Swarm agents communicate via structured comments on the parent task:
+Formula agents communicate via structured comments on the parent task:
 - `FINDINGS:` — research/analysis (Purpose, Sources, Summary, Recommendations)
 - `CHANGES:` — implementation (Files Modified, Files Created, Summary)
 - `REVIEW:PASS` or `REVIEW:BLOCK` — review (Verdict, Summary, Issues, Files Reviewed)
@@ -119,11 +119,11 @@ Swarm agents communicate via structured comments on the parent task:
 
 ### 3.2 Nesting Depth Limit
 
-Maximum nesting depth: **2**. At depth 2, `compose` fields are ignored.
+Maximum nesting depth: **2**. At depth 2, reactive bugfix is ineligible.
 
 ### 3.3 Reactive Bugfix
 
-After `REVIEW:BLOCK` or `TESTS:` with failures, the dispatch loop invokes `/yf:swarm_react`.
+After `REVIEW:BLOCK` or `TESTS:` with failures, the `formula_execute` dispatch loop handles reactive bugfix inline.
 Eligible when: depth < 2, no prior `ys:bugfix-attempt` label, config `reactive_bugfix` not false.
 Design BLOCKs are excluded — they require human judgment.
 Budget: 1 retry per step (configurable via `max_retries`).
@@ -141,18 +141,18 @@ The pre-push hook (`pre-push-land.sh`) enforces clean-tree and closed-tasks prer
 
 ## 5. ADVISORY MONITORING
 
-### 5.1 Swarm Completion Bridges
+### 5.1 Formula Completion Bridges
 
-After a swarm completes (wisp squashed):
+After a formula completes (wisp squashed):
 - FINDINGS with URLs/external sources: suggest `/yf:archive_capture type:research`
 - REVIEW:BLOCK with architectural concerns: suggest `/yf:archive_capture type:decision`
 - Feature-build/build-test/code-implement with REVIEW:PASS and specs exist: suggest `/yf:engineer_suggest_updates`
 
-At most once per swarm completion. Skip trivial swarms.
+At most once per formula completion. Skip trivial formulas.
 
 ### 5.2 Research Spike During Planning
 
-During plan mode, if 3+ web searches or comparing alternatives: suggest `/yf:swarm_run formula:research-spike feature:"<topic>"`.
+During plan mode, if 3+ web searches or comparing alternatives: suggest `/yf:formula_execute task_id:<task-id> formula:research-spike`.
 Check for existing archive tasks first. At most once per planning session.
 
 ### 5.3 Chronicle Worthiness

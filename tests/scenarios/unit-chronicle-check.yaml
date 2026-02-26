@@ -223,10 +223,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 10: Chronicle worthiness rule includes swarm execution event triggers
-  - name: "rule_has_swarm_execution_triggers"
+  # Case 10: Chronicle worthiness rule includes formula execution event triggers
+  - name: "rule_has_formula_execution_triggers"
     run: |
-      grep -q 'swarm events\|swarm' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" && echo "OK: has swarm execution trigger"
+      grep -q 'formula events\|formula' "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md" && echo "OK: has formula execution trigger"
     assertions:
       - type: exit_code
         value: "0"
@@ -243,30 +243,30 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 12: swarm_react skill contains chronicle auto-capture content (delegated from rules)
-  - name: "swarm_chronicle_bridge_in_rules"
+  # Case 12: formula_execute skill contains chronicle auto-capture content (delegated from rules)
+  - name: "formula_chronicle_bridge_in_execute"
     run: |
-      grep -q 'reactive bugfix.*chronicle\|auto-capture.*chronicle\|chronicle.*auto' "$PLUGIN_DIR/plugins/yf/skills/swarm_react/SKILL.md" && echo "OK: swarm-chronicle-bridge content in swarm_react skill"
+      grep -q 'reactive bugfix.*chronicle\|auto-capture.*chronicle\|chronicle.*auto' "$PLUGIN_DIR/plugins/yf/skills/formula_execute/SKILL.md" && echo "OK: formula-chronicle-bridge content in formula_execute skill"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 13: Swarm chronicle bridge fires automatically (not advisory) in swarm_react skill
-  - name: "swarm_chronicle_bridge_auto_fires"
+  # Case 13: Formula chronicle bridge fires automatically (not advisory) in formula_execute skill
+  - name: "formula_chronicle_bridge_auto_fires"
     run: |
-      grep -q 'NOT advisory\|fires automatically\|Auto-Capture Chronicle' "$PLUGIN_DIR/plugins/yf/skills/swarm_react/SKILL.md" && echo "OK: bridge fires automatically"
+      grep -q 'NOT advisory\|fires automatically\|Auto-Capture Chronicle' "$PLUGIN_DIR/plugins/yf/skills/formula_execute/SKILL.md" && echo "OK: bridge fires automatically"
     assertions:
       - type: exit_code
         value: "0"
       - type: output_contains
         value: "OK"
 
-  # Case 14: swarm_react has Step 4.5 for chronicle auto-capture
-  - name: "swarm_react_has_chronicle_step"
+  # Case 14: formula_execute has Step 4.5 for chronicle auto-capture
+  - name: "formula_execute_has_chronicle_step"
     run: |
-      grep -q 'Step 4.5.*Chronicle\|Auto-Capture Chronicle' "$PLUGIN_DIR/plugins/yf/skills/swarm_react/SKILL.md" && echo "OK: swarm_react has chronicle step"
+      grep -q 'Step 4.5.*Chronicle\|Auto-Capture Chronicle' "$PLUGIN_DIR/plugins/yf/skills/formula_execute/SKILL.md" && echo "OK: formula_execute has chronicle step"
     assertions:
       - type: exit_code
         value: "0"

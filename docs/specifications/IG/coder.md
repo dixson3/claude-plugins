@@ -8,14 +8,14 @@ The coder capability provides standards-driven code generation through the `code
 
 ### UC-029: Standards-Driven Code Implementation
 
-**Actor**: System (swarm dispatch) or Operator
+**Actor**: System (formula dispatch) or Operator
 
 **Preconditions**: Task with `formula:code-implement` label exists. Task involves creating or modifying code with technology/language context.
 
 **Flow**:
 1. Plan pump detects `formula:code-implement` label on a ready task
-2. Pump invokes `/yf:swarm_run formula:code-implement feature:"<title>" parent_task:<id>`
-3. Swarm instantiates formula as wisp with 4 steps:
+2. Pump invokes `/yf:formula_execute task_id:<id> formula:code-implement`
+3. Formula instantiates wisp with 4 steps:
    - `research-standards` (yf_code_researcher) -- read-only
    - `implement` (code-writer) -- full-capability
    - `test` (yf_code_tester) -- limited-write
@@ -25,7 +25,7 @@ The coder capability provides standards-driven code generation through the `code
 6. Test step reads CHANGES, writes tests, runs them, posts TESTS with pass/fail results
 7. Review step reads all upstream comments, reviews against IGs and standards, posts REVIEW:PASS or REVIEW:BLOCK
 8. On REVIEW:PASS: wisp squashed, parent task closed, chronicle captured
-9. On REVIEW:BLOCK or TESTS failure: reactive bugfix triggers via `swarm_react`
+9. On REVIEW:BLOCK or TESTS failure: reactive bugfix triggers inline via `formula_execute`
 
 **Postconditions**: Code implemented following standards, tests passing, review passed. Structured comments on parent task document the full workflow.
 
@@ -43,17 +43,16 @@ The coder capability provides standards-driven code generation through the `code
 **Preconditions**: Task created during plan-to-task conversion.
 
 **Flow**:
-1. `/yf:swarm_select_formula` evaluates task title and description
+1. `/yf:formula_select` evaluates task title and description
 2. Matches code/write/program/develop verbs WITH technology/language context
 3. Distinguishes from feature-build: code-implement requires language/technology signals (e.g., "implement auth in Python", "write Go tests"), feature-build matches general implement verbs
 4. If match: applies `formula:code-implement` label
 5. Atomic tasks (single file, config changes) are skipped
 
-**Postconditions**: Task labeled with `formula:code-implement` for swarm dispatch.
+**Postconditions**: Task labeled with `formula:code-implement` for formula dispatch.
 
 **Key Files**:
-- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/skills/swarm_select_formula/SKILL.md`
-- `/Users/james/workspace/dixson3/d3-claude-plugins/plugins/yf/rules/swarm-formula-select.md`
+- `plugins/yf/skills/formula_select/SKILL.md`
 
 ### UC-031: IG-First Standards Research
 

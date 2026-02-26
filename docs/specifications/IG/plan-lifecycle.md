@@ -71,7 +71,7 @@ The plan lifecycle converts plans into a dependency graph of tracked tasks with 
 1. `/yf:plan_pump` queries `yft_list -l plan:<idx> --ready --type=task --json`
 2. Groups tasks by `agent:<name>` label
 3. Checks `pump-state.sh is-dispatched` to skip already-dispatched tasks
-4. For formula-labeled tasks: invokes `/yf:swarm_run` instead of bare Task dispatch
+4. For formula-labeled tasks: invokes `/yf:formula_execute` instead of bare Task dispatch
 5. For other tasks: launches Task tool calls with `subagent_type` from agent label
 6. Marks tasks as dispatched via `pump-state.sh mark-dispatched`
 7. Agents claim tasks (`yft_update --status=in_progress`), implement work, close tasks (`yft_close`)

@@ -1,12 +1,12 @@
-name: "Unit: swarm_select_formula skill"
+name: "Unit: formula_select skill"
 setup:
-  - "mkdir -p plugins/yf/skills/swarm_select_formula"
+  - "mkdir -p plugins/yf/skills/formula_select"
 
 steps:
   # Case 1: Skill file exists with correct frontmatter
   - name: "skill_file_exists"
     run: |
-      test -f "$PLUGIN_DIR/plugins/yf/skills/swarm_select_formula/SKILL.md" && echo "exists"
+      test -f "$PLUGIN_DIR/plugins/yf/skills/formula_select/SKILL.md" && echo "exists"
     assertions:
       - type: output_contains
         value: "exists"
@@ -14,10 +14,10 @@ steps:
   # Case 2: Skill has correct name in frontmatter
   - name: "skill_name_correct"
     run: |
-      head -5 "$PLUGIN_DIR/plugins/yf/skills/swarm_select_formula/SKILL.md" | grep "name:"
+      head -5 "$PLUGIN_DIR/plugins/yf/skills/formula_select/SKILL.md" | grep "name:"
     assertions:
       - type: output_contains
-        value: "yf:swarm_select_formula"
+        value: "yf:formula_select"
 
   # Case 3: Consolidated rules contain formula selection content
   - name: "rules_has_formula_selection"
@@ -30,7 +30,7 @@ steps:
   # Case 4: Consolidated rules document formula dispatch
   - name: "rules_has_formula_dispatch"
     run: |
-      grep -c "formula.*swarm_run\|swarm_run.*formula" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
+      grep -c "formula.*formula_execute\|formula_execute.*formula" "$PLUGIN_DIR/plugins/yf/rules/yf-rules.md"
     assertions:
       - type: exit_code
         value: "0"
@@ -46,7 +46,7 @@ steps:
   # Case 6: Skill references idempotency check
   - name: "skill_idempotent"
     run: |
-      grep -c "formula:\*" "$PLUGIN_DIR/plugins/yf/skills/swarm_select_formula/SKILL.md" || echo "0"
+      grep -c "formula:\*" "$PLUGIN_DIR/plugins/yf/skills/formula_select/SKILL.md" || echo "0"
     assertions:
       - type: exit_code
         value: "0"

@@ -65,7 +65,7 @@ Create a chronicle task BEFORE posting your structured comment if you encounter:
 ```bash
 bash "$YFT" create --type task \
   --title "Chronicle: <brief summary>" \
-  -l ys:chronicle,ys:topic:swarm \
+  -l ys:chronicle,ys:topic:formula \
   --description "<what happened, why it matters, impact on task>"
 ```
 

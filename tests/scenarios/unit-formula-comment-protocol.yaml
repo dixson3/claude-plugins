@@ -1,4 +1,4 @@
-name: "Unit: swarm comment protocol compliance"
+name: "Unit: formula comment protocol compliance"
 setup:
   - "mkdir -p plugins/yf/formulas plugins/yf/rules"
 
@@ -131,26 +131,27 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 9: feature-build has compose field for nested build-test
-  - name: "feature_build_compose"
+  # Case 9: feature-build has no compose field (compose dropped per formula refactor)
+  - name: "feature_build_no_compose"
     run: |
-      jq -r '.steps[] | select(.compose) | .compose' "$PLUGIN_DIR/plugins/yf/formulas/feature-build.formula.json"
-    assertions:
-      - type: output_contains
-        value: "build-test"
-
-  # Case 10: swarm_dispatch has Step 6c progressive chronicle
-  - name: "dispatch_has_progressive_chronicle"
-    run: |
-      grep -q 'Step 6c.*Progressive Chronicle\|Progressive Chronicle.*Opt-In' "$PLUGIN_DIR/plugins/yf/skills/swarm_dispatch/SKILL.md" && echo "OK"
+      COMPOSE=$(jq -r '.steps[] | select(.compose) | .compose' "$PLUGIN_DIR/plugins/yf/formulas/feature-build.formula.json")
+      [ -z "$COMPOSE" ] && echo "OK: compose field absent" || echo "FAIL: compose field still present ($COMPOSE)"
     assertions:
       - type: output_contains
         value: "OK"
 
-  # Case 11: swarm_dispatch has Step 6d archive findings
+  # Case 10: formula_execute has Step 3j chronicle auto-capture
+  - name: "dispatch_has_progressive_chronicle"
+    run: |
+      grep -q '3j.*Auto-Capture Chronicle\|3j.*Progressive Chronicle' "$PLUGIN_DIR/plugins/yf/skills/formula_execute/SKILL.md" && echo "OK"
+    assertions:
+      - type: output_contains
+        value: "OK"
+
+  # Case 11: formula_execute has Step 3k archive findings
   - name: "dispatch_has_archive_findings"
     run: |
-      grep -q 'Step 6d.*Archive Findings\|Archive Findings.*Opt-In' "$PLUGIN_DIR/plugins/yf/skills/swarm_dispatch/SKILL.md" && echo "OK"
+      grep -q 'Step 3k.*Archive Findings\|Archive Findings.*Opt-In' "$PLUGIN_DIR/plugins/yf/skills/formula_execute/SKILL.md" && echo "OK"
     assertions:
       - type: output_contains
         value: "OK"
@@ -163,10 +164,10 @@ steps:
       - type: output_contains
         value: "OK"
 
-  # Case 13: swarm_run E1 chronicle has structured execution narrative
-  - name: "swarm_run_structured_chronicle"
+  # Case 13: formula_execute E1 chronicle has structured execution narrative
+  - name: "formula_execute_structured_chronicle"
     run: |
-      grep -q 'structured execution narrative\|Step Results\|BLOCK verdicts\|Final outcome' "$PLUGIN_DIR/plugins/yf/skills/swarm_run/SKILL.md" && echo "OK"
+      grep -q 'structured execution narrative\|Step Results\|BLOCK verdicts\|Final outcome' "$PLUGIN_DIR/plugins/yf/skills/formula_execute/SKILL.md" && echo "OK"
     assertions:
       - type: output_contains
         value: "OK"
@@ -174,7 +175,7 @@ steps:
   # Case 14: researcher agent has External sources subsection
   - name: "researcher_has_external_sources"
     run: |
-      grep -q '### External' "$PLUGIN_DIR/plugins/yf/agents/yf_swarm_researcher.md" && echo "OK"
+      grep -q '### External' "$PLUGIN_DIR/plugins/yf/agents/yf_formula_researcher.md" && echo "OK"
     assertions:
       - type: output_contains
         value: "OK"
@@ -182,7 +183,7 @@ steps:
   # Case 15: reviewer agent has IG reference section
   - name: "reviewer_has_ig_reference"
     run: |
-      grep -q 'Implementation Guide Reference\|Specification Alignment' "$PLUGIN_DIR/plugins/yf/agents/yf_swarm_reviewer.md" && echo "OK"
+      grep -q 'Implementation Guide Reference\|Specification Alignment' "$PLUGIN_DIR/plugins/yf/agents/yf_formula_reviewer.md" && echo "OK"
     assertions:
       - type: output_contains
         value: "OK"

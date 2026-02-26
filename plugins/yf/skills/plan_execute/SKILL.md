@@ -33,7 +33,7 @@ YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
 
 # Execute Plan Skill
 
-Orchestrates plan execution using the task pump. The pump reads ready tasks from the plan DAG, classifies each into a **formula track** (dispatched via `/yf:swarm_run`) or an **agent track** (dispatched via bare Task tool calls), and launches them in parallel. The execution loop continues until all work is complete.
+Orchestrates plan execution using the task pump. The pump reads ready tasks from the plan DAG, classifies each into a **formula track** (dispatched via `/yf:formula_execute`) or an **agent track** (dispatched via bare Task tool calls), and launches them in parallel. The execution loop continues until all work is complete.
 
 ## Prerequisites
 
@@ -68,8 +68,8 @@ Call `/yf:plan_pump` with the plan index. The pump:
 
 1. Calls `plan-exec.sh next <root-epic-id>` to get ready tasks
 2. Filters out already-dispatched tasks via `dispatch-state.sh pump is-dispatched`
-3. Classifies each task into **formula track** (has `formula:<name>` label → dispatch via `/yf:swarm_run`) or **agent track** (has `agent:<name>` label only → dispatch via bare Task tool)
-4. Returns two groups: formula tasks (for swarm dispatch) and agent tasks (for bare Task dispatch)
+3. Classifies each task into **formula track** (has `formula:<name>` label → dispatch via `/yf:formula_execute`) or **agent track** (has `agent:<name>` label only → dispatch via bare Task tool)
+4. Returns two groups: formula tasks (for formula dispatch) and agent tasks (for bare Task dispatch)
 
 #### 3b. Check Empty Result
 
@@ -80,19 +80,19 @@ If the pump returns no tasks to dispatch:
   - **executing** with in-progress tasks -> wait for subagents to return, then re-pump
 
 > **CRITICAL: Dispatch Routing**
-> Tasks with a `formula:<name>` label MUST be dispatched via `/yf:swarm_run`, NOT via bare Task tool calls. Bare dispatch of formula-labeled tasks is a bug — it bypasses multi-agent workflows (research → implement → review), structured task comments (FINDINGS/CHANGES/REVIEW/TESTS), reactive bugfix spawning, and chronicle capture.
+> Tasks with a `formula:<name>` label MUST be dispatched via `/yf:formula_execute`, NOT via bare Task tool calls. Bare dispatch of formula-labeled tasks is a bug — it bypasses multi-agent workflows (research → implement → review), structured task comments (FINDINGS/CHANGES/REVIEW/TESTS), reactive bugfix spawning, and chronicle capture.
 
 #### 3c. Dispatch in Parallel
 
 For each group from the pump, launch dispatch calls **in parallel** (multiple calls in one message). The pump classifies tasks into two tracks:
 
 **Formula dispatch** (tasks with `formula:<name>` label):
-Invoke the swarm system for full multi-agent workflow:
+Invoke formula execution for full multi-agent workflow:
 ```
-/yf:swarm_run formula:<formula-name> feature:"<task title>" parent_task:<task-id>
+/yf:formula_execute task_id:<task-id> formula:<formula-name>
 ```
 
-The swarm handles the complete lifecycle: wisp instantiation, step dispatch through specialized agents, squash on completion, and chronicle capture. The parent task is closed by swarm_run on success.
+The formula handles the complete lifecycle: wisp instantiation, step dispatch through specialized agents, squash on completion, and chronicle capture. The parent task is closed by formula_execute on success.
 
 **Agent dispatch** (tasks with `agent:<name>` label, no formula):
 ```
@@ -131,7 +131,7 @@ After dispatching a batch:
 
 When `plan-exec.sh status` returns `completed` (which also closes any chronicle gates), but **before** running the completion sequence:
 
-1. Invoke `/yf:swarm_qualify plan_idx:<idx>` to run the code-review qualification gate
+1. Invoke `/yf:formula_qualify plan_idx:<idx>` to run the code-review qualification gate
 2. If the qualification returns **PASS** (or config is `advisory`/`disabled`), proceed to Step 4
 3. If the qualification returns **BLOCK** (and config is `blocking`):
    - Report the block to the user

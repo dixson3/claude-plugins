@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "D3 Claude Marketplace - A collection of Claude plugins",
-    "version": "3.1.0",
+    "version": "3.2.0",
     "license": "MIT",
     "organization": "James Dixson / Yoshiko Studios LLC",
     "github": "dixson3"
@@ -16,7 +16,7 @@
       "name": "yf",
       "source": "./plugins/yf",
       "description": "Yoshiko Flow — plan lifecycle, swarm execution with implicit formula triggering and worktree isolation, WorktreeCreate hooks, context persistence, diary generation, research/decision archiving, specification artifacts, standards-driven code generation, hybrid idx-hash IDs, plan index registry, epic worktree lifecycle, file-based task management, zero-question setup, plugin issue reporting, and project issue tracking",
-      "version": "3.1.0"
+      "version": "3.2.0"
     }
   ]
 }

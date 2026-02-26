@@ -30,19 +30,19 @@ YFT="$CLAUDE_PLUGIN_ROOT/scripts/yf-task-cli.sh"
 
 # Task Pump Skill
 
-Reads tasks that are ready for work, classifies each into a **formula track** (dispatched via `/yf:swarm_run` for multi-agent workflows) or an **agent track** (dispatched via bare Task tool calls), and launches them in parallel. This is the mechanism that converts the persistent task DAG into live agent execution.
+Reads tasks that are ready for work, classifies each into a **formula track** (dispatched via `/yf:formula_execute` for multi-agent workflows) or an **agent track** (dispatched via bare Task tool calls), and launches them in parallel. This is the mechanism that converts the persistent task DAG into live agent execution.
 
 ## Architecture
 
 ```
 Tasks (bash "$YFT" list --ready) → classify dispatch track → group by track
-                                    ├→ formula:<name>  → swarm dispatch (via /yf:swarm_run)
+                                    ├→ formula:<name>  → formula dispatch (via /yf:formula_execute)
                                     └→ agent:<name>    → bare agent dispatch (via Task tool)
 ```
 
 **Tasks** = persistent store of work (git-backed, labeled, with dependencies)
 **Task tool** = execution engine (launches specialized agent subprocesses)
-**Swarm** = multi-agent formula execution (research → implement → review)
+**Formula** = multi-agent formula execution (research → implement → review)
 
 The pump is the bridge: it reads from tasks, classifies dispatch tracks, and groups for execution.
 
@@ -91,7 +91,7 @@ AGENT=$(bash "$YFT" label list <task-id> --json | jq -r '.[] | select(startswith
 - Tasks with `agent:<name>` label only → **agent track** (grouped by agent name)
 - Tasks with neither → **agent track** under `general-purpose`
 
-If a task has both `formula:<name>` and `agent:<name>` labels, the formula label takes priority — the swarm formula handles agent selection internally.
+If a task has both `formula:<name>` and `agent:<name>` labels, the formula label takes priority — the formula handles agent selection internally.
 
 Group tasks into two output sections:
 1. **Formula dispatch** — keyed by formula name, each entry includes task ID and title
@@ -101,12 +101,12 @@ Group tasks into two output sections:
 
 For each group, launch dispatch calls **in parallel** (multiple calls in one message):
 
-**Formula track** — dispatch via swarm_run:
+**Formula track** — dispatch via formula_execute:
 ```
-/yf:swarm_run formula:<formula-name> feature:"<task title>" parent_task:<task-id>
+/yf:formula_execute task_id:<task-id> formula:<formula-name>
 ```
 
-The swarm handles the full lifecycle: wisp instantiation, multi-agent dispatch, squash, and chronicle.
+The formula handles the full lifecycle: wisp instantiation, multi-agent dispatch, squash, and chronicle.
 
 **Agent track** — dispatch via Task tool (unchanged):
 ```

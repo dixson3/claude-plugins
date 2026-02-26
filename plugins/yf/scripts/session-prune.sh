@@ -78,7 +78,7 @@ do_ephemeral() {
   fi
 
   # Protected files — never remove these
-  # config.json, .gitignore, lock.json, plan-gate, task-pump.json, swarm-state.json
+  # config.json, .gitignore, lock.json, plan-gate, task-pump.json, formula-state.json
 
   local removed=0
 
