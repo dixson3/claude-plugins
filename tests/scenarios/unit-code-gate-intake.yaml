@@ -179,6 +179,63 @@ steps:
       - type: output_contains
         value: "OK"
 
+  # Case 9: Completed plan with no tasks (post-prune) → no block
+  - name: "completed_plan_no_tasks_no_block"
+    run: |
+      rm -f .yoshiko-flow/.tasks-check-cache .yoshiko-flow/plan-intake-skip
+      printf '# Plan 99\n**Status: Completed**' > docs/plans/plan-99.md
+      # No task files — simulates post-prune state
+      rm -f "$WORK_DIR/.yoshiko-flow/tasks/task-gate-"*
+      OUTPUT=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      EXIT=$?
+      echo "$OUTPUT"
+      if [ "$EXIT" -ne 0 ]; then
+        echo "FAIL: completed plan with no tasks should not block ($EXIT)"
+        exit 1
+      fi
+      echo "OK: completed plan with no tasks allowed"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "OK"
+
+  # Case 10: Active plan with no tasks blocks, then Completed clears block
+  - name: "active_blocks_then_completed_clears"
+    run: |
+      rm -f .yoshiko-flow/.tasks-check-cache .yoshiko-flow/plan-intake-skip
+      printf '# Plan 99\n**Status:** Active' > docs/plans/plan-99.md
+      rm -f "$WORK_DIR/.yoshiko-flow/tasks/task-gate-"*
+      # First check: Active + no tasks → should block
+      OUTPUT1=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1 || true)
+      echo "$OUTPUT1"
+      if ! echo "$OUTPUT1" | grep -q "BLOCKED"; then
+        echo "FAIL: expected BLOCKED for Active plan with no tasks"
+        exit 1
+      fi
+      # Now update status to Completed (simulates plan-exec.sh fix)
+      rm -f .yoshiko-flow/.tasks-check-cache
+      printf '# Plan 99\n**Status: Completed**' > docs/plans/plan-99.md
+      # Second check: Completed + no tasks → should allow
+      OUTPUT2=$(echo '{"tool_input":{"file_path":"'"$WORK_DIR"'/src/main.py"}}' | \
+        CLAUDE_PROJECT_DIR="$WORK_DIR" bash "$PLUGIN_DIR/plugins/yf/hooks/code-gate.sh" 2>&1)
+      EXIT2=$?
+      echo "$OUTPUT2"
+      if [ "$EXIT2" -ne 0 ]; then
+        echo "FAIL: Completed plan should not block ($EXIT2)"
+        exit 1
+      fi
+      echo "OK: Active blocked then Completed cleared"
+    assertions:
+      - type: exit_code
+        value: "0"
+      - type: output_contains
+        value: "BLOCKED"
+      - type: output_contains
+        value: "OK: Active blocked then Completed cleared"
+
 teardown:
   - "rm -f .yoshiko-flow/plan-gate .yoshiko-flow/plan-intake-skip .yoshiko-flow/.tasks-check-cache docs/plans/plan-99.md"
   - "rm -f .yoshiko-flow/tasks/task-gate-*"

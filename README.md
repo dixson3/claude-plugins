@@ -15,7 +15,7 @@ On first session start, the preflight system automatically installs rules and cr
 
 | Plugin | Description | Version |
 |--------|-------------|---------|
-| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, swarm execution with worktree isolation, context persistence, diary generation, specification artifacts, standards-driven code generation, hash-based IDs, epic worktrees, research/decision archiving, plugin issue reporting, and project issue tracking | 3.2.0 |
+| [yf](plugins/yf/) | Yoshiko Flow — plan lifecycle, swarm execution with worktree isolation, context persistence, diary generation, specification artifacts, standards-driven code generation, hash-based IDs, epic worktrees, research/decision archiving, plugin issue reporting, and project issue tracking | 3.2.1 |
 
 ## Yoshiko Flow (yf)
 

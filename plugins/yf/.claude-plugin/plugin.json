@@ -1,6 +1,6 @@
 {
   "name": "yf",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "Yoshiko Flow — plan lifecycle, formula execution with direct dispatch and worktree isolation, WorktreeCreate hooks, context persistence, diary generation, research/decision archiving, specification artifacts, standards-driven code generation, hybrid idx-hash IDs, plan index registry, epic worktree lifecycle, automatic pruning, zero-question setup, file-based task management, plugin issue reporting, and project issue tracking",
   "author": {
     "name": "James Dixson",

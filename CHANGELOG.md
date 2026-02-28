@@ -5,6 +5,16 @@ All notable changes to the Yoshiko Studios Claude Marketplace will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.1] - 2026-02-28
+
+### Fixed
+
+- **code-gate.sh blocks edits after completed plan tasks are pruned** — `plan-exec.sh` now writes "Completed" into the plan file and `_index.md` before pruning tasks, preventing false-positive edit blocks when the code-gate cache expires ([#42](https://github.com/dixson3/claude-plugins/issues/42))
+
+### Added
+
+- Test cases 9 and 10 in `unit-code-gate-intake.yaml` covering post-prune completed plan scenarios (880 assertions total)
+
 ## [3.2.0] - 2026-02-25
 
 ### Changed

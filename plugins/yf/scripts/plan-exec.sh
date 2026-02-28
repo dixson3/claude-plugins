@@ -259,6 +259,18 @@ case "$COMMAND" in
                 close_chronicle_gates "$PLAN_LABEL"
                 # Validate chronicle coverage (fail-open)
                 bash "$SCRIPT_DIR/chronicle-validate.sh" "$PLAN_LABEL" 2>/dev/null || true
+                # Mark plan file as Completed (before prune, so code-gate sees durable status)
+                PLAN_IDX="${PLAN_LABEL#plan:}"
+                PLANS_DIR="${CLAUDE_PROJECT_DIR:-.}/docs/plans"
+                PLAN_FILE=$(ls "$PLANS_DIR"/plan-*"${PLAN_IDX}"*.md 2>/dev/null | head -1)
+                if [[ -n "$PLAN_FILE" ]]; then
+                    sed -i '' 's/^\(\*\{0,2\}Status:\?\*\{0,2\}\) .*/\1 Completed/' "$PLAN_FILE" 2>/dev/null || true
+                fi
+                # Update _index.md status column
+                INDEX_FILE="$PLANS_DIR/_index.md"
+                if [[ -f "$INDEX_FILE" ]]; then
+                    sed -i '' "s/| ${PLAN_IDX} |\(.*\)| Active |/| ${PLAN_IDX} |\1| Completed |/" "$INDEX_FILE" 2>/dev/null || true
+                fi
                 # Auto-prune closed plan tasks (fail-open)
                 (
                     set +e
