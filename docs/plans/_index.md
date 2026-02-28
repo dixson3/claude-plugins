@@ -65,3 +65,4 @@
 | 0061 | plan-0061-k62y7 | Plan: Fix mol wisp bug, correct diary inaccuracies, add fact-check to diary creation | 2026-02-23 | James Dixson | Active |
 | 0062 | plan-0062-71nv1 | Plan: Bash Script Quick Wins — Reduce Complexity in yf Plugin Scripts | 2026-02-23 | James Dixson | Active |
 | 0063 | plan-0063-ykk66 | Plan: Automatic Semver Enforcement on Push | 2026-02-23 | James Dixson | Active |
+| 0064 | plan-0064-1qouz | Fix: code-gate.sh blocks edits after completed plan tasks are pruned | 2026-02-28 | James Dixson | Active |
